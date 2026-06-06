@@ -1,0 +1,546 @@
+{
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "pattern": "^q_[a-z][a-z0-9_]*$"
+      },
+      "content": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "prompt": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string"
+                  },
+                  "media": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "image",
+                            "audio",
+                            "video"
+                          ],
+                          "type": "string"
+                        },
+                        "ref": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^media:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
+                            },
+                            {
+                              "type": "string",
+                              "pattern": "^url:https:\\/\\/\\S+$"
+                            },
+                            {
+                              "type": "string",
+                              "pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
+                            }
+                          ]
+                        },
+                        "alt": {
+                          "type": "string"
+                        },
+                        "duration_ms": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "width": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "height": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "start_ms": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "end_ms": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "ref"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              },
+              "answer": {
+                "type": "string"
+              },
+              "explanation": {
+                "type": "string"
+              },
+              "variants": {
+                "type": "object",
+                "properties": {
+                  "multiple_choice": {
+                    "type": "object",
+                    "properties": {
+                      "choices": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[a-z0-9][a-z0-9_]*$"
+                            },
+                            "text": {
+                              "type": "string"
+                            },
+                            "media": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "enum": [
+                                      "image",
+                                      "audio",
+                                      "video"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "ref": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^media:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "pattern": "^url:https:\\/\\/\\S+$"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
+                                      }
+                                    ]
+                                  },
+                                  "alt": {
+                                    "type": "string"
+                                  },
+                                  "duration_ms": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "width": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  },
+                                  "height": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  },
+                                  "start_ms": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "end_ms": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "ref"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "id"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [],
+                    "additionalProperties": false
+                  },
+                  "open": {
+                    "type": "object",
+                    "properties": {
+                      "accepted": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "prompt": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string"
+                  },
+                  "media": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "image",
+                            "audio",
+                            "video"
+                          ],
+                          "type": "string"
+                        },
+                        "ref": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^media:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
+                            },
+                            {
+                              "type": "string",
+                              "pattern": "^url:https:\\/\\/\\S+$"
+                            },
+                            {
+                              "type": "string",
+                              "pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
+                            }
+                          ]
+                        },
+                        "alt": {
+                          "type": "string"
+                        },
+                        "duration_ms": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "width": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "height": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "start_ms": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "end_ms": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "ref"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              },
+              "unit": {
+                "type": "string"
+              },
+              "explanation": {
+                "type": "string"
+              },
+              "variants": {
+                "type": "object",
+                "properties": {
+                  "multiple_choice": {
+                    "type": "object",
+                    "properties": {
+                      "choices": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[a-z0-9][a-z0-9_]*$"
+                            },
+                            "text": {
+                              "type": "string"
+                            },
+                            "media": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "enum": [
+                                      "image",
+                                      "audio",
+                                      "video"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "ref": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^media:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "pattern": "^url:https:\\/\\/\\S+$"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
+                                      }
+                                    ]
+                                  },
+                                  "alt": {
+                                    "type": "string"
+                                  },
+                                  "duration_ms": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "width": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  },
+                                  "height": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  },
+                                  "start_ms": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "end_ms": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "ref"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "id"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "prompt": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string"
+                  },
+                  "media": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "image",
+                            "audio",
+                            "video"
+                          ],
+                          "type": "string"
+                        },
+                        "ref": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^media:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
+                            },
+                            {
+                              "type": "string",
+                              "pattern": "^url:https:\\/\\/\\S+$"
+                            },
+                            {
+                              "type": "string",
+                              "pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
+                            }
+                          ]
+                        },
+                        "alt": {
+                          "type": "string"
+                        },
+                        "duration_ms": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "width": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "height": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "start_ms": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "end_ms": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "ref"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              },
+              "explanation": {
+                "type": "string"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9][a-z0-9_]*$"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "media": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "enum": [
+                              "image",
+                              "audio",
+                              "video"
+                            ],
+                            "type": "string"
+                          },
+                          "ref": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^media:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
+                              },
+                              {
+                                "type": "string",
+                                "pattern": "^url:https:\\/\\/\\S+$"
+                              },
+                              {
+                                "type": "string",
+                                "pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
+                              }
+                            ]
+                          },
+                          "alt": {
+                            "type": "string"
+                          },
+                          "duration_ms": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "width": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "height": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "start_ms": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "end_ms": {
+                            "type": "integer",
+                            "minimum": 1
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "ref"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "required": [
+      "id",
+      "content"
+    ],
+    "additionalProperties": false
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
