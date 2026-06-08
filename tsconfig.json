@@ -1,5 +1,25 @@
 {
 	"extends": "./.svelte-kit/tsconfig.json",
+	"include": [
+		"ambient.d.ts",
+		"non-ambient.d.ts",
+		".svelte-kit/types/**/$types.d.ts",
+		"vite.config.js",
+		"vite.config.ts",
+		"src/**/*.js",
+		"src/**/*.ts",
+		"src/**/*.svelte",
+		"test/**/*.js",
+		"test/**/*.ts",
+		"test/**/*.svelte",
+		"tests/**/*.js",
+		"tests/**/*.ts",
+		"tests/**/*.svelte",
+		"scripts/**/*.js",
+		"scripts/**/*.ts",
+		"e2e/**/*.js",
+		"e2e/**/*.ts"
+	],
 	"compilerOptions": {
 		"rewriteRelativeImportExtensions": true,
 		"allowJs": true,

@@ -1,12 +1,6 @@
 import * as v from 'valibot';
-import {
-	Deprecation,
-	License,
-	LocaleCode,
-	QuestionId,
-	Source,
-	TagRef
-} from './common.ts';
+
+import { Deprecation, License, LocaleCode, LocalId, QuestionId, Source, TagRef } from './common.ts';
 import { MediaList } from './media.ts';
 
 export const NormalizeOp = v.picklist([
@@ -18,14 +12,11 @@ export const NormalizeOp = v.picklist([
 ]);
 export type NormalizeOp = v.InferOutput<typeof NormalizeOp>;
 
-/** ID local to a question (choice id, order-item id). Bare slug-ish. */
-const LocalId = v.pipe(v.string(), v.regex(/^[a-z0-9][a-z0-9_]*$/));
-
 const Choice = v.strictObject({
-	id: LocalId,
-	text: v.string(),
 	correct: v.optional(v.literal(true)),
-	media: v.optional(MediaList)
+	id: LocalId,
+	media: v.optional(MediaList),
+	text: v.string()
 });
 export type Choice = v.InferOutput<typeof Choice>;
 
@@ -63,22 +54,22 @@ const NumericInputVariant = v.strictObject({
 
 const RangeVariant = v.pipe(
 	v.strictObject({
-		min: v.number(),
 		max: v.number(),
+		min: v.number(),
 		step: v.optional(v.pipe(v.number(), v.minValue(0)), 1)
 	}),
 	v.check((r) => r.max > r.min, 'range.max must be greater than range.min')
 );
 
 const Prompt = v.strictObject({
-	text: v.string(),
-	media: v.optional(MediaList)
+	media: v.optional(MediaList),
+	text: v.string()
 });
 
 const TextVariants = v.strictObject({
 	multiple_choice: v.optional(MultipleChoiceVariant),
-	true_false: v.optional(TrueFalseVariant),
-	open: v.optional(OpenVariant)
+	open: v.optional(OpenVariant),
+	true_false: v.optional(TrueFalseVariant)
 });
 
 const NumericVariants = v.strictObject({
@@ -88,29 +79,29 @@ const NumericVariants = v.strictObject({
 });
 
 const TextContent = v.strictObject({
-	default_lang: LocaleCode,
-	prompt: Prompt,
 	answer: v.string(),
+	default_lang: LocaleCode,
 	explanation: v.optional(v.string()),
+	prompt: Prompt,
 	variants: v.pipe(
 		TextVariants,
 		v.check(
-			(vs) => Boolean(vs.multiple_choice || vs.true_false || vs.open),
+			(vs) => Boolean(vs.multiple_choice ?? vs.true_false ?? vs.open),
 			'text question must define at least one variant'
 		)
 	)
 });
 
 const NumericContent = v.strictObject({
-	default_lang: LocaleCode,
-	prompt: Prompt,
 	answer: v.number(),
-	unit: v.optional(v.string()),
+	default_lang: LocaleCode,
 	explanation: v.optional(v.string()),
+	prompt: Prompt,
+	unit: v.optional(v.string()),
 	variants: v.pipe(
 		NumericVariants,
 		v.check(
-			(vs) => Boolean(vs.multiple_choice || vs.numeric_input || vs.range),
+			(vs) => Boolean(vs.multiple_choice ?? vs.numeric_input ?? vs.range),
 			'numeric question must define at least one variant'
 		)
 	)
@@ -118,17 +109,17 @@ const NumericContent = v.strictObject({
 
 const OrderItem = v.strictObject({
 	id: LocalId,
-	text: v.string(),
+	media: v.optional(MediaList),
 	position: v.pipe(v.number(), v.integer(), v.minValue(1)),
-	media: v.optional(MediaList)
+	text: v.string()
 });
 
 const OrderContent = v.pipe(
 	v.strictObject({
 		default_lang: LocaleCode,
-		prompt: Prompt,
 		explanation: v.optional(v.string()),
-		items: v.pipe(v.array(OrderItem), v.minLength(2))
+		items: v.pipe(v.array(OrderItem), v.minLength(2)),
+		prompt: Prompt
 	}),
 	v.check((c) => {
 		const ids = new Set<string>();
@@ -146,30 +137,30 @@ const OrderContent = v.pipe(
 );
 
 const QuestionBase = {
+	deprecated: v.optional(Deprecation),
 	id: QuestionId,
-	tags: v.array(TagRef),
-	sources: v.optional(v.array(Source)),
-	license: v.optional(License),
 	lang_locked: v.optional(LocaleCode),
-	deprecated: v.optional(Deprecation)
+	license: v.optional(License),
+	sources: v.optional(v.array(Source)),
+	tags: v.array(TagRef)
 };
 
 export const TextQuestion = v.strictObject({
 	...QuestionBase,
-	kind: v.literal('text'),
-	content: TextContent
+	content: TextContent,
+	kind: v.literal('text')
 });
 
 export const NumericQuestion = v.strictObject({
 	...QuestionBase,
-	kind: v.literal('numeric'),
-	content: NumericContent
+	content: NumericContent,
+	kind: v.literal('numeric')
 });
 
 export const OrderQuestion = v.strictObject({
 	...QuestionBase,
-	kind: v.literal('order'),
-	content: OrderContent
+	content: OrderContent,
+	kind: v.literal('order')
 });
 
 export const Question = v.variant('kind', [TextQuestion, NumericQuestion, OrderQuestion]);

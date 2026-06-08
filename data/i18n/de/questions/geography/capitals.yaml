@@ -1,0 +1,59 @@
+- id: q_capital_france
+  content:
+    prompt: { text: 'Was ist die Hauptstadt von Frankreich?' }
+    answer: Paris
+    explanation: 'Paris ist seit 987 die Hauptstadt von Frankreich.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: paris, text: Paris }
+          - { id: lyon, text: Lyon }
+          - { id: marseille, text: Marseille }
+          - { id: nice, text: Nizza }
+      open:
+        accepted: ['Paris', 'Paris, Frankreich']
+
+- id: q_capital_germany
+  content:
+    prompt: { text: 'Was ist die Hauptstadt von Deutschland?' }
+    answer: Berlin
+    explanation: 'Berlin wurde 1990 nach der Wiedervereinigung wieder Hauptstadt.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: munich, text: München }
+          - { id: berlin, text: Berlin }
+          - { id: hamburg, text: Hamburg }
+          - { id: frankfurt, text: Frankfurt }
+      open:
+        accepted: ['Berlin', 'Berlin, Deutschland']
+
+- id: q_capital_japan
+  content:
+    prompt: { text: 'Was ist die Hauptstadt von Japan?' }
+    answer: Tokyo
+    explanation: 'Tokyo ist seit 1868 Hauptstadt, als der Kaiser von Kyoto zog.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: tokyo, text: Tokio }
+          - { id: kyoto, text: Kyoto }
+          - { id: osaka, text: Osaka }
+          - { id: nara, text: Nara }
+      open:
+        accepted: ['Tokyo', 'Tokio', 'Tokyo, Japan', 'Tokio, Japan']
+
+- id: q_capital_brazil
+  content:
+    prompt: { text: 'Was ist die Hauptstadt von Brasilien?' }
+    answer: Brasília
+    explanation: 'Brasília wurde von Grund auf erbaut und ist seit 1960 Hauptstadt, der Platzwechsel von Rio de Janeiro.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: sao_paulo, text: São Paulo }
+          - { id: rio, text: Rio de Janeiro }
+          - { id: brasilia, text: Brasília }
+          - { id: salvador, text: Salvador }
+      open:
+        accepted: ['Brasilia', 'Brasília']

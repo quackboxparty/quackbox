@@ -1,11 +1,12 @@
-import { page } from 'vitest/browser';
 import { describe, expect, it } from 'vitest';
 import { render } from 'vitest-browser-svelte';
+import { page } from 'vitest/browser';
+
 import Welcome from './Welcome.svelte';
 
 describe('Welcome.svelte', () => {
 	it('renders greetings for host and guest', async () => {
-		render(Welcome, { host: 'SvelteKit', guest: 'Vitest' });
+		render(Welcome, { guest: 'Vitest', host: 'SvelteKit' });
 
 		await expect
 			.element(page.getByRole('heading', { level: 1 }))

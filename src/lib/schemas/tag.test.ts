@@ -1,15 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { tagOverlayFile, tagRegistryFile } from '$lib/schemas/tag';
 import * as v from 'valibot';
-import {
-	tagRegistryFile,
-	tagOverlayFile
-} from '$lib/schemas/tag';
+import { describe, expect, it } from 'vitest';
 
 describe('tag registry', () => {
 	it('accepts valid registry entry', () => {
 		expect(
 			v.safeParse(tagRegistryFile('subject'), [
-				{ id: 'subject:geo', default_lang: 'en', label: 'Geography' }
+				{ default_lang: 'en', id: 'subject:geo', label: 'Geography' }
 			]).success
 		).toBe(true);
 	});
@@ -18,10 +15,10 @@ describe('tag registry', () => {
 		expect(
 			v.safeParse(tagRegistryFile('difficulty'), [
 				{
-					id: 'difficulty:general',
 					default_lang: 'en',
-					label: 'General',
-					description: 'Most people know this'
+					description: 'Most people know this',
+					id: 'difficulty:general',
+					label: 'General'
 				}
 			]).success
 		).toBe(true);
@@ -30,7 +27,7 @@ describe('tag registry', () => {
 	it('rejects id with wrong prefix for category', () => {
 		expect(
 			v.safeParse(tagRegistryFile('subject'), [
-				{ id: 'difficulty:easy', default_lang: 'en', label: 'Easy' }
+				{ default_lang: 'en', id: 'difficulty:easy', label: 'Easy' }
 			]).success
 		).toBe(false);
 	});
@@ -38,7 +35,7 @@ describe('tag registry', () => {
 	it('rejects unknown category in id', () => {
 		expect(
 			v.safeParse(tagRegistryFile('subject'), [
-				{ id: 'custom:thing', default_lang: 'en', label: 'Thing' }
+				{ default_lang: 'en', id: 'custom:thing', label: 'Thing' }
 			]).success
 		).toBe(false);
 	});
@@ -47,9 +44,7 @@ describe('tag registry', () => {
 describe('tag overlay', () => {
 	it('accepts valid overlay entry', () => {
 		expect(
-			v.safeParse(tagOverlayFile('subject'), [
-				{ id: 'subject:geo', label: 'Geografie' }
-			]).success
+			v.safeParse(tagOverlayFile('subject'), [{ id: 'subject:geo', label: 'Geografie' }]).success
 		).toBe(true);
 	});
 
@@ -64,7 +59,7 @@ describe('tag overlay', () => {
 	it('rejects default_lang on overlay (canonical only)', () => {
 		expect(
 			v.safeParse(tagOverlayFile('subject'), [
-				{ id: 'subject:geo', default_lang: 'de', label: 'Geo' }
+				{ default_lang: 'de', id: 'subject:geo', label: 'Geo' }
 			]).success
 		).toBe(false);
 	});

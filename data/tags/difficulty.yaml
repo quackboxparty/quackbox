@@ -1,0 +1,11 @@
+- id: difficulty:easy
+  default_lang: en
+  label: Easy
+
+- id: difficulty:general
+  default_lang: en
+  label: General knowledge
+
+- id: difficulty:niche
+  default_lang: en
+  label: Niche

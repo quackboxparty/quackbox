@@ -1,12 +1,12 @@
-import { describe, expect, it } from 'vitest';
-import * as v from 'valibot';
 import { GamemodeManifest } from '$lib/schemas/gamemode';
+import * as v from 'valibot';
+import { describe, expect, it } from 'vitest';
 
 const BASE = {
+	accepts: { kinds: ['text'] as const, variants: ['multiple_choice'] as const },
 	id: 'classic',
 	name: 'Classic Quiz',
-	accepts: { kinds: ['text'] as const, variants: ['multiple_choice'] as const },
-	ui: { player_view: 'Player.svelte', host_view: 'Host.svelte' }
+	ui: { host_view: 'Host.svelte', player_view: 'Player.svelte' }
 };
 
 describe('gamemode', () => {
@@ -19,10 +19,10 @@ describe('gamemode', () => {
 			v.safeParse(GamemodeManifest, {
 				...BASE,
 				description: 'Traditional style.',
-				requires: { timer: true, min_players: 2 },
+				requires: { min_players: 2, timer: true },
 				ui: {
-					player_view: 'Player.svelte',
 					host_view: 'Host.svelte',
+					player_view: 'Player.svelte',
 					spectator_view: 'Spectator.svelte'
 				}
 			}).success
@@ -34,8 +34,8 @@ describe('gamemode', () => {
 			...BASE,
 			accepts: {
 				...BASE.accepts,
-				min_choices: 6,
-				max_choices: 4
+				max_choices: 4,
+				min_choices: 6
 			}
 		};
 		expect(v.safeParse(GamemodeManifest, bad).success).toBe(false);

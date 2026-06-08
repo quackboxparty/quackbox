@@ -3,11 +3,8 @@ import * as v from 'valibot';
 export const MediaKind = v.picklist(['image', 'audio', 'video']);
 export type MediaKind = v.InferOutput<typeof MediaKind>;
 
-// `media:` — relative path under data/media/. Disallow leading `/` and `..`.
-const MediaLocalRef = v.pipe(
-	v.string(),
-	v.regex(/^media:(?!\/)(?!.*\.\.)[A-Za-z0-9._\-/]+$/)
-);
+// `local:` — relative path under data/media/. Disallow leading `/` and `..`.
+const MediaLocalRef = v.pipe(v.string(), v.regex(/^local:(?!\/)(?!.*\.\.)[A-Za-z0-9._\-/]+$/));
 
 // `url:https://…` — https only, scheme validated at the prefix level.
 const MediaUrlRef = v.pipe(v.string(), v.regex(/^url:https:\/\/\S+$/));
@@ -25,17 +22,17 @@ export type MediaRef = v.InferOutput<typeof MediaRef>;
 
 export const Media = v.pipe(
 	v.strictObject({
-		kind: MediaKind,
-		ref: MediaRef,
 		alt: v.optional(v.string()),
 		// type-specific hints; loader/UI may use them, schema only sanity-checks.
 		duration_ms: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
-		width: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
+		end_ms: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
 		height: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
+		kind: MediaKind,
+		ref: MediaRef,
 		// Playback segment for audio/video. Both in milliseconds, relative to
 		// the source start. Omit either side to play from start / to end.
 		start_ms: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
-		end_ms: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)))
+		width: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)))
 	}),
 	v.check(
 		(m) => m.start_ms === undefined || m.end_ms === undefined || m.end_ms > m.start_ms,

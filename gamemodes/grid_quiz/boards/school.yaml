@@ -1,0 +1,26 @@
+id: board_school
+title: School Quiz
+description: 'A 4×4 board covering capitals, flags, chemistry, math, and physics.'
+points: [100, 200, 300, 500]
+difficulty_map:
+  100: [difficulty:easy]
+  200: [difficulty:general]
+  300: [difficulty:niche]
+  500: [difficulty:general, difficulty:niche]
+categories:
+  - name: Hauptstädte
+    filter:
+      tags_any: [subject:capitals]
+  - name: Flaggen
+    filter:
+      tags_any: [subject:flags]
+  - name: Chemie
+    question_ids:
+      100: q_atom_nucleus
+      200: q_acid_base
+      300: q_chemical_oxygen_ozone
+      500: q_periodic_helium
+  - name: Mathe und Physik
+    pack_ref: pack_school_trivia
+    filter:
+      tags_any: [subject:math, subject:physics]

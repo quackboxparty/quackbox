@@ -1,0 +1,55 @@
+- id: q_atom_nucleus
+  content:
+    prompt: { text: 'Welcher Teil eines Atoms hat eine positive Ladung?' }
+    answer: Proton
+    explanation: 'Protonen tragen eine positive elektrische Ladung und befinden sich zusammen mit Neutronen im Kern.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: proton, text: Proton }
+          - { id: electron, text: Elektron }
+          - { id: neutron, text: Neutron }
+          - { id: photon, text: Photon }
+      open:
+        accepted: ['Proton', 'Das Proton']
+
+- id: q_periodic_helium
+  content:
+    prompt: { text: 'Welches chemische Symbol hat Helium im Periodensystem?' }
+    answer: He
+    explanation: 'Helium ist Element 2 im Periodensystem, Symbol He.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: he, text: He }
+          - { id: h, text: H }
+          - { id: hl, text: Hl }
+          - { id: hy, text: Hy }
+      open:
+        accepted: ['He', 'he', 'HE']
+
+- id: q_chemical_oxygen_ozone
+  content:
+    prompt: { text: 'Welche chemische Formel hat Ozon?' }
+    answer: O3
+    explanation: 'Ozon besteht aus drei Sauerstoffatomen. Normaler Sauerstoff ist O2, während Ozon (O3) in der oberen Atmosphäre eine Schicht bildet.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: o2, text: 'O2' }
+          - { id: o3, text: 'O3' }
+          - { id: o3h, text: 'O3H' }
+          - { id: o, text: 'O' }
+      open:
+        accepted: ['O3', 'o3']
+
+- id: q_acid_base
+  content:
+    prompt: { text: 'Welchen pH-Wert hat reines Wasser?' }
+    variants:
+      multiple_choice:
+        choices:
+          - { id: ph7, text: '7' }
+          - { id: ph0, text: '0' }
+          - { id: ph14, text: '14' }
+          - { id: ph1, text: '1' }

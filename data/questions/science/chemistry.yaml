@@ -1,0 +1,71 @@
+- id: q_atom_nucleus
+  kind: text
+  tags: [subject:chemistry, subject:school, difficulty:easy, region:global]
+  content:
+    default_lang: en
+    prompt: { text: 'What part of an atom has a positive charge?' }
+    answer: Proton
+    explanation: 'Protons carry a positive electric charge and are found in the nucleus along with neutrons.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: proton, text: Proton, correct: true }
+          - { id: electron, text: Electron }
+          - { id: neutron, text: Neutron }
+          - { id: photon, text: Photon }
+      open:
+        accepted: ['Proton', 'The proton']
+        normalize: [lowercase, strip_articles]
+
+- id: q_periodic_helium
+  kind: text
+  tags: [subject:chemistry, subject:school, difficulty:general, region:global]
+  content:
+    default_lang: en
+    prompt: { text: 'What chemical symbol does Helium have on the periodic table?' }
+    answer: He
+    explanation: 'Helium is element 2 on the periodic table, symbol He.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: he, text: He, correct: true }
+          - { id: h, text: H }
+          - { id: hl, text: Hl }
+          - { id: hy, text: Hy }
+      open:
+        accepted: ['He', 'he', 'HE']
+        normalize: [lowercase]
+
+- id: q_chemical_oxygen_ozone
+  kind: text
+  tags: [subject:chemistry, subject:school, difficulty:general, region:global]
+  content:
+    default_lang: en
+    prompt: { text: 'What is the chemical formula for ozone?' }
+    answer: O3
+    explanation: 'Ozone consists of three oxygen atoms. Regular oxygen is O2, while ozone (O3) forms a layer in the upper atmosphere.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: o2, text: 'O2' }
+          - { id: o3, text: 'O3', correct: true }
+          - { id: o3h, text: 'O3H' }
+          - { id: o, text: 'O' }
+      open:
+        accepted: ['O3', 'o3']
+
+- id: q_acid_base
+  kind: numeric
+  tags: [subject:chemistry, subject:school, difficulty:easy, region:global]
+  content:
+    default_lang: en
+    prompt: { text: 'What is the pH of pure water?' }
+    answer: 7
+    variants:
+      multiple_choice:
+        choices:
+          - { id: ph7, text: '7', correct: true }
+          - { id: ph0, text: '0' }
+          - { id: ph14, text: '14' }
+          - { id: ph1, text: '1' }
+      numeric_input: { tolerance: 0 }

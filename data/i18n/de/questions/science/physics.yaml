@@ -1,0 +1,55 @@
+- id: q_physics_light_speed
+  content:
+    prompt: { text: 'Wie viele Kilometer pro Sekunde legt Licht im Vakuum ungefähr zurück?' }
+    explanation: 'Licht bewegt sich mit ungefähr 299.792 km/s, wird oft auf 300.000 km/s gerundet.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: '300k', text: '300.000' }
+          - { id: '150k', text: '150.000' }
+          - { id: '500k', text: '500.000' }
+
+- id: q_physics_gravity
+  content:
+    prompt: { text: 'Welcher Wissenschaftler formulierte das Gesetz der allgemeinen Gravitation?' }
+    answer: Isaac Newton
+    explanation: 'Isaac Newton veröffentlichte sein Gravitationsgesetz in Principia Mathematica (1687).'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: einstein, text: Albert Einstein }
+          - { id: newton, text: Isaac Newton }
+          - { id: galileo, text: Galileo Galilei }
+          - { id: bohr, text: Niels Bohr }
+      open:
+        accepted: ['Isaac Newton', 'Newton', 'Sir Isaac Newton']
+
+- id: q_physics_sound_medium
+  content:
+    prompt: { text: 'Was wird für die Schallausbreitung benötigt?' }
+    answer: Medium (Materie)
+    explanation: 'Schall ist eine mechanische Welle und benötigt ein Medium (Gas, Flüssigkeit oder Festkörper). Er kann sich nicht im Vakuum ausbreiten.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: vacuum, text: Vakuum (Leerraum) }
+          - { id: medium, text: Medium (Materie) }
+          - { id: field, text: Magnetfeld }
+          - { id: charge, text: Elektrische Ladung }
+      open:
+        accepted: ['Medium', 'Medium (Materie)', 'Materie', 'Material']
+
+- id: q_physics_einstein
+  content:
+    prompt: { text: 'Wofür steht E in Einsteins Gleichung E=mc²?' }
+    answer: Energie
+    explanation: 'E=mc² stellt Energie (E) in Beziehung zu Masse (m) und Lichtgeschwindigkeit im Quadrat (c²).'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: energy, text: Energie }
+          - { id: electric, text: Elektrizität }
+          - { id: entropy, text: Entropie }
+          - { id: equilibrium, text: Gleichgewicht }
+      open:
+        accepted: ['Energie']

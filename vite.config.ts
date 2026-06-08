@@ -1,12 +1,12 @@
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
-import { defineConfig } from 'vitest/config';
-import { playwright } from '@vitest/browser-playwright';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { playwright } from '@vitest/browser-playwright';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
 	plugins: [
 		sveltekit(),
-		paraglideVitePlugin({ project: './project.inlang', outdir: './src/lib/paraglide' })
+		paraglideVitePlugin({ outdir: './src/lib/paraglide', project: './project.inlang' })
 	],
 	test: {
 		expect: { requireAssertions: true },
@@ -14,24 +14,24 @@ export default defineConfig({
 			{
 				extends: './vite.config.ts',
 				test: {
-					name: 'client',
 					browser: {
 						enabled: true,
-						provider: playwright(),
-						instances: [{ browser: 'chromium', headless: true }]
+						instances: [{ browser: 'chromium', headless: true }],
+						provider: playwright()
 					},
+					exclude: ['src/lib/server/**'],
 					include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
-					exclude: ['src/lib/server/**']
+					name: 'client'
 				}
 			},
 
 			{
 				extends: './vite.config.ts',
 				test: {
-					name: 'server',
 					environment: 'node',
+					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}'],
 					include: ['src/**/*.{test,spec}.{js,ts}'],
-					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
+					name: 'server'
 				}
 			}
 		]

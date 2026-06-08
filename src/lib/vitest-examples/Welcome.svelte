@@ -1,7 +1,7 @@
-<script>
+<script lang="ts">
 	import { greet } from './greet';
 
-	let { host = 'SvelteKit', guest = 'Vitest' } = $props();
+	let { guest = 'Vitest', host = 'Sveltekit' }: { guest?: string; host?: string } = $props();
 </script>
 
 <h1>{greet(host)}</h1>

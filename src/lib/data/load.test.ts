@@ -1,8 +1,19 @@
-import { mkdir, rm, writeFile, mkdtemp } from 'node:fs/promises';
-import { join } from 'node:path';
+import { loadDataset, runCrossFileChecks } from '$lib/data/load';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { loadDataset, runCrossFileChecks } from '$lib/data/load.ts';
+
+async function validate(files: Record<string, string>) {
+	const root = await fixture(files);
+	try {
+		const ds = await loadDataset({ dataDir: root });
+		await runCrossFileChecks(ds);
+		return ds;
+	} finally {
+		await destroy(root);
+	}
+}
 
 async function fixture(files: Record<string, string>): Promise<string> {
 	const root = await mkdtemp(join(tmpdir(), 'qbx-test-'));
@@ -20,18 +31,7 @@ async function fixture(files: Record<string, string>): Promise<string> {
 }
 
 async function destroy(root: string) {
-	await rm(root, { recursive: true, force: true });
-}
-
-async function validate(files: Record<string, string>) {
-	const root = await fixture(files);
-	try {
-		const ds = await loadDataset({ dataDir: root });
-		await runCrossFileChecks(ds);
-		return ds;
-	} finally {
-		await destroy(root);
-	}
+	await rm(root, { force: true, recursive: true });
 }
 
 const VALID_QUESTION = `
@@ -52,6 +52,13 @@ const VALID_QUESTION = `
 `;
 
 const VALID_REGISTRIES = {
+	'tags/audience.yaml': `[]\n`,
+	'tags/difficulty.yaml': `- id: difficulty:general
+  default_lang: en
+  label: General
+`,
+	'tags/format.yaml': `[]\n`,
+	'tags/region.yaml': `[]\n`,
 	'tags/subject.yaml': `- id: subject:geo
   default_lang: en
   label: Geography
@@ -59,13 +66,6 @@ const VALID_REGISTRIES = {
   default_lang: en
   label: History
 `,
-	'tags/difficulty.yaml': `- id: difficulty:general
-  default_lang: en
-  label: General
-`,
-	'tags/audience.yaml': `[]\n`,
-	'tags/region.yaml': `[]\n`,
-	'tags/format.yaml': `[]\n`,
 	'tags/warning.yaml': `[]\n`
 };
 
@@ -78,8 +78,8 @@ describe('happy path', () => {
 	it('loads a valid question, registry, and pack with zero issues', async () => {
 		const ds = await validate({
 			...VALID_REGISTRIES,
-			'questions/test.yaml': VALID_QUESTION,
-			'packs/alpha.yaml': VALID_PACK
+			'packs/alpha.yaml': VALID_PACK,
+			'questions/test.yaml': VALID_QUESTION
 		});
 		expect(ds.issues).toEqual([]);
 		expect(ds.questions.length).toBe(1);
@@ -109,7 +109,7 @@ describe('schema validation', () => {
 `
 		});
 		expect(ds.issues.length).toBeGreaterThan(0);
-		expect(ds.issues[0].message.toLowerCase()).toContain('variant');
+		expect(ds.issues[0]?.message.toLowerCase()).toContain('variant');
 	});
 
 	it('catches multiple_choice with no correct choice', async () => {
@@ -154,7 +154,6 @@ describe('schema validation', () => {
 	it('catches overlay with non-translatable fields', async () => {
 		const ds = await validate({
 			...VALID_REGISTRIES,
-			'questions/ok.yaml': VALID_QUESTION,
 			'i18n/de/questions/ok.yaml': `
 - id: q_alpha_one
   content:
@@ -163,7 +162,8 @@ describe('schema validation', () => {
       multiple_choice:
         choices:
           - { id: two, text: Zwei, correct: true }
-`
+`,
+			'questions/ok.yaml': VALID_QUESTION
 		});
 		expect(ds.issues.length).toBeGreaterThan(0);
 	});
@@ -229,7 +229,9 @@ questions: []
     prompt: { text: "Kein Problem?" }
 `
 		});
-		expect(ds.issues.some((i) => i.message.includes('overlay references unknown question'))).toBe(true);
+		expect(ds.issues.some((i) => i.message.includes('overlay references unknown question'))).toBe(
+			true
+		);
 	});
 
 	it('catches unknown tag on question', async () => {
@@ -280,7 +282,7 @@ describe('media checks', () => {
     prompt:
       text: "Look"
       media:
-        - { kind: image, ref: "media:img/flag.png" }
+        - { kind: image, ref: "local:img/flag.png" }
     answer: Red
     variants: { open: { accepted: ["Red"] } }
 `
@@ -291,6 +293,7 @@ describe('media checks', () => {
 	it('catches extension/kind mismatch', async () => {
 		const root = await fixture({
 			...VALID_REGISTRIES,
+			'media/img/song.mp3': 'audio bytes',
 			'questions/a.yaml': `
 - id: q_pic
   kind: text
@@ -300,11 +303,10 @@ describe('media checks', () => {
     prompt:
       text: "Look"
       media:
-        - { kind: image, ref: "media:img/song.mp3" }
+        - { kind: image, ref: "local:img/song.mp3" }
     answer: Red
     variants: { open: { accepted: ["Red"] } }
-`,
-			'media/img/song.mp3': 'audio bytes'
+`
 		});
 		try {
 			const ds = await loadDataset({ dataDir: root });
@@ -318,6 +320,7 @@ describe('media checks', () => {
 	it('accepts video file used as kind: audio', async () => {
 		const root = await fixture({
 			...VALID_REGISTRIES,
+			'media/clip/vid.mp4': 'video bytes',
 			'questions/a.yaml': `
 - id: q_clip
   kind: text
@@ -327,11 +330,10 @@ describe('media checks', () => {
     prompt:
       text: "Listen"
       media:
-        - { kind: audio, ref: "media:clip/vid.mp4" }
+        - { kind: audio, ref: "local:clip/vid.mp4" }
     answer: Blue
     variants: { open: { accepted: ["Blue"] } }
-`,
-			'media/clip/vid.mp4': 'video bytes'
+`
 		});
 		try {
 			const ds = await loadDataset({ dataDir: root });
@@ -345,6 +347,7 @@ describe('media checks', () => {
 	it('catches oversized image', async () => {
 		const root = await fixture({
 			...VALID_REGISTRIES,
+			'media/img/huge.png': 'x'.repeat(101 * 1024), // 101 KB
 			'questions/a.yaml': `
 - id: q_big
   kind: text
@@ -354,11 +357,10 @@ describe('media checks', () => {
     prompt:
       text: "Oversized"
       media:
-        - { kind: image, ref: "media:img/huge.png" }
+        - { kind: image, ref: "local:img/huge.png" }
     answer: Big
     variants: { open: { accepted: ["Big"] } }
-`,
-			'media/img/huge.png': 'x'.repeat(101 * 1024) // 101 KB
+`
 		});
 		try {
 			const ds = await loadDataset({ dataDir: root });

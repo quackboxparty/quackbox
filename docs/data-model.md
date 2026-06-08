@@ -126,7 +126,7 @@ gamemodes pick the first compatible one at pool-build time.
     - difficulty:general
     - region:global
   sources:
-    - { url: "https://example.org/", accessed: "2025-06-01" }
+    - { url: 'https://example.org/', accessed: '2025-06-01' }
   license: CC-BY-4.0 # SPDX id from allowlist; optional, per-question override
   # lang_locked: en               # optional — question only valid in this lang
   # deprecated:                   # optional — see "Deprecation"
@@ -135,13 +135,13 @@ gamemodes pick the first compatible one at pool-build time.
   content:
     default_lang: en # language of the canonical strings below
     prompt:
-      text: "What is the capital of France?"
+      text: 'What is the capital of France?'
       # media: …                  # optional, see "Media" section
     answer: Paris # canonical short form; drives all variants
-    explanation: "Paris has been the capital since 987 AD."
+    explanation: 'Paris has been the capital since 987 AD.'
     variants:
       open:
-        accepted: ["Paris", "Paris, France"]
+        accepted: ['Paris', 'Paris, France']
         normalize: [lowercase, strip_diacritics, strip_punctuation]
       multiple_choice:
         choices:
@@ -160,7 +160,7 @@ gamemodes pick the first compatible one at pool-build time.
   tags: [subject:history, subject:space, difficulty:general]
   content:
     default_lang: en
-    prompt: { text: "Year of the first crewed Moon landing?" }
+    prompt: { text: 'Year of the first crewed Moon landing?' }
     answer: 1969
     unit: year # optional; loader does not convert, just labels
     variants:
@@ -168,10 +168,10 @@ gamemodes pick the first compatible one at pool-build time.
       range: { min: 1960, max: 1979, step: 1 }
       multiple_choice:
         choices:
-          - { id: y1969, text: "1969", correct: true }
-          - { id: y1965, text: "1965" }
-          - { id: y1972, text: "1972" }
-          - { id: y1959, text: "1959" }
+          - { id: y1969, text: '1969', correct: true }
+          - { id: y1965, text: '1965' }
+          - { id: y1972, text: '1972' }
+          - { id: y1959, text: '1959' }
 ```
 
 ### Canonical (order kind)
@@ -182,16 +182,12 @@ gamemodes pick the first compatible one at pool-build time.
   tags: [subject:history, difficulty:niche]
   content:
     default_lang: en
-    prompt: { text: "Arrange these WWI events chronologically." }
+    prompt: { text: 'Arrange these WWI events chronologically.' }
     items:
-      - {
-          id: assassination,
-          text: "Assassination of Franz Ferdinand",
-          position: 1,
-        }
-      - { id: lusitania, text: "Sinking of the Lusitania", position: 2 }
-      - { id: us_enters, text: "US enters the war", position: 3 }
-      - { id: armistice, text: "Armistice signed", position: 4 }
+      - { id: assassination, text: 'Assassination of Franz Ferdinand', position: 1 }
+      - { id: lusitania, text: 'Sinking of the Lusitania', position: 2 }
+      - { id: us_enters, text: 'US enters the war', position: 3 }
+      - { id: armistice, text: 'Armistice signed', position: 4 }
 ```
 
 **Hard rule:** everything inside `content` is translatable. Everything outside
@@ -221,12 +217,12 @@ placement, not from the question.
 - id: q_capital_france_paris
   content:
     prompt:
-      text: "Was ist die Hauptstadt von Frankreich?"
+      text: 'Was ist die Hauptstadt von Frankreich?'
     answer: Paris
-    explanation: "Paris ist seit 987 die Hauptstadt."
+    explanation: 'Paris ist seit 987 die Hauptstadt.'
     variants:
       open:
-        accepted: ["Paris"]
+        accepted: ['Paris']
       multiple_choice:
         choices:
           - { id: paris, text: Paris }
@@ -248,7 +244,7 @@ referenced by packs. To retire a question:
 ```yaml
 - id: q_old_capital_burma
   deprecated:
-    reason: "Country renamed to Myanmar; question wording is outdated."
+    reason: 'Country renamed to Myanmar; question wording is outdated.'
     replaced_by: q_capital_myanmar # optional
   # … rest of question stays for backward compat
 ```
@@ -437,12 +433,12 @@ variant choices (e.g. image-answer questions) or `order` items.
 ```yaml
 content:
   prompt:
-    text: "Which band released this song?"
+    text: 'Which band released this song?'
     media:
       - kind: audio # image | audio | video
-        ref: "media:audio/wonderwall-clip.ogg"
+        ref: 'media:audio/wonderwall-clip.ogg'
         duration_ms: 8000 # type-specific metadata
-        alt: "8-second clip of a guitar riff" # accessibility
+        alt: '8-second clip of a guitar riff' # accessibility
   variants:
     multiple_choice:
       choices:
@@ -450,7 +446,7 @@ content:
           text: Oasis
           correct: true
           media: # choices can also have media
-            - { kind: image, ref: "media:img/oasis-logo.svg", alt: Oasis logo }
+            - { kind: image, ref: 'media:img/oasis-logo.svg', alt: Oasis logo }
 ```
 
 Overlays may localize media at any level (prompt, choice, order item) by
@@ -510,7 +506,7 @@ Overlay can replace the media array:
   content:
     prompt:
       media:
-        - { kind: audio, ref: "media:audio/de/q-podcast-intro-clip.ogg" }
+        - { kind: audio, ref: 'media:audio/de/q-podcast-intro-clip.ogg' }
 ```
 
 If no localized media is provided, the canonical media is served.
@@ -774,20 +770,22 @@ Game sessions use **`query.live`** to stream state to players:
 
 ```ts
 // example, not final
-import { command, query } from "$app/server";
-import * as v from "valibot";
+import { command, query } from '$app/server';
+import * as v from 'valibot';
 
 export const gameState = query.live(
-  v.object({ roomCode: v.string() }),
-  async function* ({ roomCode }) {
-    const room = rooms.get(roomCode);
-    for await (const state of room.subscribe()) yield state;
-  },
+	v.object({ roomCode: v.string() }),
+	async function* ({ roomCode }) {
+		const room = rooms.get(roomCode);
+		for await (const state of room.subscribe()) yield state;
+	}
 );
 
 export const submitAnswer = command(
-  v.object({ roomCode: v.string(), choiceId: v.string() }),
-  async ({ roomCode, choiceId }) => {/* … */},
+	v.object({ roomCode: v.string(), choiceId: v.string() }),
+	async ({ roomCode, choiceId }) => {
+		/* … */
+	}
 );
 ```
 

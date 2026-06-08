@@ -108,7 +108,7 @@ Planned (not yet implemented): `pnpm gen:schemas`,
   avoidable — keeps validation (valibot) co-located with the call.
 - New content schema = valibot first, JSON Schema generated, never
   hand-edited.
-- No comments restating what code does; comment only non-obvious *why*.
+- No comments restating what code does; comment only non-obvious _why_.
 - Don't edit `src/lib/paraglide/**` — generated.
 
 ## Implementation order (from data-model.md §Implementation order)

@@ -1,0 +1,114 @@
+{
+	"type": "object",
+	"properties": {
+		"id": {
+			"type": "string",
+			"pattern": "^board_[a-z0-9][a-z0-9_]*$"
+		},
+		"title": {
+			"type": "string"
+		},
+		"description": {
+			"type": "string"
+		},
+		"points": {
+			"type": "array",
+			"items": {
+				"type": "integer",
+				"minimum": 1
+			},
+			"minItems": 2
+		},
+		"difficulty_map": {
+			"type": "object",
+			"propertyNames": {
+				"type": "string"
+			},
+			"additionalProperties": {
+				"type": "array",
+				"items": {
+					"type": "string",
+					"pattern": "^(subject|difficulty|audience|region|format|warning):[a-z0-9][a-z0-9_]*$"
+				}
+			}
+		},
+		"categories": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"name": {
+						"type": "string"
+					},
+					"question_ids": {
+						"type": "object",
+						"propertyNames": {
+							"type": "string",
+							"pattern": "^[a-z0-9][a-z0-9_]*$"
+						},
+						"additionalProperties": {
+							"type": "string",
+							"pattern": "^q_[a-z0-9][a-z0-9_]*$"
+						}
+					},
+					"pack_ref": {
+						"type": "string",
+						"pattern": "^pack_[a-z0-9][a-z0-9_]*$"
+					},
+					"filter": {
+						"type": "object",
+						"properties": {
+							"tags_all": {
+								"type": "array",
+								"items": {
+									"type": "string",
+									"pattern": "^(subject|difficulty|audience|region|format|warning):[a-z0-9][a-z0-9_]*$"
+								}
+							},
+							"tags_any": {
+								"type": "array",
+								"items": {
+									"type": "string",
+									"pattern": "^(subject|difficulty|audience|region|format|warning):[a-z0-9][a-z0-9_]*$"
+								}
+							},
+							"tags_none": {
+								"type": "array",
+								"items": {
+									"type": "string",
+									"pattern": "^(subject|difficulty|audience|region|format|warning):[a-z0-9][a-z0-9_]*$"
+								}
+							},
+							"kinds": {
+								"type": "array",
+								"items": {
+									"enum": ["text", "numeric", "order"],
+									"type": "string"
+								}
+							},
+							"variants_any": {
+								"type": "array",
+								"items": {
+									"enum": ["multiple_choice", "true_false", "open", "numeric_input", "range"],
+									"type": "string"
+								}
+							},
+							"limit": {
+								"type": "integer",
+								"minimum": 1
+							}
+						},
+						"required": [],
+						"additionalProperties": false
+					}
+				},
+				"required": ["name"],
+				"additionalProperties": false
+			},
+			"minItems": 2
+		}
+	},
+	"required": ["id", "title", "points", "categories"],
+	"additionalProperties": false,
+	"$schema": "http://json-schema.org/draft-07/schema#"
+}

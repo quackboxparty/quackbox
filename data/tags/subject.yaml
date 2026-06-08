@@ -1,0 +1,27 @@
+- id: subject:geography
+  default_lang: en
+  label: Geography
+
+- id: subject:capitals
+  default_lang: en
+  label: Capitals
+
+- id: subject:flags
+  default_lang: en
+  label: Flags
+
+- id: subject:chemistry
+  default_lang: en
+  label: Chemistry
+
+- id: subject:math
+  default_lang: en
+  label: Mathematics
+
+- id: subject:physics
+  default_lang: en
+  label: Physics
+
+- id: subject:school
+  default_lang: en
+  label: School

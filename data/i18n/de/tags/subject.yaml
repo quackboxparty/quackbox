@@ -1,0 +1,20 @@
+- id: subject:geography
+  label: Geografie
+
+- id: subject:capitals
+  label: Hauptstädte
+
+- id: subject:flags
+  label: Flaggen
+
+- id: subject:chemistry
+  label: Chemie
+
+- id: subject:math
+  label: Mathematik
+
+- id: subject:physics
+  label: Physik
+
+- id: subject:school
+  label: Schule

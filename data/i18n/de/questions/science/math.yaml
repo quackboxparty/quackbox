@@ -1,0 +1,42 @@
+- id: q_math_pi_digits
+  content:
+    prompt: { text: 'Runde Pi auf 2 Dezimalstellen.' }
+    variants:
+      multiple_choice:
+        choices:
+          - { id: '314', text: '3,14' }
+          - { id: '315', text: '3,15' }
+          - { id: '316', text: '3,16' }
+          - { id: '312', text: '3,12' }
+
+- id: q_math_triangle_angle_sum
+  content:
+    prompt: { text: 'Wie groß ist die Summe der Innenwinkel eines Dreiecks in Grad?' }
+    variants:
+      multiple_choice:
+        choices:
+          - { id: '180', text: '180°' }
+          - { id: '90', text: '90°' }
+          - { id: '360', text: '360°' }
+          - { id: '270', text: '270°' }
+
+- id: q_math_square_root
+  content:
+    prompt: { text: 'Was ist die Quadratwurzel von 144?' }
+    variants:
+      multiple_choice:
+        choices:
+          - { id: '12', text: '12' }
+          - { id: '11', text: '11' }
+          - { id: '13', text: '13' }
+          - { id: '14', text: '14' }
+
+- id: q_math_order
+  content:
+    prompt: { text: 'Sortiere diese Zahlen von klein nach groß.' }
+    explanation: 'Negative Zahlen kommen vor positiven. Unter den Posativen kommt die kleinere Größe zuerst.'
+    items:
+      - { id: '42', text: '42' }
+      - { id: neg7, text: '-7' }
+      - { id: pi, text: 'π (≈3,14)' }
+      - { id: '25', text: '25' }

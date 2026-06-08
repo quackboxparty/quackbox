@@ -1,0 +1,13 @@
+id: grid_quiz
+name: Grid Quiz
+description: Jeopardy-style trivia — a board of NxM slots organized by category and difficulty.
+accepts:
+  kinds: [text, numeric, order]
+  variants: [multiple_choice]
+  min_choices: 2
+  max_choices: 6
+requires:
+  min_players: 1
+ui:
+  player_view: PlayerView.svelte
+  host_view: HostView.svelte

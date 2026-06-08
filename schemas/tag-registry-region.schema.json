@@ -1,29 +1,25 @@
 {
-  "type": "array",
-  "items": {
-    "type": "object",
-    "properties": {
-      "id": {
-        "type": "string",
-        "pattern": "^region:[a-z][a-z0-9_]*$"
-      },
-      "default_lang": {
-        "type": "string",
-        "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
-      },
-      "label": {
-        "type": "string"
-      },
-      "description": {
-        "type": "string"
-      }
-    },
-    "required": [
-      "id",
-      "default_lang",
-      "label"
-    ],
-    "additionalProperties": false
-  },
-  "$schema": "http://json-schema.org/draft-07/schema#"
+	"type": "array",
+	"items": {
+		"type": "object",
+		"properties": {
+			"id": {
+				"type": "string",
+				"pattern": "^region:[a-z0-9][a-z0-9_]*$"
+			},
+			"default_lang": {
+				"type": "string",
+				"pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+			},
+			"label": {
+				"type": "string"
+			},
+			"description": {
+				"type": "string"
+			}
+		},
+		"required": ["id", "default_lang", "label"],
+		"additionalProperties": false
+	},
+	"$schema": "http://json-schema.org/draft-07/schema#"
 }

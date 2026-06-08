@@ -1,0 +1,62 @@
+- id: q_math_pi_digits
+  kind: numeric
+  tags: [subject:math, subject:school, difficulty:easy, region:global]
+  content:
+    default_lang: en
+    prompt: { text: 'Round Pi to 2 decimal places.' }
+    answer: 3.14
+    unit: number
+    variants:
+      numeric_input: { tolerance: 0 }
+      multiple_choice:
+        choices:
+          - { id: '314', text: '3.14', correct: true }
+          - { id: '315', text: '3.15' }
+          - { id: '316', text: '3.16' }
+          - { id: '312', text: '3.12' }
+
+- id: q_math_triangle_angle_sum
+  kind: numeric
+  tags: [subject:math, subject:school, difficulty:easy, region:global]
+  content:
+    default_lang: en
+    prompt: { text: 'What is the sum of internal angles of a triangle in degrees?' }
+    answer: 180
+    unit: degrees
+    variants:
+      numeric_input: { tolerance: 0 }
+      multiple_choice:
+        choices:
+          - { id: '180', text: '180°', correct: true }
+          - { id: '90', text: '90°' }
+          - { id: '360', text: '360°' }
+          - { id: '270', text: '270°' }
+
+- id: q_math_square_root
+  kind: numeric
+  tags: [subject:math, subject:school, difficulty:general, region:global]
+  content:
+    default_lang: en
+    prompt: { text: 'What is the square root of 144?' }
+    answer: 12
+    variants:
+      numeric_input: { tolerance: 0 }
+      multiple_choice:
+        choices:
+          - { id: '12', text: '12', correct: true }
+          - { id: '11', text: '11' }
+          - { id: '13', text: '13' }
+          - { id: '14', text: '14' }
+
+- id: q_math_order
+  kind: order
+  tags: [subject:math, subject:school, difficulty:general, region:global]
+  content:
+    default_lang: en
+    prompt: { text: 'Order these numbers from smallest to largest.' }
+    explanation: 'Negative numbers come before positive ones. Among positives, smaller magnitude comes first.'
+    items:
+      - { id: '42', text: '42', position: 4 }
+      - { id: neg7, text: '-7', position: 1 }
+      - { id: pi, text: 'π (≈3.14)', position: 2 }
+      - { id: '25', text: '25', position: 3 }

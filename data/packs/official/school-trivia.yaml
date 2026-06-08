@@ -1,0 +1,10 @@
+id: pack_school_trivia
+title: School Trivia
+description: Mix of science and geography — capitals, flags, chemistry, math, physics
+author: lucas
+license: CC-BY-4.0
+recommended_gamemodes: [classic]
+filter:
+  tags_any: [subject:school, subject:capitals, subject:flags]
+  kinds: [text, numeric, order]
+  variants_any: [multiple_choice, open]

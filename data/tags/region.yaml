@@ -1,0 +1,3 @@
+- id: region:global
+  default_lang: en
+  label: Global

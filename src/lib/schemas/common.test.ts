@@ -1,15 +1,14 @@
-import { describe, expect, it } from 'vitest';
-import * as v from 'valibot';
 import {
 	GamemodeId,
 	License,
 	LocaleCode,
 	PackId,
 	QuestionId,
-	TagCategory,
 	TagRef,
 	tagRefFor
 } from '$lib/schemas/common';
+import * as v from 'valibot';
+import { describe, expect, it } from 'vitest';
 
 describe('common', () => {
 	it('accepts valid locale codes', () => {

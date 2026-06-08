@@ -1,48 +1,51 @@
 import * as v from 'valibot';
-import { LocaleCode, TagCategory, tagRefFor } from './common.ts';
 
-/** Single entry in a tag registry file. `id` is constrained per-category. */
-function tagRegistryEntry<C extends v.InferOutput<typeof TagCategory>>(category: C) {
-	return v.strictObject({
-		id: tagRefFor(category),
-		default_lang: LocaleCode,
-		label: v.string(),
-		description: v.optional(v.string())
-	});
-}
+import { LocaleCode, type TagCategory, tagRefFor } from './common.ts';
+
+type TagCategoryValue = v.InferOutput<typeof TagCategory>;
 
 /** Canonical registry file: one category per file, all entries share the prefix. */
-export function tagRegistryFile<C extends v.InferOutput<typeof TagCategory>>(category: C) {
+export function tagRegistryFile(category: TagCategoryValue) {
 	return v.array(tagRegistryEntry(category));
 }
 
-export const TagRegistryFiles = {
-	subject: tagRegistryFile('subject'),
-	difficulty: tagRegistryFile('difficulty'),
-	audience: tagRegistryFile('audience'),
-	region: tagRegistryFile('region'),
-	format: tagRegistryFile('format'),
-	warning: tagRegistryFile('warning')
-} as const;
-
-/** Overlay entry: only translatable fields. `default_lang` is canonical-only. */
-function tagOverlayEntry<C extends v.InferOutput<typeof TagCategory>>(category: C) {
+/** Single entry in a tag registry file. `id` is constrained per-category. */
+function tagRegistryEntry(category: TagCategoryValue) {
 	return v.strictObject({
+		default_lang: LocaleCode,
+		description: v.optional(v.string()),
 		id: tagRefFor(category),
-		label: v.optional(v.string()),
-		description: v.optional(v.string())
+		label: v.string()
 	});
 }
 
-export function tagOverlayFile<C extends v.InferOutput<typeof TagCategory>>(category: C) {
+export const TagRegistryFiles = {
+	audience: tagRegistryFile('audience'),
+	difficulty: tagRegistryFile('difficulty'),
+	format: tagRegistryFile('format'),
+	region: tagRegistryFile('region'),
+	subject: tagRegistryFile('subject'),
+	warning: tagRegistryFile('warning')
+} as const;
+
+export function tagOverlayFile(category: TagCategoryValue) {
 	return v.array(tagOverlayEntry(category));
 }
 
+/** Overlay entry: only translatable fields. `default_lang` is canonical-only. */
+function tagOverlayEntry(category: TagCategoryValue) {
+	return v.strictObject({
+		description: v.optional(v.string()),
+		id: tagRefFor(category),
+		label: v.optional(v.string())
+	});
+}
+
 export const TagOverlayFiles = {
-	subject: tagOverlayFile('subject'),
-	difficulty: tagOverlayFile('difficulty'),
 	audience: tagOverlayFile('audience'),
-	region: tagOverlayFile('region'),
+	difficulty: tagOverlayFile('difficulty'),
 	format: tagOverlayFile('format'),
+	region: tagOverlayFile('region'),
+	subject: tagOverlayFile('subject'),
 	warning: tagOverlayFile('warning')
 } as const;

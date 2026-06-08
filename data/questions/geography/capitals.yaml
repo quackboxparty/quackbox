@@ -1,0 +1,75 @@
+- id: q_capital_france
+  kind: text
+  tags: [subject:geography, subject:capitals, difficulty:general, region:global]
+  content:
+    default_lang: en
+    prompt: { text: 'What is the capital of France?' }
+    answer: Paris
+    explanation: 'Paris has been the capital of France since 987 AD.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: paris, text: Paris, correct: true }
+          - { id: lyon, text: Lyon }
+          - { id: marseille, text: Marseille }
+          - { id: nice, text: Nice }
+      open:
+        accepted: ['Paris', 'Paris, France']
+        normalize: [lowercase]
+
+- id: q_capital_germany
+  kind: text
+  tags: [subject:geography, subject:capitals, difficulty:general, region:global]
+  content:
+    default_lang: en
+    prompt: { text: 'What is the capital of Germany?' }
+    answer: Berlin
+    explanation: 'Berlin became the capital again in 1990 after German reunification.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: munich, text: Munich }
+          - { id: berlin, text: Berlin, correct: true }
+          - { id: hamburg, text: Hamburg }
+          - { id: frankfurt, text: Frankfurt }
+      open:
+        accepted: ['Berlin', 'Berlin, Germany']
+        normalize: [lowercase]
+
+- id: q_capital_japan
+  kind: text
+  tags: [subject:geography, subject:capitals, difficulty:general, region:global]
+  content:
+    default_lang: en
+    prompt: { text: 'What is the capital of Japan?' }
+    answer: Tokyo
+    explanation: 'Tokyo has been the capital since 1868, when the Emperor moved from Kyoto.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: tokyo, text: Tokyo, correct: true }
+          - { id: kyoto, text: Kyoto }
+          - { id: osaka, text: Osaka }
+          - { id: nara, text: Nara }
+      open:
+        accepted: ['Tokyo', 'Tokyo, Japan']
+        normalize: [lowercase]
+
+- id: q_capital_brazil
+  kind: text
+  tags: [subject:geography, subject:capitals, difficulty:niche, region:global]
+  content:
+    default_lang: en
+    prompt: { text: 'What is the capital of Brazil?' }
+    answer: Brasilia
+    explanation: 'Brasília was built from scratch and became capital in 1960, moving it inland from Rio de Janeiro.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: sao_paulo, text: São Paulo }
+          - { id: rio, text: Rio de Janeiro }
+          - { id: brasilia, text: Brasília, correct: true }
+          - { id: salvador, text: Salvador }
+      open:
+        accepted: ['Brasilia', 'Brasília', 'Brasilia, Brazil', 'Brasília, Brazil']
+        normalize: [lowercase, strip_diacritics]

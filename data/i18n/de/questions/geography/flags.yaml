@@ -1,0 +1,87 @@
+- id: q_flag_italy
+  content:
+    prompt:
+      text: 'Zu welchem Land gehört diese Flagge?'
+      media:
+        - {
+            kind: image,
+            ref: 'local:img/flags/it.svg',
+            alt: 'Italienische Flagge — vertikale Streifen grün, weiß, rot'
+          }
+    answer: Italien
+    explanation: 'Die italienische Trikolore wurde 1797 erstmals angenommen und ist von der französischen Flagge inspiriert.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: france, text: Frankreich }
+          - { id: italy, text: Italien }
+          - { id: ireland, text: Irland }
+          - { id: mexico, text: Mexiko }
+      open:
+        accepted: ['Italien', 'Italia']
+
+- id: q_flag_canada
+  content:
+    prompt:
+      text: 'Wem gehört diese Flagge?'
+      media:
+        - {
+            kind: image,
+            ref: 'local:img/flags/ca.svg',
+            alt: 'Kanadische Flagge — rot mit Ahornblatt'
+          }
+    answer: Kanada
+    explanation: 'Das rote Ahornblatt wurde 1965 nach jahrelangen Debatten angenommen.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: canada, text: Kanada }
+          - { id: usa, text: Vereinigte Staaten }
+          - { id: sweden, text: Schweden }
+          - { id: australia, text: Australien }
+      open:
+        accepted: ['Kanada']
+
+- id: q_flag_south_korea
+  content:
+    prompt:
+      text: 'Wessen Flagge ist das?'
+      media:
+        - {
+            kind: image,
+            ref: 'local:img/flags/kr.svg',
+            alt: 'Südkoreanische Flagge — weiß mit Taegeuk und Trigrammen'
+          }
+    answer: Südkorea
+    explanation: 'Das Taegeuk-Symbol steht für Balance und Harmonie.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: north_korea, text: Nordkorea }
+          - { id: south_korea, text: Südkorea }
+          - { id: japan, text: Japan }
+          - { id: vietnam, text: Vietnam }
+      open:
+        accepted: ['Südkorea', 'Süd Korea', 'Korea', 'Republik Korea', 'ROK']
+
+- id: q_flag_morocco
+  content:
+    prompt:
+      text: 'Welches Land hat diese Flagge?'
+      media:
+        - {
+            kind: image,
+            ref: 'local:img/flags/ma.svg',
+            alt: 'Marokkanische Flagge — rot mit grünem Fünfzackstern'
+          }
+    answer: Marokko
+    explanation: 'Der rote Hintergrund steht für die Dynastie der Alaouiten, das grüne Siegel für den Islam.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: morocco, text: Marokko }
+          - { id: algeria, text: Algerien }
+          - { id: tunisia, text: Tunesien }
+          - { id: libya, text: Libyen }
+      open:
+        accepted: ['Marokko']

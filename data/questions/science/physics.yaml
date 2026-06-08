@@ -1,0 +1,73 @@
+- id: q_physics_light_speed
+  kind: numeric
+  tags: [subject:physics, subject:school, difficulty:general, region:global]
+  content:
+    default_lang: en
+    prompt: { text: 'Roughly how many kilometers per second does light travel in a vacuum?' }
+    answer: 300000
+    unit: km/s
+    explanation: 'Light travels at approximately 299,792 km/s, commonly rounded to 300,000 km/s.'
+    variants:
+      numeric_input: { tolerance: 10000 }
+      multiple_choice:
+        choices:
+          - { id: '300k', text: '300,000', correct: true }
+          - { id: '150k', text: '150,000' }
+          - { id: '500k', text: '500,000' }
+
+- id: q_physics_gravity
+  kind: text
+  tags: [subject:physics, subject:school, difficulty:easy, region:global]
+  content:
+    default_lang: en
+    prompt: { text: 'Which scientist formulated the law of universal gravitation?' }
+    answer: Isaac Newton
+    explanation: 'Isaac Newton published his law of universal gravitation in Principia Mathematica (1687).'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: einstein, text: Albert Einstein }
+          - { id: newton, text: Isaac Newton, correct: true }
+          - { id: galileo, text: Galileo Galilei }
+          - { id: bohr, text: Niels Bohr }
+      open:
+        accepted: ['Isaac Newton', 'Newton', 'Sir Isaac Newton']
+        normalize: [lowercase]
+
+- id: q_physics_sound_medium
+  kind: text
+  tags: [subject:physics, subject:school, difficulty:easy, region:global]
+  content:
+    default_lang: en
+    prompt: { text: 'What is required for sound to travel?' }
+    answer: Medium (matter)
+    explanation: 'Sound is a mechanical wave and needs a medium (gas, liquid, or solid) to propagate. It cannot travel through a vacuum.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: vacuum, text: Vacuum (empty space) }
+          - { id: medium, text: Medium (matter), correct: true }
+          - { id: field, text: Magnetic field }
+          - { id: charge, text: Electric charge }
+      open:
+        accepted: ['Medium', 'Medium (matter)', 'Matter', 'Material']
+        normalize: [lowercase]
+
+- id: q_physics_einstein
+  kind: text
+  tags: [subject:physics, subject:school, difficulty:general, region:global]
+  content:
+    default_lang: en
+    prompt: { text: "What does E in Einstein's equation E=mc² stand for?" }
+    answer: Energy
+    explanation: 'E=mc² relates energy (E) to mass (m) and the speed of light squared (c²).'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: energy, text: Energy, correct: true }
+          - { id: electric, text: Electricity }
+          - { id: entropy, text: Entropy }
+          - { id: equilibrium, text: Equilibrium }
+      open:
+        accepted: ['Energy', 'Energie']
+        normalize: [lowercase]

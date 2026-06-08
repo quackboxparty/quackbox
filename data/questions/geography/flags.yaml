@@ -1,0 +1,103 @@
+- id: q_flag_italy
+  kind: text
+  tags: [subject:geography, subject:flags, difficulty:easy, region:global]
+  content:
+    default_lang: en
+    prompt:
+      text: 'Which country is this flag from?'
+      media:
+        - {
+            kind: image,
+            ref: 'local:img/flags/it.svg',
+            alt: 'Italian flag — vertical green, white, and red'
+          }
+    answer: Italy
+    explanation: 'The Italian tricolor was first adopted in 1797 and based on the French flag.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: france, text: France }
+          - { id: italy, text: Italy, correct: true }
+          - { id: ireland, text: Ireland }
+          - { id: mexico, text: Mexico }
+      open:
+        accepted: ['Italy', 'Italia']
+        normalize: [lowercase]
+
+- id: q_flag_canada
+  kind: text
+  tags: [subject:geography, subject:flags, difficulty:general, region:global]
+  content:
+    default_lang: en
+    prompt:
+      text: 'Which country does this flag belong to?'
+      media:
+        - {
+            kind: image,
+            ref: 'local:img/flags/ca.svg',
+            alt: 'Canadian flag — red with a maple leaf'
+          }
+    answer: Canada
+    explanation: 'The red maple leaf was adopted in 1965 after years of debate about what to feature on the flag.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: canada, text: Canada, correct: true }
+          - { id: usa, text: United States }
+          - { id: sweden, text: Sweden }
+          - { id: australia, text: Australia }
+      open:
+        accepted: ['Canada', 'The Canada']
+        normalize: [lowercase, strip_articles]
+
+- id: q_flag_south_korea
+  kind: text
+  tags: [subject:geography, subject:flags, difficulty:niche, region:global]
+  content:
+    default_lang: en
+    prompt:
+      text: "Which country's flag is this?"
+      media:
+        - {
+            kind: image,
+            ref: 'local:img/flags/kr.svg',
+            alt: 'South Korean flag — white with taegeuk and trigrams'
+          }
+    answer: South Korea
+    explanation: 'The taegeuk symbol represents balance and harmony, dating back to ancient Asian philosophy.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: north_korea, text: North Korea }
+          - { id: south_korea, text: South Korea, correct: true }
+          - { id: japan, text: Japan }
+          - { id: vietnam, text: Vietnam }
+      open:
+        accepted: ['South Korea', 'Korea', 'Republic of Korea', 'ROK']
+        normalize: [lowercase]
+
+- id: q_flag_morocco
+  kind: text
+  tags: [subject:geography, subject:flags, difficulty:niche, region:global]
+  content:
+    default_lang: en
+    prompt:
+      text: 'Which country has this flag?'
+      media:
+        - {
+            kind: image,
+            ref: 'local:img/flags/ma.svg',
+            alt: 'Moroccan flag — red with a green pentagram'
+          }
+    answer: Morocco
+    explanation: 'The red background represents the Alaouite dynasty, while the green seal represents Islam.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: morocco, text: Morocco, correct: true }
+          - { id: algeria, text: Algeria }
+          - { id: tunisia, text: Tunisia }
+          - { id: libya, text: Libya }
+      open:
+        accepted: ['Morocco', 'The Kingdom of Morocco']
+        normalize: [lowercase, strip_articles]

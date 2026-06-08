@@ -1,0 +1,8 @@
+- id: difficulty:easy
+  label: Leicht
+
+- id: difficulty:general
+  label: Allgemeinwissen
+
+- id: difficulty:niche
+  label: Nischenwissen

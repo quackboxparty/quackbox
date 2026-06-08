@@ -1,5 +1,6 @@
 import * as v from 'valibot';
-import { QuestionId } from './common.ts';
+
+import { LocalId, QuestionId } from './common.ts';
 import { MediaList } from './media.ts';
 
 /*
@@ -13,77 +14,65 @@ import { MediaList } from './media.ts';
  * - No `default_lang`, no tags/license/sources/lang_locked/deprecated.
  *
  * Strict objects enforce all of the above by rejecting unknown keys.
+ *
+ * Overlay files don't carry `kind` — they're keyed only by `id` and patch
+ * whichever fields are present. Loader resolves the kind from the canonical
+ * question and applies the matching shape. A single catch-all strict object
+ * (all fields optional) avoids valibot disambiguation issues with all-optional
+ * union branches. Kind-specific field mismatches (e.g. `unit` on a text
+ * question) are silently ignored at merge-time.
  */
-
-const LocalId = v.pipe(v.string(), v.regex(/^[a-z0-9][a-z0-9_]*$/));
 
 const ChoiceOverlay = v.strictObject({
 	id: LocalId,
-	text: v.optional(v.string()),
-	media: v.optional(MediaList)
-});
-
-const MultipleChoiceVariantOverlay = v.strictObject({
-	choices: v.optional(v.array(ChoiceOverlay))
-});
-
-const OpenVariantOverlay = v.strictObject({
-	accepted: v.optional(v.array(v.string()))
+	media: v.optional(MediaList),
+	text: v.optional(v.string())
 });
 
 const PromptOverlay = v.strictObject({
-	text: v.optional(v.string()),
-	media: v.optional(MediaList)
-});
-
-const TextVariantsOverlay = v.strictObject({
-	multiple_choice: v.optional(MultipleChoiceVariantOverlay),
-	open: v.optional(OpenVariantOverlay)
-	// true_false has no translatable fields
-});
-
-const NumericVariantsOverlay = v.strictObject({
-	multiple_choice: v.optional(MultipleChoiceVariantOverlay)
-	// numeric_input / range have nothing translatable
-});
-
-const TextContentOverlay = v.strictObject({
-	prompt: v.optional(PromptOverlay),
-	answer: v.optional(v.string()),
-	explanation: v.optional(v.string()),
-	variants: v.optional(TextVariantsOverlay)
-});
-
-const NumericContentOverlay = v.strictObject({
-	prompt: v.optional(PromptOverlay),
-	unit: v.optional(v.string()),
-	explanation: v.optional(v.string()),
-	variants: v.optional(NumericVariantsOverlay)
+	media: v.optional(MediaList),
+	text: v.optional(v.string())
 });
 
 const OrderItemOverlay = v.strictObject({
 	id: LocalId,
-	text: v.optional(v.string()),
-	media: v.optional(MediaList)
+	media: v.optional(MediaList),
+	text: v.optional(v.string())
 });
 
-const OrderContentOverlay = v.strictObject({
-	prompt: v.optional(PromptOverlay),
-	explanation: v.optional(v.string()),
-	items: v.optional(v.array(OrderItemOverlay))
-});
-
-/*
- * Overlay files don't carry `kind` — they're keyed only by `id` and patch
- * whichever fields are present. Loader resolves the kind from the canonical
- * question and applies the matching shape. We accept the union of all three
- * content shapes; strict objects keep the boundaries clean per kind.
+/**
+ * Single translatable-shape overlay covering all three question kinds.
+ * All fields optional — only present fields are applied by the loader.
+ * Non-translatable fields (`correct`, `position`, numeric `answer`,
+ * `tolerance`, `min`/`max`/`step`, `normalize`, `default_lang`) are
+ * deliberately absent to reject them at schema level.
  */
-const ContentOverlay = v.union([TextContentOverlay, NumericContentOverlay, OrderContentOverlay]);
+const ContentOverlay = v.strictObject({
+	answer: v.optional(v.string()),
+	explanation: v.optional(v.string()),
+	items: v.optional(v.array(OrderItemOverlay)),
+	prompt: v.optional(PromptOverlay),
+	unit: v.optional(v.string()),
+	variants: v.optional(
+		v.strictObject({
+			multiple_choice: v.optional(
+				v.strictObject({
+					choices: v.optional(v.array(ChoiceOverlay))
+				})
+			),
+			open: v.optional(
+				v.strictObject({
+					accepted: v.optional(v.array(v.string()))
+				})
+			)
+			// true_false, numeric_input, range have no translatable fields
+		})
+	)
+});
 
 export const QuestionOverlay = v.strictObject({
-	id: QuestionId,
-	content: ContentOverlay
+	content: ContentOverlay,
+	id: QuestionId
 });
 export type QuestionOverlay = v.InferOutput<typeof QuestionOverlay>;
 
