@@ -28,8 +28,11 @@ export function readYaml(
       return { file, message: `failed to parse YAML: ${(error as Error).message}` };
     }
   ).andThen((text) => {
-    // FIXME: parseYaml could error
-    return ok(parseYaml(text));
+    try {
+      return ok(parseYaml(text));
+    } catch (error) {
+      return err({ file, message: `invalid YAML: ${(error as Error).message}` });
+    }
   });
 }
 
