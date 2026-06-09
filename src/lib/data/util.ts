@@ -8,9 +8,8 @@ import type { LoadIssue } from './load';
 export function parse<Schema extends v.GenericSchema>(
   file: string,
   schema: Schema,
-  opts: { optional?: boolean } = {}
 ): ResultAsync<v.InferOutput<Schema>, LoadIssue[]> {
-  return readYaml(file, opts)
+  return readYaml(file)
     .mapErr((e) => [e])
     .andThen((raw) => {
       const result = v.safeParse(schema, raw);
@@ -22,14 +21,10 @@ export function parse<Schema extends v.GenericSchema>(
 
 export function readYaml(
   file: string,
-  opts: { optional?: boolean } = {}
 ): ResultAsync<unknown, LoadIssue> {
   return ResultAsync.fromPromise(
     readFile(file, 'utf8'),
     (error) => {
-      if (opts.optional && (error as NodeJS.ErrnoException).code === 'ENOENT') {
-        return { file, message: `file not found: ${(error as Error).message}` };
-      }
       return { file, message: `failed to parse YAML: ${(error as Error).message}` };
     }
   ).andThen((text) => {

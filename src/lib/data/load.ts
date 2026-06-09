@@ -1,4 +1,4 @@
-import { readdir } from 'node:fs/promises';
+import { readdir, stat } from 'node:fs/promises';
 import { dirname, join, relative } from 'node:path';
 
 import {
@@ -65,10 +65,12 @@ export async function loadDataset(opts: LoadOptions = {}): Promise<LoadedDataset
   const base = dirname(dataDir);
   const rel = (file: string) => relative(base, file);
 
-  const questions = await loadQuestions(dataDir, rel);
-  const packs = await loadPacks(dataDir, rel);
-  const tags = await loadTagRegistries(dataDir, rel);
-  const overlays = await loadOverlays(dataDir, rel);
+  const [questions, packs, tags, overlays] = await Promise.all([
+    loadQuestions(dataDir, rel),
+    loadPacks(dataDir, rel),
+    loadTags(dataDir, rel),
+    loadOverlays(dataDir, rel),
+  ]);
 
   const ds: LoadedDataset = {
     dataDir,
@@ -90,9 +92,16 @@ async function loadQuestions(
   const issues: LoadIssue[] = [];
 
   const questionsDir = join(dataDir, 'questions');
-  for (const file of await walkYaml(questionsDir)) {
-    await parse(file, QuestionFile).match(
-      (questions) => {
+  const { files, issues: walkIssues } = await walkYaml(questionsDir);
+  issues.push(...walkIssues);
+
+  const results = await Promise.all(files.map((file) =>
+    parse(file, QuestionFile)
+      .map((questions) => ({ file, questions }))
+  ));
+  for (const result of results) {
+    result.match(
+      ({ file, questions }) => {
         for (const q of questions) {
           if (items.has(q.id)) {
             issues.push({ file, message: `duplicate question id found '${q.id}'` })
@@ -116,9 +125,16 @@ async function loadPacks(
   const issues: LoadIssue[] = [];
 
   const packsDir = join(dataDir, 'packs');
-  for (const file of await walkYaml(packsDir)) {
-    await parse(file, PackFile).match(
-      (pack) => {
+  const { files, issues: walkIssues } = await walkYaml(packsDir);
+  issues.push(...walkIssues);
+
+  const results = await Promise.all(files.map((file) =>
+    parse(file, PackFile)
+      .map((pack) => ({ file, pack }))
+  ));
+  for (const result of results) {
+    result.match(
+      ({ file, pack }) => {
         if (items.has(pack.id)) {
           issues.push({ file, message: `duplicate pack id found '${pack.id}'` })
         } else {
@@ -132,7 +148,7 @@ async function loadPacks(
   return { items, issues };
 }
 
-async function loadTagRegistries(
+async function loadTags(
   dataDir: string,
   rel: (f: string) => string
 ): Promise<LoadResult<Registry<Tag>>> {
@@ -142,6 +158,7 @@ async function loadTagRegistries(
   const tagsDir = join(dataDir, 'tags');
   for (const category of TAG_CATEGORIES) {
     const file = join(tagsDir, `${category}.yaml`);
+    try { await stat(file) } catch { continue }
     await parse(file, TagRegistryFiles[category]).match(
       (tags) => {
         for (const t of tags) {
@@ -167,7 +184,10 @@ async function loadOverlays(
   const issues: LoadIssue[] = [];
 
   const i18nDir = join(dataDir, 'i18n');
-  for (const file of await walkYaml(i18nDir)) {
+  const { files, issues: walkIssues } = await walkYaml(i18nDir);
+  issues.push(...walkIssues);
+
+  for (const file of files) {
     const r = relative(i18nDir, file);
     const parts = r.split(/[\\/]/);
     const locale = parts[0];
@@ -212,22 +232,31 @@ async function loadOverlays(
   return { items: overlays, issues }
 }
 
-async function walkYaml(dir: string): Promise<string[]> {
+async function walkYaml(dir: string): Promise<{ files: string[], issues: LoadIssue[] }> {
   let entries: Dirent[];
+
   try {
     entries = await readdir(dir, { withFileTypes: true });
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      return { files: [], issues: [{ file: dir, message: `dir doesn't exist??? ${dir}` }] };
+    }
+    return { files: [], issues: [{ file: dir, message: `failed to read directory: ${(err as Error).message}` }] }
   }
-  const out: string[] = [];
+
+  const files: string[] = [];
+  const issues: LoadIssue[] = []
   for (const entry of entries) {
     const full = join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...(await walkYaml(full)));
-    else if (entry.isFile() && (entry.name.endsWith('.yaml') || entry.name.endsWith('.yml')))
-      out.push(full);
+    if (entry.isDirectory()) {
+      const sub = await walkYaml(full);
+      files.push(...sub.files);
+      issues.push(...sub.issues);
+    } else if (entry.isFile() && (entry.name.endsWith('.yaml') || entry.name.endsWith('.yml'))) {
+      files.push(full);
+    }
   }
-  return out;
+  return { files, issues };
 }
 
 async function loadTagOverlay(

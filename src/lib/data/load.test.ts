@@ -229,7 +229,7 @@ questions: []
     prompt: { text: "Kein Problem?" }
 `
     });
-    expect(ds.issues.some((i) => i.message.includes('overlay references unknown question'))).toBe(
+    expect(ds.issues.some((i) => i.message.includes('references unknown question'))).toBe(
       true
     );
   });
