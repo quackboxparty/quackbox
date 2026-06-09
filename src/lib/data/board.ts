@@ -6,7 +6,7 @@ import { parse as parseYaml } from 'yaml';
 import type { LoadedDataset, LoadIssue } from './load.ts';
 
 import { type BoardCategory, BoardFile } from '../schemas/board.ts';
-import { buildIndex, queryPool, type QuestionIndex } from './query.ts';
+import { queryPool } from './query.ts';
 
 /** A resolved 2D grid — `grid[categoryIndex][pointIndex] = questionId | null`. */
 export type BoardGrid = (string | null)[][];
@@ -55,7 +55,6 @@ export function buildBoard(
   const grid: BoardGrid = [];
   const rng = mulberry32(opts.seed ?? 42);
   const diffMap = board.difficulty_map ?? {};
-  const idx = buildIndex(ds);
 
   const packCache = new Map<string, string[]>();
 
@@ -73,7 +72,7 @@ export function buildBoard(
         continue;
       }
 
-      const candidates = buildCandidates(cat, pointKey, ds, packCache, idx, diffMap);
+      const candidates = buildCandidates(cat, pointKey, ds, packCache, diffMap);
       const unused = candidates.filter((id) => !used.has(id));
       const pool = unused.length > 0 ? unused : candidates;
 
@@ -126,17 +125,16 @@ function buildCandidates(
   pointKey: string,
   ds: LoadedDataset,
   packCache: Map<string, string[]>,
-  idx: QuestionIndex,
   diffMap: Record<string, string[] | undefined>
 ): string[] {
   let candidates: string[] = [];
 
   if (cat.pack_ref) {
-    candidates = resolvePack(ds, packCache, idx, cat.pack_ref);
+    candidates = resolvePack(ds, packCache, cat.pack_ref);
   }
 
   if (cat.filter) {
-    const filteredSet = new Set(queryPool(ds, cat.filter, idx));
+    const filteredSet = new Set(queryPool(ds, cat.filter));
     candidates =
       candidates.length > 0 ? candidates.filter((qid) => filteredSet.has(qid)) : [...filteredSet];
   }
@@ -144,8 +142,8 @@ function buildCandidates(
   const diffTags = diffMap[pointKey];
   if (diffTags && diffTags.length > 0) {
     candidates = candidates.filter((qid) => {
-      const tags = idx.tags.get(qid);
-      return tags !== undefined && diffTags.some((tag) => tags.has(tag));
+      const tags = ds.questions.get(qid)?.item.tags;
+      return tags !== undefined && diffTags.some((tag) => tags.includes(tag));
     });
   }
 
@@ -155,24 +153,23 @@ function buildCandidates(
 function resolvePack(
   ds: LoadedDataset,
   packCache: Map<string, string[]>,
-  idx: QuestionIndex,
   packId: string
 ): string[] {
   const cached = packCache.get(packId);
   if (cached !== undefined) return cached;
 
   const ids: string[] = [];
-  const pack = ds.packs.find((p) => p.item.id === packId);
+  const pack = ds.packs.get(packId)
   if (!pack) return ids;
   // includes
   for (const incl of pack.item.includes ?? []) {
-    ids.push(...resolvePack(ds, packCache, idx, incl));
+    ids.push(...resolvePack(ds, packCache, incl));
   }
   // explicit questions
   ids.push(...(pack.item.questions ?? []));
   // pack filter query
   if (pack.item.filter) {
-    ids.push(...queryPool(ds, pack.item.filter, idx));
+    ids.push(...queryPool(ds, pack.item.filter));
   }
   const unique = [...new Set(ids)];
   packCache.set(packId, unique);

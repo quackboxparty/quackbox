@@ -24,6 +24,7 @@ export { runCrossFileChecks } from './validate.ts';
 
 export interface LoadedDataset {
   dataDir: string;
+  // TODO: maybe have different dimensions to filter faster, like tags etc.
   questions: Registry<Question>;
   packs: Registry<Pack>;
   tags: Registry<Tag>;
@@ -41,15 +42,15 @@ export interface LoadOptions {
   dataDir?: string;
 }
 
-type Overlays = Map<string, {
+export type Overlays = Map<string, {
   questions: Registry<QuestionOverlay>;
   packs: Registry<PackOverlay>;
   tags: Registry<TagOverlay>;
 }>;
 
-type Registry<T> = Map<string, Entry<T>>;
+export type Registry<T> = Map<string, Entry<T>>;
 
-interface Entry<T> {
+export interface Entry<T> {
   file: string;
   item: T
 }
@@ -92,7 +93,13 @@ async function loadQuestions(
   for (const file of await walkYaml(questionsDir)) {
     await parse(file, QuestionFile).match(
       (questions) => {
-        for (const q of questions) items.set(q.id, { file: rel(file), item: q });
+        for (const q of questions) {
+          if (items.has(q.id)) {
+            issues.push({ file, message: `duplicate question id found '${q.id}'` })
+          } else {
+            items.set(q.id, { file: rel(file), item: q });
+          }
+        };
       },
       (err) => issues.push(...err)
     )
@@ -111,7 +118,13 @@ async function loadPacks(
   const packsDir = join(dataDir, 'packs');
   for (const file of await walkYaml(packsDir)) {
     await parse(file, PackFile).match(
-      (pack) => items.set(pack.id, { file: rel(file), item: pack }),
+      (pack) => {
+        if (items.has(pack.id)) {
+          issues.push({ file, message: `duplicate pack id found '${pack.id}'` })
+        } else {
+          items.set(pack.id, { file: rel(file), item: pack });
+        }
+      },
       (err) => issues.push(...err)
     )
   }
@@ -131,7 +144,13 @@ async function loadTagRegistries(
     const file = join(tagsDir, `${category}.yaml`);
     await parse(file, TagRegistryFiles[category]).match(
       (tags) => {
-        for (const t of tags) items.set(t.id, { file: rel(file), item: t });
+        for (const t of tags) {
+          if (items.has(t.id)) {
+            issues.push({ file, message: `duplicate pack id found '${t.id}'` })
+          } else {
+            items.set(t.id, { file: rel(file), item: t });
+          }
+        }
       },
       (err) => issues.push(...err)
     )

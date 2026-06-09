@@ -1,7 +1,7 @@
 { pkgs, ... }:
 pkgs.mkShell {
   nativeBuildInputs = with pkgs; [
-    nodejs_24
+    nodejs_26
     pnpm_11
     playwright-driver.browsers
   ];
