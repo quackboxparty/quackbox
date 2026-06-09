@@ -9,7 +9,7 @@
         - {
             kind: image,
             ref: 'local:img/flags/it.svg',
-            alt: 'Italian flag — vertical green, white, and red'
+            alt: 'flag — vertical green, white, and red'
           }
     answer: Italy
     explanation: 'The Italian tricolor was first adopted in 1797 and based on the French flag.'
@@ -35,7 +35,7 @@
         - {
             kind: image,
             ref: 'local:img/flags/ca.svg',
-            alt: 'Canadian flag — red with a maple leaf'
+            alt: 'flag — red with a maple leaf'
           }
     answer: Canada
     explanation: 'The red maple leaf was adopted in 1965 after years of debate about what to feature on the flag.'
@@ -61,7 +61,7 @@
         - {
             kind: image,
             ref: 'local:img/flags/kr.svg',
-            alt: 'South Korean flag — white with taegeuk and trigrams'
+            alt: 'flag — white with taegeuk and trigrams'
           }
     answer: South Korea
     explanation: 'The taegeuk symbol represents balance and harmony, dating back to ancient Asian philosophy.'
@@ -87,7 +87,7 @@
         - {
             kind: image,
             ref: 'local:img/flags/ma.svg',
-            alt: 'Moroccan flag — red with a green pentagram'
+            alt: 'flag — red with a green pentagram'
           }
     answer: Morocco
     explanation: 'The red background represents the Alaouite dynasty, while the green seal represents Islam.'

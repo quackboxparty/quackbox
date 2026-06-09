@@ -32,7 +32,6 @@
 		"eslint": "10.4.1",
 		"eslint-config-prettier": "10.1.8",
 		"eslint-formatter-unix": "9.0.1",
-		"eslint-plugin-perfectionist": "^5.9.0",
 		"eslint-plugin-svelte": "3.19.0",
 		"globals": "17.6.0",
 		"playwright": "1.59.1",
@@ -48,6 +47,7 @@
 	},
 	"dependencies": {
 		"@valibot/to-json-schema": "1.7.0",
+		"neverthrow": "^8.2.0",
 		"valibot": "1.4.1",
 		"yaml": "2.9.0"
 	}

@@ -9,7 +9,7 @@ import { type BoardCategory, BoardFile } from '../schemas/board.ts';
 import { buildIndex, queryPool, type QuestionIndex } from './query.ts';
 
 /** A resolved 2D grid — `grid[categoryIndex][pointIndex] = questionId | null`. */
-export type BoardGrid = (null | string)[][];
+export type BoardGrid = (string | null)[][];
 
 export interface BuildBoardOptions {
   locale: string;

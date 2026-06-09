@@ -2,50 +2,67 @@ import * as v from 'valibot';
 
 import { LocaleCode, type TagCategory, tagRefFor } from './common.ts';
 
+
+/** Generic tag  shape — id is category-specific at parse time via the schemas above. */
+export interface Tag {
+  default_lang: LocaleCode,
+  description?: string | undefined;
+  id: string;
+  label: string;
+};
+/** Generic tag overlay shape — id is category-specific at parse time via the schemas above. */
+export interface TagOverlay {
+  description?: string | undefined;
+  id: string;
+  label?: string | undefined;
+};
+
 type TagCategoryValue = v.InferOutput<typeof TagCategory>;
 
 /** Canonical registry file: one category per file, all entries share the prefix. */
 export function tagRegistryFile(category: TagCategoryValue) {
-	return v.array(tagRegistryEntry(category));
+  return v.array(tagRegistryEntry(category));
 }
 
 /** Single entry in a tag registry file. `id` is constrained per-category. */
 function tagRegistryEntry(category: TagCategoryValue) {
-	return v.strictObject({
-		default_lang: LocaleCode,
-		description: v.optional(v.string()),
-		id: tagRefFor(category),
-		label: v.string()
-	});
+  return v.strictObject({
+    default_lang: LocaleCode,
+    description: v.optional(v.string()),
+    id: tagRefFor(category),
+    label: v.string()
+  });
 }
 
+
 export const TagRegistryFiles = {
-	audience: tagRegistryFile('audience'),
-	difficulty: tagRegistryFile('difficulty'),
-	format: tagRegistryFile('format'),
-	region: tagRegistryFile('region'),
-	subject: tagRegistryFile('subject'),
-	warning: tagRegistryFile('warning')
+  audience: tagRegistryFile('audience'),
+  difficulty: tagRegistryFile('difficulty'),
+  format: tagRegistryFile('format'),
+  region: tagRegistryFile('region'),
+  subject: tagRegistryFile('subject'),
+  warning: tagRegistryFile('warning')
 } as const;
 
 export function tagOverlayFile(category: TagCategoryValue) {
-	return v.array(tagOverlayEntry(category));
+  return v.array(tagOverlayEntry(category));
 }
 
 /** Overlay entry: only translatable fields. `default_lang` is canonical-only. */
 function tagOverlayEntry(category: TagCategoryValue) {
-	return v.strictObject({
-		description: v.optional(v.string()),
-		id: tagRefFor(category),
-		label: v.optional(v.string())
-	});
+  return v.strictObject({
+    description: v.optional(v.string()),
+    id: tagRefFor(category),
+    label: v.optional(v.string())
+  });
 }
 
 export const TagOverlayFiles = {
-	audience: tagOverlayFile('audience'),
-	difficulty: tagOverlayFile('difficulty'),
-	format: tagOverlayFile('format'),
-	region: tagOverlayFile('region'),
-	subject: tagOverlayFile('subject'),
-	warning: tagOverlayFile('warning')
+  audience: tagOverlayFile('audience'),
+  difficulty: tagOverlayFile('difficulty'),
+  format: tagOverlayFile('format'),
+  region: tagOverlayFile('region'),
+  subject: tagOverlayFile('subject'),
+  warning: tagOverlayFile('warning')
 } as const;
+

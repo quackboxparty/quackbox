@@ -1,34 +1,34 @@
-import type { Dirent } from 'node:fs';
-
-import { readdir, readFile } from 'node:fs/promises';
+import { readdir } from 'node:fs/promises';
 import { dirname, join, relative } from 'node:path';
-import * as v from 'valibot';
-import { parse as parseYaml } from 'yaml';
 
 import {
   type Pack,
   PackFile,
-  PackOverlay,
-  type PackOverlay as PackOverlayT,
+  type PackOverlay,
   type Question,
   QuestionFile,
   type QuestionOverlay,
   QuestionOverlayFile,
   TagOverlayFiles,
-  TagRegistryFiles
+  TagRegistryFiles,
+  type TagOverlay,
+  PackOverlayFile,
+  type TagCategory,
+  type Tag
 } from '../schemas/index.ts';
 import { DATA_DIR, TAG_CATEGORIES, type TagCategoryName } from './paths.ts';
+import { parse } from './util.ts';
+import type { Dirent } from 'node:fs';
 
 export { runCrossFileChecks } from './validate.ts';
 
 export interface LoadedDataset {
   dataDir: string;
+  questions: Registry<Question>;
+  packs: Registry<Pack>;
+  tags: Registry<Tag>;
+  overlays: Overlays
   issues: LoadIssue[];
-  packOverlays: Map<string, { file: string; item: PackOverlayT; locale: string }[]>;
-  packs: { file: string; item: Pack }[];
-  questionOverlays: Map<string, { file: string; item: QuestionOverlay; locale: string }[]>;
-  questions: { file: string; item: Question }[];
-  tagRegistry: Map<string, { defaultLang: string; file: string }>;
 }
 
 export interface LoadIssue {
@@ -41,111 +41,156 @@ export interface LoadOptions {
   dataDir?: string;
 }
 
+type Overlays = Map<string, {
+  questions: Registry<QuestionOverlay>;
+  packs: Registry<PackOverlay>;
+  tags: Registry<TagOverlay>;
+}>;
+
+type Registry<T> = Map<string, Entry<T>>;
+
+interface Entry<T> {
+  file: string;
+  item: T
+}
+
+interface LoadResult<T> {
+  items: T;
+  issues: LoadIssue[]
+}
+
 export async function loadDataset(opts: LoadOptions = {}): Promise<LoadedDataset> {
   const dataDir = opts.dataDir ?? DATA_DIR;
   const base = dirname(dataDir);
   const rel = (file: string) => relative(base, file);
-  const issues: LoadIssue[] = [];
+
+  const questions = await loadQuestions(dataDir, rel);
+  const packs = await loadPacks(dataDir, rel);
+  const tags = await loadTagRegistries(dataDir, rel);
+  const overlays = await loadOverlays(dataDir, rel);
 
   const ds: LoadedDataset = {
     dataDir,
-    issues,
-    packOverlays: new Map(),
-    packs: [],
-    questionOverlays: new Map(),
-    questions: [],
-    tagRegistry: new Map()
+    issues: [...questions.issues, ...packs.issues, ...tags.issues, ...overlays.issues],
+    packs: packs.items,
+    questions: questions.items,
+    tags: tags.items,
+    overlays: overlays.items
   };
-
-  await loadQuestions(ds, dataDir, rel);
-  await loadPacks(ds, dataDir, rel);
-  await loadTagRegistries(ds, dataDir, rel);
-  await loadOverlays(ds, dataDir, rel);
 
   return ds;
 }
 
 async function loadQuestions(
-  ds: LoadedDataset,
   dataDir: string,
   rel: (f: string) => string
-): Promise<void> {
+): Promise<LoadResult<Registry<Question>>> {
+  const items = new Map<string, Entry<Question>>();
+  const issues: LoadIssue[] = [];
+
   const questionsDir = join(dataDir, 'questions');
   for (const file of await walkYaml(questionsDir)) {
-    const raw = await readYamlFile(file, ds.issues, rel);
-    if (raw === undefined) continue;
-    const result = v.safeParse(QuestionFile, raw);
-    if (!result.success) {
-      pushIssues(rel(file), result.issues, ds.issues);
-      continue;
-    }
-    for (const item of result.output) ds.questions.push({ file: rel(file), item });
+    await parse(file, QuestionFile).match(
+      (questions) => {
+        for (const q of questions) items.set(q.id, { file: rel(file), item: q });
+      },
+      (err) => issues.push(...err)
+    )
   }
+
+  return { items, issues };
 }
 
 async function loadPacks(
-  ds: LoadedDataset,
   dataDir: string,
   rel: (f: string) => string
-): Promise<void> {
+): Promise<LoadResult<Registry<Pack>>> {
+  const items = new Map<string, Entry<Pack>>();
+  const issues: LoadIssue[] = [];
+
   const packsDir = join(dataDir, 'packs');
   for (const file of await walkYaml(packsDir)) {
-    const raw = await readYamlFile(file, ds.issues, rel);
-    if (raw === undefined) continue;
-    const result = v.safeParse(PackFile, raw);
-    if (!result.success) {
-      pushIssues(rel(file), result.issues, ds.issues)
-      continue;
-    }
-    ds.packs.push({ file: rel(file), item: result.output });
+    await parse(file, PackFile).match(
+      (pack) => items.set(pack.id, { file: rel(file), item: pack }),
+      (err) => issues.push(...err)
+    )
   }
+
+  return { items, issues };
+}
+
+async function loadTagRegistries(
+  dataDir: string,
+  rel: (f: string) => string
+): Promise<LoadResult<Registry<Tag>>> {
+  const items = new Map<string, Entry<Tag>>();
+  const issues: LoadIssue[] = [];
+
+  const tagsDir = join(dataDir, 'tags');
+  for (const category of TAG_CATEGORIES) {
+    const file = join(tagsDir, `${category}.yaml`);
+    await parse(file, TagRegistryFiles[category]).match(
+      (tags) => {
+        for (const t of tags) items.set(t.id, { file: rel(file), item: t });
+      },
+      (err) => issues.push(...err)
+    )
+  }
+
+  return { items, issues };
 }
 
 async function loadOverlays(
-  ds: LoadedDataset,
   dataDir: string,
   rel: (f: string) => string
-): Promise<void> {
+): Promise<LoadResult<Overlays>> {
+  const overlays: Overlays = new Map()
+  const issues: LoadIssue[] = [];
+
   const i18nDir = join(dataDir, 'i18n');
   for (const file of await walkYaml(i18nDir)) {
     const r = relative(i18nDir, file);
     const parts = r.split(/[\\/]/);
     const locale = parts[0];
     const kind = parts[1];
-    if (!locale) continue;
+    const filename = parts[2];
+    if (!locale || !filename) continue;
 
-    const raw = await readYamlFile(file, ds.issues, rel);
-    if (raw === undefined) continue;
+    const localeOverlays = overlays.getOrInsert(locale, {
+      questions: new Map(),
+      packs: new Map(),
+      tags: new Map()
+    })
 
     if (kind === 'questions') {
-      const result = v.safeParse(QuestionOverlayFile, raw);
-      if (!result.success) {
-        pushIssues(rel(file), result.issues, ds.issues);
-        continue;
-      }
-      for (const item of result.output) {
-        const list = ds.questionOverlays.get(item.id) ?? [];
-        list.push({ file: rel(file), item, locale });
-        ds.questionOverlays.set(item.id, list);
-      }
+      await parse(file, QuestionOverlayFile).match(
+        (questions) => {
+          for (const q of questions) {
+            localeOverlays.questions.set(q.id, { file: rel(file), item: q });
+          }
+        },
+        (err) => issues.push(...err)
+      )
     } else if (kind === 'packs') {
-      const result = v.safeParse(PackOverlay, raw);
-      if (!result.success) {
-        pushIssues(rel(file), result.issues, ds.issues)
-        continue;
-      }
-      const list = ds.packOverlays.get(result.output.id) ?? [];
-      list.push({ file: rel(file), item: result.output, locale });
-      ds.packOverlays.set(result.output.id, list);
+      await parse(file, PackOverlayFile).match(
+        (pack) => {
+          localeOverlays.packs.set(pack.id, { file: rel(file), item: pack });
+        },
+        (err) => issues.push(...err)
+      )
     } else if (kind === 'tags') {
-      await loadTagOverlay(ds, file, parts, rel);
+      const { items, issues: tagIssues } = await loadTagOverlay(file, filename, rel)
+      localeOverlays.tags = new Map([...localeOverlays.tags, ...items])
+      issues.push(...tagIssues)
     } else {
-      ds.issues.push({
+      issues.push({
         file: rel(file),
         message: `unknown i18n subdirectory: ${kind ?? '(root)'}`
       });
     }
   }
+
+  return { items: overlays, issues }
 }
 
 async function walkYaml(dir: string): Promise<string[]> {
@@ -167,82 +212,30 @@ async function walkYaml(dir: string): Promise<string[]> {
 }
 
 async function loadTagOverlay(
-  ds: LoadedDataset,
   file: string,
-  parts: string[],
+  filename: string,
   rel: (f: string) => string
-): Promise<void> {
-  const category = parts[2]?.replace(/\.ya?ml$/, '');
-  if (!category || !(TAG_CATEGORIES as readonly string[]).includes(category)) {
-    ds.issues.push({
+): Promise<LoadResult<Registry<TagOverlay>>> {
+  const tagOverlays = new Map<string, Entry<TagOverlay>>();
+  const issues: LoadIssue[] = [];
+
+  const category = filename.replace(/\.ya?ml$/, '');
+  if (!category || !TAG_CATEGORIES.includes(category as TagCategory)) {
+    issues.push({
       file: rel(file),
       message: `tag overlay file must live at data/i18n/<locale>/tags/<category>.yaml; got category=${category}`
     });
-    return;
-  }
-  const raw = await readYamlFile(file, ds.issues, rel);
-  if (raw === undefined) return;
-  const schema = TagOverlayFiles[category as TagCategoryName];
-  v.safeParse(schema, raw);
-}
 
-async function loadTagRegistries(
-  ds: LoadedDataset,
-  dataDir: string,
-  rel: (f: string) => string
-): Promise<void> {
-  const tagsDir = join(dataDir, 'tags');
-  for (const category of TAG_CATEGORIES) {
-    const file = join(tagsDir, `${category}.yaml`);
-    const raw = await readYamlFile(file, ds.issues, rel, { optional: true });
-    if (raw === undefined) continue;
-    const schema = TagRegistryFiles[category];
-    const result = v.safeParse(schema, raw);
-    if (!result.success) {
-      pushIssues(rel(file), result.issues, ds.issues)
-      continue;
-    }
-    for (const entry of result.output) {
-      ds.tagRegistry.set(entry.id, { defaultLang: entry.default_lang, file: rel(file) });
-    }
+    return { items: tagOverlays, issues };
   }
-}
+  await parse(file, TagOverlayFiles[category as TagCategoryName]).match(
+    (tags) => {
+      for (const t of tags) {
+        tagOverlays.set(t.id, { file: rel(file), item: t });
+      }
+    },
+    (err) => issues.push(...err)
+  )
 
-function pushIssues(
-  relFile: string,
-  issues: v.BaseIssue<unknown>[],
-  out: LoadIssue[]
-) {
-  for (const issue of issues) {
-    out.push({ file: relFile, message: issue.message, path: formatIssuePath(issue) });
-  }
-}
-
-function formatIssuePath(issue: v.BaseIssue<unknown>): string {
-  if (!issue.path) return '';
-  return issue.path
-    .map((p) => {
-      const key = (p as { key?: unknown }).key;
-      if (typeof key === 'number') return `[${key}]`;
-      if (typeof key === 'string') return `.${key}`;
-      return '';
-    })
-    .join('')
-    .replace(/^\./, '');
-}
-
-async function readYamlFile(
-  file: string,
-  issues: LoadIssue[],
-  rel: (f: string) => string,
-  opts: { optional?: boolean } = {}
-): Promise<unknown> {
-  try {
-    const text = await readFile(file, 'utf8');
-    return parseYaml(text);
-  } catch (err) {
-    if (opts.optional && (err as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
-    issues.push({ file: rel(file), message: `failed to parse YAML: ${(err as Error).message}` });
-    return undefined;
-  }
+  return { items: tagOverlays, issues };
 }

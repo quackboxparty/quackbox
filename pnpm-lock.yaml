@@ -11,6 +11,9 @@ importers:
       '@valibot/to-json-schema':
         specifier: 1.7.0
         version: 1.7.0(valibot@1.4.1(typescript@6.0.3))
+      neverthrow:
+        specifier: ^8.2.0
+        version: 8.2.0
       valibot:
         specifier: 1.4.1
         version: 1.4.1(typescript@6.0.3)
@@ -54,9 +57,6 @@ importers:
       eslint-formatter-unix:
         specifier: 9.0.1
         version: 9.0.1
-      eslint-plugin-perfectionist:
-        specifier: ^5.9.0
-        version: 5.9.0(eslint@10.4.1)(typescript@6.0.3)
       eslint-plugin-svelte:
         specifier: 3.19.0
         version: 3.19.0(eslint@10.4.1)(svelte@5.56.0(@typescript-eslint/types@8.60.0))
@@ -818,12 +818,6 @@ packages:
     resolution: {integrity: sha512-6trzj/OL0Q2B5mw3dqryAmQWzo5vVfL9YkaJdw3laouSgbs83TsSz9GFN+1/7lMUlUkBY+8mVEWelkAQoKnlcA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  eslint-plugin-perfectionist@5.9.0:
-    resolution: {integrity: sha512-8TWzg02zmnBdZwCkWLi8jhzqXI+fE7Z/RwV8SL6xD45tJ8Bp3wGuYL2XtQgfe/Wd0eBqOUX+s6ey73IyszvKTA==}
-    engines: {node: ^20.0.0 || >=22.0.0}
-    peerDependencies:
-      eslint: ^8.45.0 || ^9.0.0 || ^10.0.0
-
   eslint-plugin-svelte@3.19.0:
     resolution: {integrity: sha512-t3rNaZeXz4d2gG4uJyMEYfJCFKf22+SWbSizIIXIWKu4wM+XPLiMWuSSr/C5821JmFeN9ogK+eExbG+z+twyxw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
@@ -1162,8 +1156,8 @@ packages:
   natural-compare@1.4.0:
     resolution: {integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==}
 
-  natural-orderby@5.0.0:
-    resolution: {integrity: sha512-kKHJhxwpR/Okycz4HhQKKlhWe4ASEfPgkSWNmKFHd7+ezuQlxkA5cM3+XkBPvm1gmHen3w53qsYAv+8GwRrBlg==}
+  neverthrow@8.2.0:
+    resolution: {integrity: sha512-kOCT/1MCPAxY5iUV3wytNFUMUolzuwd/VF/1KCx7kf6CutrOsTie+84zTGTpgQycjvfLdBBdvBvFLqFD2c0wkQ==}
     engines: {node: '>=18'}
 
   obug@2.1.1:
@@ -2211,15 +2205,6 @@ snapshots:
 
   eslint-formatter-unix@9.0.1: {}
 
-  eslint-plugin-perfectionist@5.9.0(eslint@10.4.1)(typescript@6.0.3):
-    dependencies:
-      '@typescript-eslint/utils': 8.60.0(eslint@10.4.1)(typescript@6.0.3)
-      eslint: 10.4.1
-      natural-orderby: 5.0.0
-    transitivePeerDependencies:
-      - supports-color
-      - typescript
-
   eslint-plugin-svelte@3.19.0(eslint@10.4.1)(svelte@5.56.0(@typescript-eslint/types@8.60.0)):
     dependencies:
       '@eslint-community/eslint-utils': 4.9.1(eslint@10.4.1)
@@ -2509,7 +2494,9 @@ snapshots:
 
   natural-compare@1.4.0: {}
 
-  natural-orderby@5.0.0: {}
+  neverthrow@8.2.0:
+    optionalDependencies:
+      '@rollup/rollup-linux-x64-gnu': 4.61.0
 
   obug@2.1.1: {}
 

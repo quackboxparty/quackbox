@@ -1,6 +1,5 @@
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
-import perfectionist from 'eslint-plugin-perfectionist';
 import svelte from 'eslint-plugin-svelte';
 import { defineConfig } from 'eslint/config';
 import globals from 'globals';
@@ -30,35 +29,6 @@ export default defineConfig(
   svelte.configs.recommended,
   prettier,
   svelte.configs.prettier,
-  perfectionist.configs['recommended-natural'],
-
-	{
-		rules: {
-			'perfectionist/sort-modules': [
-				'error',
-				{
-					// type: 'usage',
-					// fallbackSort: { type: 'natural' },
-					groups: [
-						// types/interfaces/enums: sorted by usage (asc)
-						'declare-enum',
-						'export-enum',
-						'enum',
-						['declare-interface', 'declare-type'],
-						['export-interface', 'export-type'],
-						['interface', 'type'],
-						'declare-class',
-						'class',
-						'export-class',
-						// functions: leave in source order, avoids diamond dep loops
-						{ group: 'declare-function', type: 'unsorted' },
-						{ group: 'export-function', type: 'unsorted' },
-						{ group: 'function', type: 'unsorted' },
-					]
-				}
-			]
-		}
-	},
 
   {
     languageOptions: {
