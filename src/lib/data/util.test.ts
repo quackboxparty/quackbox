@@ -1,5 +1,5 @@
 import { parse } from '$lib/data/util';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -23,7 +23,7 @@ describe('parse', () => {
       () => expect.unreachable('should have failed'),
       (issues) => {
         expect(issues.length).toBe(1);
-        expect(issues[0].message).toMatch(/invalid YAML/i);
+        expect(issues[0]?.message).toMatch(/invalid YAML/i);
       }
     );
 
@@ -41,7 +41,7 @@ describe('parse', () => {
       () => expect.unreachable('should have failed'),
       (issues) => {
         expect(issues.length).toBeGreaterThan(0);
-        expect(issues[0].file).toBe(file);
+        expect(issues[0]?.file).toBe(file);
       }
     );
 
@@ -56,7 +56,7 @@ describe('parse', () => {
     const result = await parse(file, Schema);
 
     result.match(
-      (value) => expect(value).toEqual({ id: 'hello' }),
+      (value) => { expect(value).toEqual({ id: 'hello' }) },
       () => expect.unreachable('should have succeeded')
     );
 
@@ -70,7 +70,7 @@ describe('parse', () => {
       () => expect.unreachable('should have failed'),
       (issues) => {
         expect(issues.length).toBe(1);
-        expect(issues[0].message).toMatch(/failed to parse YAML/i);
+        expect(issues[0]?.message).toMatch(/failed to parse YAML/i);
       }
     );
   });

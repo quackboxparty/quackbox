@@ -2,21 +2,6 @@ import * as v from 'valibot';
 
 import { LocaleCode, type TagCategory, tagRefFor } from './common.ts';
 
-
-/** Generic tag  shape — id is category-specific at parse time via the schemas above. */
-export interface Tag {
-  default_lang: LocaleCode,
-  description?: string | undefined;
-  id: string;
-  label: string;
-};
-/** Generic tag overlay shape — id is category-specific at parse time via the schemas above. */
-export interface TagOverlay {
-  description?: string | undefined;
-  id: string;
-  label?: string | undefined;
-};
-
 type TagCategoryValue = v.InferOutput<typeof TagCategory>;
 
 /** Canonical registry file: one category per file, all entries share the prefix. */
@@ -25,7 +10,7 @@ export function tagRegistryFile(category: TagCategoryValue) {
 }
 
 /** Single entry in a tag registry file. `id` is constrained per-category. */
-function tagRegistryEntry(category: TagCategoryValue) {
+export function tagRegistryEntry(category: TagCategoryValue) {
   return v.strictObject({
     default_lang: LocaleCode,
     description: v.optional(v.string()),
@@ -49,13 +34,16 @@ export function tagOverlayFile(category: TagCategoryValue) {
 }
 
 /** Overlay entry: only translatable fields. `default_lang` is canonical-only. */
-function tagOverlayEntry(category: TagCategoryValue) {
+export function tagOverlayEntry(category: TagCategoryValue) {
   return v.strictObject({
     description: v.optional(v.string()),
     id: tagRefFor(category),
     label: v.optional(v.string())
   });
 }
+
+export type Tag = v.InferOutput<ReturnType<typeof tagRegistryEntry>>;
+export type TagOverlay = v.InferOutput<ReturnType<typeof tagOverlayEntry>>;
 
 export const TagOverlayFiles = {
   audience: tagOverlayFile('audience'),

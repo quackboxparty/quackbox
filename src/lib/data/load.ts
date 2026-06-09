@@ -163,7 +163,7 @@ async function loadTags(
       (tags) => {
         for (const t of tags) {
           if (items.has(t.id)) {
-            issues.push({ file, message: `duplicate pack id found '${t.id}'` })
+            issues.push({ file, message: `duplicate tag id found '${t.id}'` })
           } else {
             items.set(t.id, { file: rel(file), item: t });
           }
