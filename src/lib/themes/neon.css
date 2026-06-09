@@ -1,0 +1,57 @@
+[data-theme="neon"] {
+	/* ── Colors ── */
+	--color-primary: #ff2d95;
+	--color-primary-hover: #e0247a;
+	--color-secondary: #00f0ff;
+	--color-accent: #f5e642;
+	--color-text: #e0e0ff;
+	--color-text-muted: #8888bb;
+	--color-text-inverse: #0a0a1a;
+	--color-correct: #39ff14;
+	--color-wrong: #ff3131;
+	--color-warning: #f5e642;
+
+	/* ── Surfaces ── */
+	--bg-primary: #0a0a1a;
+	--bg-surface: #12122a;
+	--bg-surface-elevated: #1a1a3a;
+	--bg-image: none;
+	--bg-overlay: rgba(10, 10, 26, 0.7);
+
+	/* ── Typography ── */
+	--font-heading: 'Orbitron', sans-serif;
+	--font-body: 'Rajdhani', sans-serif;
+	--font-mono: 'Orbitron', monospace;
+	--font-scale: 1;
+	--line-height: 1.5;
+
+	/* ── Radius ── */
+	--radius-none: 0px;
+	--radius-sm: 2px;
+	--radius-md: 4px;
+	--radius-lg: 8px;
+	--radius-full: 9999px;
+
+	/* ── Border ── */
+	--border-width: 2px;
+	--border-color: #ff2d95;
+	--border-style: solid;
+
+	/* ── Shadows — neon glow ── */
+	--shadow-sm: 0 0 6px rgba(255, 45, 149, 0.4), 0 0 12px rgba(255, 45, 149, 0.2);
+	--shadow-md: 0 0 8px rgba(255, 45, 149, 0.5), 0 0 20px rgba(255, 45, 149, 0.3), 0 0 40px rgba(255, 45, 149, 0.1);
+	--shadow-lg: 0 0 10px rgba(255, 45, 149, 0.6), 0 0 30px rgba(255, 45, 149, 0.4), 0 0 60px rgba(255, 45, 149, 0.15);
+
+	/* ── Motion ── */
+	--duration-fast: 80ms;
+	--duration-normal: 150ms;
+	--duration-slow: 250ms;
+	--easing: cubic-bezier(0.22, 1, 0.36, 1);
+
+	/* ── Floating background ── */
+	--float-duration: 18s;
+	--float-drift: 25deg;
+
+	/* ── Focus ring ── */
+	--focus-ring: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-secondary), 0 0 12px var(--color-secondary);
+}

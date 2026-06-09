@@ -1,0 +1,34 @@
+[data-theme="modern-dark"] {
+	/* ── Colors ── */
+	--color-primary: #818cf8;
+	--color-primary-hover: #6366f1;
+	--color-secondary: #a78bfa;
+	--color-accent: #fbbf24;
+	--color-text: #e2e8f0;
+	--color-text-muted: #94a3b8;
+	--color-text-inverse: #0f172a;
+	--color-correct: #4ade80;
+	--color-wrong: #f87171;
+	--color-warning: #fbbf24;
+
+	/* ── Surfaces ── */
+	--bg-primary: #0f172a;
+	--bg-surface: #1e293b;
+	--bg-surface-elevated: #334155;
+	--bg-image: none;
+	--bg-overlay: rgba(0, 0, 0, 0.6);
+
+	/* ── Typography ── */
+	/* same fonts as modern */
+
+	/* ── Border ── */
+	--border-color: #334155;
+
+	/* ── Shadows (heavier for dark bg) ── */
+	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+	--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+	--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+
+	/* ── Focus ring ── */
+	--focus-ring: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-primary);
+}

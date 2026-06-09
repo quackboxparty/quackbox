@@ -1,0 +1,57 @@
+[data-theme="western"] {
+	/* ── Colors ── */
+	--color-primary: #c07830;
+	--color-primary-hover: #a86420;
+	--color-secondary: #8b5e3c;
+	--color-accent: #a03020;
+	--color-text: #e8d5b0;
+	--color-text-muted: #b8a080;
+	--color-text-inverse: #1a1008;
+	--color-correct: #6daa6d;
+	--color-wrong: #c04040;
+	--color-warning: #d4a843;
+
+	/* ── Surfaces ── */
+	--bg-primary: #1a1008;
+	--bg-surface: #2a1a0e;
+	--bg-surface-elevated: #382414;
+	--bg-image: url('/themes/western/leather.svg');
+	--bg-overlay: rgba(26, 16, 8, 0.6);
+
+	/* ── Typography ── */
+	--font-heading: 'Rye', serif;
+	--font-body: 'Sancreek', serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, monospace;
+	--font-scale: 1;
+	--line-height: 1.5;
+
+	/* ── Radius ── */
+	--radius-none: 0px;
+	--radius-sm: 2px;
+	--radius-md: 4px;
+	--radius-lg: 6px;
+	--radius-full: 9999px;
+
+	/* ── Border ── */
+	--border-width: 2px;
+	--border-color: #8b5e3c;
+	--border-style: solid;
+
+	/* ── Shadows — worn leather ── */
+	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+	--shadow-md: 0 3px 6px rgba(0, 0, 0, 0.5);
+	--shadow-lg: 0 6px 12px rgba(0, 0, 0, 0.6);
+
+	/* ── Motion ── */
+	--duration-fast: 130ms;
+	--duration-normal: 250ms;
+	--duration-slow: 400ms;
+	--easing: cubic-bezier(0.4, 0, 0.2, 1);
+
+	/* ── Floating background ── */
+	--float-duration: 24s;
+	--float-drift: 18deg;
+
+	/* ── Focus ring ── */
+	--focus-ring: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-primary);
+}

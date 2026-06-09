@@ -1,0 +1,76 @@
+/*
+ * Design tokens — modern theme is the default.
+ * All components consume these vars; theme files override them via [data-theme].
+ *
+ * Token naming: --<category>-<property>-<scale>
+ *   category:  color, bg, font, radius, border, shadow, duration, easing
+ *   property:  descriptive name
+ *   scale:     sm / md / lg (where it makes sense)
+ */
+
+:root {
+	/* ── Colors ── */
+	--color-primary: #6366f1;
+	--color-primary-hover: #4f46e5;
+	--color-secondary: #8b5cf6;
+	--color-accent: #f59e0b;
+	--color-text: #1e293b;
+	--color-text-muted: #64748b;
+	--color-text-inverse: #ffffff;
+	--color-correct: #22c55e;
+	--color-wrong: #ef4444;
+	--color-warning: #f59e0b;
+
+	/* ── Surfaces ── */
+	--bg-primary: #f8fafc;
+	--bg-surface: #ffffff;
+	--bg-surface-elevated: #ffffff;
+	--bg-image: none;
+	--bg-overlay: rgba(0, 0, 0, 0.4);
+
+	/* ── Typography ── */
+	--font-heading: 'Inter', system-ui, sans-serif;
+	--font-body: 'Inter', system-ui, sans-serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, monospace;
+	--font-scale: 1;
+	--line-height: 1.5;
+
+	/* ── Radius ── */
+	--radius-none: 0px;
+	--radius-sm: 6px;
+	--radius-md: 12px;
+	--radius-lg: 16px;
+	--radius-full: 9999px;
+
+	/* ── Border ── */
+	--border-width: 1px;
+	--border-color: #e2e8f0;
+	--border-style: solid;
+
+	/* ── Shadows ── */
+	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+	--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+	--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+	/* ── Motion ── */
+	--duration-fast: 100ms;
+	--duration-normal: 200ms;
+	--duration-slow: 300ms;
+	--easing: cubic-bezier(0.4, 0, 0.2, 1);
+
+	/* ── Spacing scale ── */
+	--space-1: 0.25rem;
+	--space-2: 0.5rem;
+	--space-3: 0.75rem;
+	--space-4: 1rem;
+	--space-6: 1.5rem;
+	--space-8: 2rem;
+	--space-12: 3rem;
+
+	/* ── Floating background ── */
+	--float-duration: 20s;
+	--float-drift: 30deg;
+
+	/* ── Focus ring ── */
+	--focus-ring: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-primary);
+}

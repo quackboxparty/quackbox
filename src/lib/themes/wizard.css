@@ -1,0 +1,57 @@
+[data-theme="wizard"] {
+	/* ── Colors ── */
+	--color-primary: #9b6dff;
+	--color-primary-hover: #8555e8;
+	--color-secondary: #3d2b7a;
+	--color-accent: #ffd700;
+	--color-text: #e8dff0;
+	--color-text-muted: #a898c0;
+	--color-text-inverse: #1a0e30;
+	--color-correct: #5dff8a;
+	--color-wrong: #ff5f5f;
+	--color-warning: #ffd700;
+
+	/* ── Surfaces ── */
+	--bg-primary: #1a0e30;
+	--bg-surface: #241445;
+	--bg-surface-elevated: #2e1c58;
+	--bg-image: none;
+	--bg-overlay: rgba(26, 14, 48, 0.6);
+
+	/* ── Typography ── */
+	--font-heading: 'Cinzel Decorative', serif;
+	--font-body: 'Crimson Text', serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, monospace;
+	--font-scale: 1;
+	--line-height: 1.55;
+
+	/* ── Radius ── */
+	--radius-none: 0px;
+	--radius-sm: 4px;
+	--radius-md: 10px;
+	--radius-lg: 16px;
+	--radius-full: 9999px;
+
+	/* ── Border ── */
+	--border-width: 2px;
+	--border-color: #9b6dff;
+	--border-style: solid;
+
+	/* ── Shadows — magical glow ── */
+	--shadow-sm: 0 0 6px rgba(155, 109, 255, 0.2);
+	--shadow-md: 0 0 10px rgba(155, 109, 255, 0.3), 0 4px 8px rgba(0, 0, 0, 0.3);
+	--shadow-lg: 0 0 16px rgba(155, 109, 255, 0.4), 0 8px 16px rgba(0, 0, 0, 0.4);
+
+	/* ── Motion ── */
+	--duration-fast: 150ms;
+	--duration-normal: 300ms;
+	--duration-slow: 500ms;
+	--easing: cubic-bezier(0.25, 0.1, 0.25, 1);
+
+	/* ── Floating background ── */
+	--float-duration: 28s;
+	--float-drift: 22deg;
+
+	/* ── Focus ring ── */
+	--focus-ring: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-accent), 0 0 12px var(--color-accent);
+}

@@ -1,0 +1,57 @@
+[data-theme="chalkboard"] {
+	/* ── Colors ── */
+	--color-primary: #f0e6c8;
+	--color-primary-hover: #e0d4aa;
+	--color-secondary: #c8b88a;
+	--color-accent: #e8a642;
+	--color-text: #f0e6c8;
+	--color-text-muted: #a89e7a;
+	--color-text-inverse: #2d4a2e;
+	--color-correct: #7dde7d;
+	--color-wrong: #e86060;
+	--color-warning: #e8a642;
+
+	/* ── Surfaces ── */
+	--bg-primary: #2d4a2e;
+	--bg-surface: #355236;
+	--bg-surface-elevated: #3d5a3e;
+	--bg-image: none;
+	--bg-overlay: rgba(45, 74, 46, 0.6);
+
+	/* ── Typography ── */
+	--font-heading: 'Kalam', cursive;
+	--font-body: 'Caveat', cursive;
+	--font-mono: 'JetBrains Mono', ui-monospace, monospace;
+	--font-scale: 1.15;
+	--line-height: 1.4;
+
+	/* ── Radius ── */
+	--radius-none: 0px;
+	--radius-sm: 0px;
+	--radius-md: 0px;
+	--radius-lg: 0px;
+	--radius-full: 9999px;
+
+	/* ── Border ── */
+	--border-width: 2px;
+	--border-color: rgba(240, 230, 200, 0.25);
+	--border-style: dashed;
+
+	/* ── Shadows — chalk dust ── */
+	--shadow-sm: 2px 2px 0px rgba(240, 230, 200, 0.1);
+	--shadow-md: 3px 3px 0px rgba(240, 230, 200, 0.12);
+	--shadow-lg: 4px 4px 0px rgba(240, 230, 200, 0.15);
+
+	/* ── Motion ── */
+	--duration-fast: 120ms;
+	--duration-normal: 250ms;
+	--duration-slow: 400ms;
+	--easing: cubic-bezier(0.4, 0, 0.2, 1);
+
+	/* ── Floating background ── */
+	--float-duration: 22s;
+	--float-drift: 15deg;
+
+	/* ── Focus ring ── */
+	--focus-ring: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-accent);
+}

@@ -1,0 +1,65 @@
+/*
+ * Font imports — only the weights actually used by themes.
+ * Fontsource packages ship unicode-range subsets, so browsers
+ * only load glyphs for the user's language.
+ */
+
+/* ── Modern / Modern Dark ── */
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+
+/* ── Retro ── */
+@import '@fontsource/press-start-2p/400.css';
+
+/* ── Medieval ── */
+@import '@fontsource/medievalsharp/400.css';
+@import '@fontsource/lora/400.css';
+@import '@fontsource/lora/500.css';
+@import '@fontsource/lora/600.css';
+@import '@fontsource/lora/700.css';
+
+/* ── Neon ── */
+@import '@fontsource/orbitron/400.css';
+@import '@fontsource/orbitron/500.css';
+@import '@fontsource/orbitron/600.css';
+@import '@fontsource/orbitron/700.css';
+@import '@fontsource/orbitron/800.css';
+@import '@fontsource/orbitron/900.css';
+@import '@fontsource/rajdhani/400.css';
+@import '@fontsource/rajdhani/500.css';
+@import '@fontsource/rajdhani/600.css';
+@import '@fontsource/rajdhani/700.css';
+
+/* ── Chalkboard ── */
+@import '@fontsource/caveat/400.css';
+@import '@fontsource/caveat/500.css';
+@import '@fontsource/caveat/600.css';
+@import '@fontsource/caveat/700.css';
+@import '@fontsource/kalam/300.css';
+@import '@fontsource/kalam/400.css';
+@import '@fontsource/kalam/700.css';
+
+/* ── Kawaii ── */
+@import '@fontsource/quicksand/400.css';
+@import '@fontsource/quicksand/500.css';
+@import '@fontsource/quicksand/600.css';
+@import '@fontsource/quicksand/700.css';
+
+/* ── Western ── */
+@import '@fontsource/rye/400.css';
+@import '@fontsource/sancreek/400.css';
+
+/* ── Wizard ── */
+@import '@fontsource/cinzel-decorative/400.css';
+@import '@fontsource/cinzel-decorative/700.css';
+@import '@fontsource/cinzel-decorative/900.css';
+@import '@fontsource/crimson-text/400.css';
+@import '@fontsource/crimson-text/600.css';
+@import '@fontsource/crimson-text/700.css';
+@import '@fontsource/crimson-text/400-italic.css';
+@import '@fontsource/crimson-text/600-italic.css';
+@import '@fontsource/crimson-text/700-italic.css';

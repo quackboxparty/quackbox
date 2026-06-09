@@ -1,0 +1,57 @@
+[data-theme="medieval"] {
+	/* ── Colors ── */
+	--color-primary: #d4a843;
+	--color-primary-hover: #c49a38;
+	--color-secondary: #8b6914;
+	--color-accent: #c0392b;
+	--color-text: #e8d5b7;
+	--color-text-muted: #b8a88a;
+	--color-text-inverse: #2c1810;
+	--color-correct: #22c55e;
+	--color-wrong: #c0392b;
+	--color-warning: #d4a843;
+
+	/* ── Surfaces ── */
+	--bg-primary: #2c1810;
+	--bg-surface: #3d2317;
+	--bg-surface-elevated: #4a2e1f;
+	--bg-image: url('/themes/medieval/parchment.svg');
+	--bg-overlay: rgba(0, 0, 0, 0.5);
+
+	/* ── Typography ── */
+	--font-heading: 'MedievalSharp', serif;
+	--font-body: 'Lora', serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, monospace;
+	--font-scale: 1;
+	--line-height: 1.6;
+
+	/* ── Radius ── */
+	--radius-none: 0px;
+	--radius-sm: 4px;
+	--radius-md: 8px;
+	--radius-lg: 12px;
+	--radius-full: 9999px;
+
+	/* ── Border ── */
+	--border-width: 2px;
+	--border-color: #8b6914;
+	--border-style: solid;
+
+	/* ── Shadows ── */
+	--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+	--shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+	--shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+
+	/* ── Motion ── */
+	--duration-fast: 150ms;
+	--duration-normal: 300ms;
+	--duration-slow: 500ms;
+	--easing: cubic-bezier(0.25, 0.1, 0.25, 1);
+
+	/* ── Floating background ── */
+	--float-duration: 25s;
+	--float-drift: 20deg;
+
+	/* ── Focus ring ── */
+	--focus-ring: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-primary);
+}

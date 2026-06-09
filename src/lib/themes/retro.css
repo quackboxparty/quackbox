@@ -1,0 +1,57 @@
+[data-theme="retro"] {
+	/* ── Colors ── */
+	--color-primary: #e94560;
+	--color-primary-hover: #d63851;
+	--color-secondary: #0f3460;
+	--color-accent: #fbbf24;
+	--color-text: #e0e0e0;
+	--color-text-muted: #a0a0a0;
+	--color-text-inverse: #1a1a2e;
+	--color-correct: #4ade80;
+	--color-wrong: #f87171;
+	--color-warning: #f59e0b;
+
+	/* ── Surfaces ── */
+	--bg-primary: #1a1a2e;
+	--bg-surface: #16213e;
+	--bg-surface-elevated: #1a2744;
+	--bg-image: none;
+	--bg-overlay: rgba(0, 0, 0, 0.6);
+
+	/* ── Typography ── */
+	--font-heading: 'Press Start 2P', monospace;
+	--font-body: 'Press Start 2P', monospace;
+	--font-mono: 'Press Start 2P', monospace;
+	--font-scale: 0.75;
+	--line-height: 1.8;
+
+	/* ── Radius ── */
+	--radius-none: 0px;
+	--radius-sm: 0px;
+	--radius-md: 0px;
+	--radius-lg: 0px;
+	--radius-full: 0px;
+
+	/* ── Border ── */
+	--border-width: 3px;
+	--border-color: #e94560;
+	--border-style: solid;
+
+	/* ── Shadows ── */
+	--shadow-sm: 4px 4px 0px #0f3460;
+	--shadow-md: 6px 6px 0px #0f3460;
+	--shadow-lg: 8px 8px 0px #0f3460;
+
+	/* ── Motion ── */
+	--duration-fast: 0ms;
+	--duration-normal: 0ms;
+	--duration-slow: 0ms;
+	--easing: steps(2, end);
+
+	/* ── Floating background ── */
+	--float-duration: 30s;
+	--float-drift: 10deg;
+
+	/* ── Focus ring ── */
+	--focus-ring: 0 0 0 3px var(--color-primary);
+}

@@ -1,19 +1,28 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
-	import { resolve } from '$app/paths';
-	import { page } from '$app/state';
 	import favicon from '$lib/assets/favicon.svg';
-	import { locales, localizeHref } from '$lib/paraglide/runtime';
+	import { initTheme } from '$lib/themes';
+	import FloatingBackground from '$lib/components/FloatingBackground.svelte';
+
+	import '$lib/themes/reset.css';
+	import '$lib/themes/fonts.css';
+	import '$lib/themes/tokens.css';
+	import '$lib/themes/modern-dark.css';
+	import '$lib/themes/retro.css';
+	import '$lib/themes/medieval.css';
+	import '$lib/themes/neon.css';
+	import '$lib/themes/chalkboard.css';
+	import '$lib/themes/kawaii.css';
+	import '$lib/themes/western.css';
+	import '$lib/themes/wizard.css';
 
 	let { children }: { children: Snippet } = $props();
+
+	initTheme();
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
-{@render children()}
 
-<div style="display:none">
-	{#each locales as locale (locale)}
-		<a href={resolve(localizeHref(page.url.pathname, { locale }))}>{locale}</a>
-	{/each}
-</div>
+<FloatingBackground />
+{@render children()}

@@ -1,0 +1,32 @@
+/* Minimal reset — no opinions beyond sensible defaults */
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+html {
+	-webkit-text-size-adjust: 100%;
+	background: var(--bg-primary);
+	background-image: var(--bg-image);
+	background-size: cover;
+}
+
+body {
+	min-height: 100vh;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+img,
+svg,
+video {
+	display: block;
+	max-width: 100%;
+}
+
+button {
+	font: inherit;
+}
