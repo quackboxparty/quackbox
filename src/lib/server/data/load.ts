@@ -57,34 +57,37 @@ function loadQuestions(
 > {
 	return Effect.gen(function* () {
 		const path = yield* Path.Path;
-		const items = new Map<string, Entry<Question>>();
-		const issues: LoadIssue[] = [];
-
 		const questionsDir = path.join(dataDir, 'questions');
 		const { files, issues: walkIssues } = yield* walkYaml(questionsDir);
-		issues.push(...walkIssues);
 
-		yield* Effect.forEach(
+		const results = yield* Effect.forEach(
 			files,
 			(file) =>
 				parse(file, QuestionFile).pipe(
 					Effect.match({
-						onSuccess: (questions) => {
-							for (const q of questions) {
-								if (items.has(q.id)) {
-									issues.push({ file, message: `duplicate question id found '${q.id}'` });
-								} else {
-									items.set(q.id, { file: rel(file), item: q });
-								}
-							}
-						},
-						onFailure: (errs) => {
-							issues.push(...errs);
-						}
+						onSuccess: (items) => ({ ok: true as const, file, items }),
+						onFailure: (errs) => ({ ok: false as const, file, errs })
 					})
 				),
 			{ concurrency: 'unbounded' }
 		);
+
+		const issues = [...walkIssues];
+		const items = new Map<string, Entry<Question>>();
+
+		for (const result of results) {
+			if (!result.ok) {
+				issues.push(...result.errs);
+			} else {
+				for (const q of result.items) {
+					if (items.has(q.id)) {
+						issues.push({ file: rel(result.file), message: `duplicate question id found '${q.id}'` });
+					} else {
+						items.set(q.id, { file: rel(result.file), item: q });
+					}
+				}
+			}
+		}
 
 		return { items, issues };
 	});
