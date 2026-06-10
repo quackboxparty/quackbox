@@ -5,9 +5,11 @@ import {
 	type Pack,
 	PackFile,
 	PackOverlayFile,
+	type PackOverlay,
 	type Question,
 	QuestionFile,
 	QuestionOverlayFile,
+	type QuestionOverlay,
 	TagOverlayFiles,
 	TagRegistryFiles
 } from '../../schemas/index.ts';
@@ -47,6 +49,40 @@ export const loadDataset = (
 		} satisfies LoadedDataset;
 	});
 
+function accumulateFileParses<A, R>(
+	files: string[],
+	processor: (file: string) => Effect.Effect<ReadonlyArray<A>, LoadIssue[], R>
+): Effect.Effect<{ items: { file: string; item: A }[]; issues: LoadIssue[] }, never, R> {
+	return Effect.gen(function* () {
+		const results = yield* Effect.forEach(
+			files,
+			(file) =>
+				processor(file).pipe(
+					Effect.match({
+						onSuccess: (items) => ({ ok: true as const, file, items }),
+						onFailure: (errs) => ({ ok: false as const, file, errs })
+					})
+				),
+			{ concurrency: 'unbounded' }
+		);
+
+		const issues: LoadIssue[] = [];
+		const successes: { file: string; item: A }[] = [];
+
+		for (const result of results) {
+			if (!result.ok) {
+				issues.push(...result.errs);
+			} else {
+				for (const item of result.items) {
+					successes.push({ file: result.file, item });
+				}
+			}
+		}
+
+		return { items: successes, issues };
+	});
+}
+
 function loadQuestions(
 	dataDir: string,
 	rel: (f: string) => string
@@ -60,32 +96,19 @@ function loadQuestions(
 		const questionsDir = path.join(dataDir, 'questions');
 		const { files, issues: walkIssues } = yield* walkYaml(questionsDir);
 
-		const results = yield* Effect.forEach(
+		const { items: parsedQuestions, issues: parseIssues } = yield* accumulateFileParses(
 			files,
-			(file) =>
-				parse(file, QuestionFile).pipe(
-					Effect.match({
-						onSuccess: (items) => ({ ok: true as const, file, items }),
-						onFailure: (errs) => ({ ok: false as const, file, errs })
-					})
-				),
-			{ concurrency: 'unbounded' }
+			(file) => parse(file, QuestionFile)
 		);
 
-		const issues = [...walkIssues];
 		const items = new Map<string, Entry<Question>>();
+		const issues = [...walkIssues, ...parseIssues];
 
-		for (const result of results) {
-			if (!result.ok) {
-				issues.push(...result.errs);
+		for (const { file, item: q } of parsedQuestions) {
+			if (items.has(q.id)) {
+				issues.push({ file: rel(file), message: `duplicate question id found '${q.id}'` });
 			} else {
-				for (const q of result.items) {
-					if (items.has(q.id)) {
-						issues.push({ file: rel(result.file), message: `duplicate question id found '${q.id}'` });
-					} else {
-						items.set(q.id, { file: rel(result.file), item: q });
-					}
-				}
+				items.set(q.id, { file: rel(file), item: q });
 			}
 		}
 
@@ -103,32 +126,24 @@ function loadPacks(
 > {
 	return Effect.gen(function* () {
 		const path = yield* Path.Path;
-		const items = new Map<string, Entry<Pack>>();
-		const issues: LoadIssue[] = [];
-
 		const packsDir = path.join(dataDir, 'packs');
 		const { files, issues: walkIssues } = yield* walkYaml(packsDir);
-		issues.push(...walkIssues);
 
-		yield* Effect.forEach(
+		const { items: parsedPacks, issues: parseIssues } = yield* accumulateFileParses(
 			files,
-			(file) =>
-				parse(file, PackFile).pipe(
-					Effect.match({
-						onSuccess: (pack) => {
-							if (items.has(pack.id)) {
-								issues.push({ file, message: `duplicate pack id found '${pack.id}'` });
-							} else {
-								items.set(pack.id, { file: rel(file), item: pack });
-							}
-						},
-						onFailure: (errs) => {
-							issues.push(...errs);
-						}
-					})
-				),
-			{ concurrency: 'unbounded' }
+			(file) => parse(file, PackFile).pipe(Effect.map((pack) => [pack]))
 		);
+
+		const items = new Map<string, Entry<Pack>>();
+		const issues = [...walkIssues, ...parseIssues];
+
+		for (const { file, item: pack } of parsedPacks) {
+			if (items.has(pack.id)) {
+				issues.push({ file: rel(file), message: `duplicate pack id found '${pack.id}'` });
+			} else {
+				items.set(pack.id, { file: rel(file), item: pack });
+			}
+		}
 
 		return { items, issues };
 	});
@@ -145,36 +160,32 @@ function loadTags(
 	return Effect.gen(function* () {
 		const path = yield* Path.Path;
 		const fs = yield* FileSystem.FileSystem;
-		const items = new Map<string, Entry<Tag>>();
-		const issues: LoadIssue[] = [];
-
 		const tagsDir = path.join(dataDir, 'tags');
-		yield* Effect.forEach(
-			TAG_CATEGORIES,
-			(category) =>
-				Effect.gen(function* () {
-					const file = path.join(tagsDir, `${category}.yaml`);
-					const exists = yield* fs.exists(file).pipe(Effect.orElseSucceed(() => false));
-					if (!exists) return;
-					yield* parse(file, TagRegistryFiles[category]).pipe(
-						Effect.match({
-							onSuccess: (tags) => {
-								for (const t of tags) {
-									if (items.has(t.id)) {
-										issues.push({ file, message: `duplicate tag id found '${t.id}'` });
-									} else {
-										items.set(t.id, { file: rel(file), item: t });
-									}
-								}
-							},
-							onFailure: (errs) => {
-								issues.push(...errs);
-							}
-						})
-					);
-				}),
-			{ concurrency: 'unbounded' }
+
+		const existingFiles: string[] = [];
+		for (const category of TAG_CATEGORIES) {
+			const file = path.join(tagsDir, `${category}.yaml`);
+			if (yield* fs.exists(file).pipe(Effect.orElseSucceed(() => false))) existingFiles.push(file);
+		}
+
+		const { items: parsedTags, issues: parseIssues } = yield* accumulateFileParses(
+			existingFiles,
+			(file) => {
+				const category = path.basename(file, '.yaml') as TagCategoryName;
+				return parse(file, TagRegistryFiles[category]);
+			}
 		);
+
+		const items = new Map<string, Entry<Tag>>();
+		const issues = [...parseIssues];
+
+		for (const { file, item: t } of parsedTags) {
+			if (items.has(t.id)) {
+				issues.push({ file: rel(file), message: `duplicate tag id found '${t.id}'` });
+			} else {
+				items.set(t.id, { file: rel(file), item: t });
+			}
+		}
 
 		return { items, issues };
 	});
@@ -190,67 +201,71 @@ function loadOverlays(
 > {
 	return Effect.gen(function* () {
 		const path = yield* Path.Path;
-		const overlays: Overlays = new Map();
-		const issues: LoadIssue[] = [];
-
 		const i18nDir = path.join(dataDir, 'i18n');
 		const { files, issues: walkIssues } = yield* walkYaml(i18nDir);
-		issues.push(...walkIssues);
 
-		yield* Effect.forEach(
+		type OverlayEntry =
+			| { locale: string; kind: 'questions'; filename: string; item: QuestionOverlay }
+			| { locale: string; kind: 'packs'; filename: string; item: PackOverlay }
+			| { locale: string; kind: 'tags'; filename: string; item: TagOverlay };
+
+		const { items: parsedOverlays, issues: parseIssues } = yield* accumulateFileParses<
+			OverlayEntry,
+			FileSystem.FileSystem
+		>(
 			files,
-			(file) =>
-				Effect.gen(function* () {
-					const r = path.relative(i18nDir, file);
-					const parts = r.split(/[\\/]/);
-					const locale = parts[0];
-					const kind = parts[1];
-					const filename = parts[2];
-					if (!locale || !filename) return;
+			(file): Effect.Effect<OverlayEntry[], LoadIssue[], FileSystem.FileSystem> => {
+				const r = path.relative(i18nDir, file);
+				const parts = r.split(/[\\/]/);
+				const locale = parts[0];
+				const kind = parts[1];
+				const filename = parts[2];
 
-					let localeOverlays = overlays.get(locale);
-					if (!localeOverlays) {
-						localeOverlays = { packs: new Map(), questions: new Map(), tags: new Map() };
-						overlays.set(locale, localeOverlays);
+				if (!locale || !filename) {
+					return Effect.fail([{ file, message: `invalid overlay path: ${r}` }]);
+				}
+				if (kind === 'questions') {
+					return parse(file, QuestionOverlayFile).pipe(
+						Effect.map((qs) => qs.map((q) => ({ locale, kind: 'questions' as const, filename, item: q })))
+					);
+				}
+				if (kind === 'packs') {
+					return parse(file, PackOverlayFile).pipe(
+						Effect.map((p) => [{ locale, kind: 'packs' as const, filename, item: p }])
+					);
+				}
+				if (kind === 'tags') {
+					const category = filename.replace(/\.ya?ml$/, '') as TagCategoryName;
+					if (!(TAG_CATEGORIES as readonly string[]).includes(category)) {
+						return Effect.fail([{ file, message: `unknown tag category: ${category}` }]);
 					}
-
-					if (kind === 'questions') {
-						yield* parse(file, QuestionOverlayFile).pipe(
-							Effect.match({
-								onSuccess: (questions) => {
-									for (const q of questions) {
-										localeOverlays.questions.set(q.id, { file: rel(file), item: q });
-									}
-								},
-								onFailure: (errs) => {
-									issues.push(...errs);
-								}
-							})
-						);
-					} else if (kind === 'packs') {
-						yield* parse(file, PackOverlayFile).pipe(
-							Effect.match({
-								onSuccess: (pack) => {
-									localeOverlays.packs.set(pack.id, { file: rel(file), item: pack });
-								},
-								onFailure: (errs) => {
-									issues.push(...errs);
-								}
-							})
-						);
-					} else if (kind === 'tags') {
-						const { items, issues: tagIssues } = yield* loadTagOverlay(file, filename, rel);
-						localeOverlays.tags = new Map([...localeOverlays.tags, ...items]);
-						issues.push(...tagIssues);
-					} else {
-						issues.push({
-							file: rel(file),
-							message: `unknown i18n subdirectory: ${kind ?? '(root)'}`
-						});
-					}
-				}),
-			{ concurrency: 'unbounded' }
+					return parse(file, TagOverlayFiles[category]).pipe(
+						Effect.map((ts) => ts.map((t) => ({ locale, kind: 'tags' as const, filename, item: t })))
+					);
+				}
+				return Effect.fail([
+					{ file, message: `unknown i18n subdirectory: ${kind ?? '(root)'}` }
+				]);
+			}
 		);
+
+		const overlays: Overlays = new Map();
+		const issues = [...walkIssues, ...parseIssues];
+
+		for (const { file, item: enriched } of parsedOverlays) {
+			const localeOverlays = overlays.getOrInsertComputed(enriched.locale, () => ({
+				packs: new Map(),
+				questions: new Map(),
+				tags: new Map()
+			}));
+			if (enriched.kind === 'questions') {
+				localeOverlays.questions.set(enriched.item.id, { file: rel(file), item: enriched.item });
+			} else if (enriched.kind === 'packs') {
+				localeOverlays.packs.set(enriched.item.id, { file: rel(file), item: enriched.item });
+			} else {
+				localeOverlays.tags.set(enriched.item.id, { file: rel(file), item: enriched.item });
+			}
+		}
 
 		return { items: overlays, issues };
 	});
@@ -294,40 +309,4 @@ function walkYaml(
 	});
 }
 
-function loadTagOverlay(
-	file: string,
-	filename: string,
-	rel: (f: string) => string
-): Effect.Effect<
-	{ items: Registry<TagOverlay>; issues: LoadIssue[] },
-	never,
-	FileSystem.FileSystem
-> {
-	return Effect.gen(function* () {
-		const tagOverlays = new Map<string, Entry<TagOverlay>>();
-		const issues: LoadIssue[] = [];
 
-		const category = filename.replace(/\.ya?ml$/, '');
-		if (!category || !(TAG_CATEGORIES as readonly string[]).includes(category)) {
-			issues.push({
-				file: rel(file),
-				message: `tag overlay file must live at data/i18n/<locale>/tags/<category>.yaml; got category=${category}`
-			});
-			return { items: tagOverlays, issues };
-		}
-		yield* parse(file, TagOverlayFiles[category as TagCategoryName]).pipe(
-			Effect.match({
-				onSuccess: (tags) => {
-					for (const t of tags) {
-						tagOverlays.set(t.id, { file: rel(file), item: t });
-					}
-				},
-				onFailure: (errs) => {
-					issues.push(...errs);
-				}
-			})
-		);
-
-		return { items: tagOverlays, issues };
-	});
-}
