@@ -3,80 +3,10 @@
 	"items": {
 		"type": "object",
 		"properties": {
-			"id": {
-				"type": "string",
-				"pattern": "^q_[a-z0-9][a-z0-9_]*$"
-			},
 			"content": {
 				"type": "object",
 				"properties": {
-					"prompt": {
-						"type": "object",
-						"properties": {
-							"text": {
-								"type": "string"
-							},
-							"media": {
-								"type": "array",
-								"items": {
-									"type": "object",
-									"properties": {
-										"kind": {
-											"enum": ["image", "audio", "video"],
-											"type": "string"
-										},
-										"ref": {
-											"anyOf": [
-												{
-													"type": "string",
-													"pattern": "^local:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-\\/]+$"
-												},
-												{
-													"type": "string",
-													"pattern": "^url:https:\\/\\/\\S+$"
-												},
-												{
-													"type": "string",
-													"pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&\\-]*)?$"
-												}
-											]
-										},
-										"alt": {
-											"type": "string"
-										},
-										"duration_ms": {
-											"type": "integer",
-											"minimum": 0
-										},
-										"width": {
-											"type": "integer",
-											"minimum": 1
-										},
-										"height": {
-											"type": "integer",
-											"minimum": 1
-										},
-										"start_ms": {
-											"type": "integer",
-											"minimum": 0
-										},
-										"end_ms": {
-											"type": "integer",
-											"minimum": 1
-										}
-									},
-									"required": ["kind", "ref"],
-									"additionalProperties": false
-								}
-							}
-						},
-						"required": [],
-						"additionalProperties": false
-					},
 					"answer": {
-						"type": "string"
-					},
-					"unit": {
 						"type": "string"
 					},
 					"explanation": {
@@ -91,14 +21,26 @@
 									"type": "string",
 									"pattern": "^[a-z0-9][a-z0-9_]*$"
 								},
-								"text": {
-									"type": "string"
-								},
 								"media": {
 									"type": "array",
 									"items": {
 										"type": "object",
 										"properties": {
+											"alt": {
+												"type": "string"
+											},
+											"duration_ms": {
+												"type": "integer",
+												"minimum": 0
+											},
+											"end_ms": {
+												"type": "integer",
+												"minimum": 1
+											},
+											"height": {
+												"type": "integer",
+												"minimum": 1
+											},
 											"kind": {
 												"enum": ["image", "audio", "video"],
 												"type": "string"
@@ -107,7 +49,7 @@
 												"anyOf": [
 													{
 														"type": "string",
-														"pattern": "^local:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-\\/]+$"
+														"pattern": "^local:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
 													},
 													{
 														"type": "string",
@@ -115,30 +57,15 @@
 													},
 													{
 														"type": "string",
-														"pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&\\-]*)?$"
+														"pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
 													}
 												]
-											},
-											"alt": {
-												"type": "string"
-											},
-											"duration_ms": {
-												"type": "integer",
-												"minimum": 0
-											},
-											"width": {
-												"type": "integer",
-												"minimum": 1
-											},
-											"height": {
-												"type": "integer",
-												"minimum": 1
 											},
 											"start_ms": {
 												"type": "integer",
 												"minimum": 0
 											},
-											"end_ms": {
+											"width": {
 												"type": "integer",
 												"minimum": 1
 											}
@@ -146,11 +73,80 @@
 										"required": ["kind", "ref"],
 										"additionalProperties": false
 									}
+								},
+								"text": {
+									"type": "string"
 								}
 							},
 							"required": ["id"],
 							"additionalProperties": false
 						}
+					},
+					"prompt": {
+						"type": "object",
+						"properties": {
+							"media": {
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": {
+										"alt": {
+											"type": "string"
+										},
+										"duration_ms": {
+											"type": "integer",
+											"minimum": 0
+										},
+										"end_ms": {
+											"type": "integer",
+											"minimum": 1
+										},
+										"height": {
+											"type": "integer",
+											"minimum": 1
+										},
+										"kind": {
+											"enum": ["image", "audio", "video"],
+											"type": "string"
+										},
+										"ref": {
+											"anyOf": [
+												{
+													"type": "string",
+													"pattern": "^local:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
+												},
+												{
+													"type": "string",
+													"pattern": "^url:https:\\/\\/\\S+$"
+												},
+												{
+													"type": "string",
+													"pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
+												}
+											]
+										},
+										"start_ms": {
+											"type": "integer",
+											"minimum": 0
+										},
+										"width": {
+											"type": "integer",
+											"minimum": 1
+										}
+									},
+									"required": ["kind", "ref"],
+									"additionalProperties": false
+								}
+							},
+							"text": {
+								"type": "string"
+							}
+						},
+						"required": [],
+						"additionalProperties": false
+					},
+					"unit": {
+						"type": "string"
 					},
 					"variants": {
 						"type": "object",
@@ -167,14 +163,26 @@
 													"type": "string",
 													"pattern": "^[a-z0-9][a-z0-9_]*$"
 												},
-												"text": {
-													"type": "string"
-												},
 												"media": {
 													"type": "array",
 													"items": {
 														"type": "object",
 														"properties": {
+															"alt": {
+																"type": "string"
+															},
+															"duration_ms": {
+																"type": "integer",
+																"minimum": 0
+															},
+															"end_ms": {
+																"type": "integer",
+																"minimum": 1
+															},
+															"height": {
+																"type": "integer",
+																"minimum": 1
+															},
 															"kind": {
 																"enum": ["image", "audio", "video"],
 																"type": "string"
@@ -183,7 +191,7 @@
 																"anyOf": [
 																	{
 																		"type": "string",
-																		"pattern": "^local:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-\\/]+$"
+																		"pattern": "^local:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
 																	},
 																	{
 																		"type": "string",
@@ -191,30 +199,15 @@
 																	},
 																	{
 																		"type": "string",
-																		"pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&\\-]*)?$"
+																		"pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
 																	}
 																]
-															},
-															"alt": {
-																"type": "string"
-															},
-															"duration_ms": {
-																"type": "integer",
-																"minimum": 0
-															},
-															"width": {
-																"type": "integer",
-																"minimum": 1
-															},
-															"height": {
-																"type": "integer",
-																"minimum": 1
 															},
 															"start_ms": {
 																"type": "integer",
 																"minimum": 0
 															},
-															"end_ms": {
+															"width": {
 																"type": "integer",
 																"minimum": 1
 															}
@@ -222,6 +215,9 @@
 														"required": ["kind", "ref"],
 														"additionalProperties": false
 													}
+												},
+												"text": {
+													"type": "string"
 												}
 											},
 											"required": ["id"],
@@ -252,9 +248,13 @@
 				},
 				"required": [],
 				"additionalProperties": false
+			},
+			"id": {
+				"type": "string",
+				"pattern": "^q_[a-z0-9][a-z0-9_]*$"
 			}
 		},
-		"required": ["id", "content"],
+		"required": ["content", "id"],
 		"additionalProperties": false
 	},
 	"$schema": "http://json-schema.org/draft-07/schema#"

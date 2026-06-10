@@ -1,8 +1,10 @@
 # Quackbox — Data Model
 
-> Status: **design sketch**, not yet implemented. Scope: how quiz content
-> (questions, packs, gamemodes, media, translations) is stored on disk,
-> validated, and loaded at runtime.
+> Status: **partially implemented** — schemas, data loader, cross-file
+> validation, pool query engine, board builder, and an example dataset are
+> working. Gamemode runtime (SvelteKit remote functions) and UI wiring are not
+> yet built. Scope: how quiz content (questions, packs, gamemodes, media,
+> translations) is stored on disk, validated, and loaded at runtime.
 
 ## Goals
 
@@ -29,31 +31,27 @@ data/
     geography/
       capitals.yaml
       flags.yaml
-    music/
-      90s-pop.yaml
-    history/
     science/
-    …
+      chemistry.yaml
+      math.yaml
+      physics.yaml
   i18n/               # translation overlays, mirror of questions/ + packs/
     de/
       questions/
         geography/capitals.yaml
-        music/90s-pop.yaml
+        geography/flags.yaml
+        science/chemistry.yaml
+        science/math.yaml
+        science/physics.yaml
       packs/
-        official/britpop-trivia.yaml
+        official/school-trivia.yaml
       tags/
         subject.yaml
         difficulty.yaml
         region.yaml
-        …
-    fr/
-      …
   packs/              # curated playlists (lists of question IDs)
     official/
-      britpop-trivia.yaml
-      capitals-easy.yaml
-    community/
-      …
+      school-trivia.yaml
   tags/               # tag registry — one file per category
     subject.yaml
     difficulty.yaml
@@ -63,20 +61,25 @@ data/
     warning.yaml
   media/              # binary assets referenced by questions
     img/
-      flag-jp.svg
-    audio/            # see "Media" section for storage strategy
+      flags/it.svg
+      flags/ca.svg
+      flags/kr.svg
+      flags/ma.svg
 
 gamemodes/            # code, not data; each declares compatibility metadata
-  classic/
-  battle_royale/
-  survival/
-  music_quiz/
-  …
+  grid_quiz/          # Jeopardy-style — first implemented gamemode
+    manifest.yaml
+    boards/           # board definitions (category × point grid)
+      school.yaml
 
 schemas/              # generated from valibot, committed for editor support
   question.schema.json
+  question-overlay.schema.json
   pack.schema.json
-  gamemode.schema.json
+  pack-overlay.schema.json
+  board.schema.json
+  tag-registry-<category>.schema.json  # one per category
+  tag-overlay-<category>.schema.json   # one per category
 ```
 
 ### Layering principle
@@ -286,7 +289,7 @@ and lets PRs touch a single file when adding tags.
 
 ```yaml
 # data/tags/subject.yaml
-# yaml-language-server: $schema=../../schemas/tag-registry.schema.json
+# yaml-language-server: $schema=../../schemas/tag-registry-subject.schema.json
 
 - id: subject:chemistry
   default_lang: en
@@ -436,7 +439,7 @@ content:
     text: 'Which band released this song?'
     media:
       - kind: audio # image | audio | video
-        ref: 'media:audio/wonderwall-clip.ogg'
+        ref: 'local:audio/wonderwall-clip.ogg'
         duration_ms: 8000 # type-specific metadata
         alt: '8-second clip of a guitar riff' # accessibility
   variants:
@@ -446,7 +449,7 @@ content:
           text: Oasis
           correct: true
           media: # choices can also have media
-            - { kind: image, ref: 'media:img/oasis-logo.svg', alt: Oasis logo }
+            - { kind: image, ref: 'local:img/oasis-logo.svg', alt: Oasis logo }
 ```
 
 Overlays may localize media at any level (prompt, choice, order item) by
@@ -469,31 +472,33 @@ Recommended: **hybrid**.
 
 | Prefix     | Value                           | Resolves to                                |
 | ---------- | ------------------------------- | ------------------------------------------ |
-| `media:`   | path relative to `data/media/`  | Local file shipped with the repo.          |
+| `local:`   | path relative to `data/media/`  | Local file shipped with the repo.          |
 | `url:`     | absolute `https://` URL         | Arbitrary remote asset.                    |
 | `youtube:` | video ID, optional query params | YouTube embed (`youtube:abc123?start=10`). |
 
 Examples:
 
 ```yaml
-ref: "media:audio/wonderwall-clip.ogg"
+ref: "local:img/flags/it.svg"
 ref: "url:https://example.org/clip.mp3"
 ref: "youtube:pkndFYSTr0Y?start=10&end=18"
 ```
 
 Valibot validates each prefix with its own schema (URL parsing, YouTube ID
-regex, local path resolution). Adding a new source (e.g. `s3:`) is a schema PR.
-Self-hosters can pin or mirror media as they like.
+regex, local path disallowing `..`). Adding a new source (e.g. `s3:`) is a
+schema PR. Self-hosters can pin or mirror media as they like.
 
 ### CI rules
 
-- For `media:` refs: file must exist under `data/media/`, file extension must
+- For `local:` refs: file must exist under `data/media/`, file extension must
   match declared `kind` (e.g. `kind: audio` rejects `.png`).
-- For `media:` refs: file size cap (suggested **100 KB for images**, **1 MB for
-  audio/video** — large clips should be `url:` or `youtube:`).
-- For `url:` refs: must be `https://`, scheme-validated only — no liveness check
-  in CI (too flaky).
-- For `youtube:` refs: video ID must match `^[A-Za-z0-9_-]{11}$`.
+- For `local:` refs: file size cap (**100 KB for images**, **1 MB for
+  audio/video** — enforced by `validate-data`; large clips should be `url:` or
+  `youtube:`).
+- For `url:` refs: must be `https://`, scheme-validated only — no liveness
+  check in CI (too flaky).
+- For `youtube:` refs: video ID must match `^[A-Za-z0-9_-]{8,24}$` (generous
+  range, Google may extend beyond 11 chars).
 
 ### Per-locale media
 
@@ -506,10 +511,64 @@ Overlay can replace the media array:
   content:
     prompt:
       media:
-        - { kind: audio, ref: 'media:audio/de/q-podcast-intro-clip.ogg' }
+        - { kind: audio, ref: 'local:audio/de/q-podcast-intro-clip.ogg' }
 ```
 
 If no localized media is provided, the canonical media is served.
+
+## Boards
+
+A **board** is a 2D grid (categories × point values) used by grid-based
+gamemodes like Jeopardy/Grid Quiz. Boards live under `gamemodes/<id>/boards/`
+and reference packs, filters, or explicit question IDs per category.
+
+```yaml
+# gamemodes/grid_quiz/boards/school.yaml
+# yaml-language-server: $schema=../../../schemas/board.schema.json
+
+id: board_school
+title: School Quiz
+description: A 4×4 board covering capitals, flags, chemistry, math, and physics.
+points: [100, 200, 300, 500]
+difficulty_map:
+  100: [difficulty:easy]
+  200: [difficulty:general]
+  300: [difficulty:niche]
+  500: [difficulty:general, difficulty:niche]
+categories:
+  - name: Capitals
+    filter:
+      tags_any: [subject:capitals]
+  - name: Flags
+    filter:
+      tags_any: [subject:flags]
+  - name: Chemistry
+    question_ids:
+      100: q_atom_nucleus
+      200: q_acid_base
+      300: q_chemical_oxygen_ozone
+      500: q_periodic_helium
+  - name: Math & Physics
+    pack_ref: pack_school_trivia
+    filter:
+      tags_any: [subject:math, subject:physics]
+```
+
+Resolution per `(category, point)` slot (first match wins):
+
+1. **`question_ids[point]`** — explicit override, always wins.
+2. **`pack_ref`** — resolved pack's questions, AND-ed with `filter` and
+   `difficulty_map`.
+3. **`filter`** — dynamic pool query, AND-ed with `difficulty_map`.
+
+`difficulty_map` maps each point value to a set of tags — the board builder
+filters candidates to questions that carry at least one of those tags. This
+lets a Jeopardy-style board ramp difficulty without each category repeating
+tag filters.
+
+The board builder deduplicates across the whole board (no question appears
+twice) and shuffles with a deterministic seed (`mulberry32` PRNG) so boards
+are reproducible given the same seed.
 
 ## Packs
 
@@ -682,9 +741,10 @@ reading diffs/logs; it is **not authoritative** and carries no semantic meaning
 the loader can rely on.
 
 ```
-q_<descriptive_slug>                 e.g. q_capital_france_paris
-pack_<slug>                          e.g. pack_britpop
-<slug>                               e.g. battle_royale  (gamemodes, bare slug)
+q_<descriptive_slug>                 e.g. q_capital_france
+pack_<slug>                          e.g. pack_school_trivia
+board_<slug>                         e.g. board_school
+<slug>                               e.g. grid_quiz  (gamemodes, bare slug)
 ```
 
 Rules:
@@ -732,39 +792,59 @@ Written in **valibot**. Single source of truth → both:
 
 ### Validation points
 
-| Where                              | What                                                           |
-| ---------------------------------- | -------------------------------------------------------------- |
-| Editor (developer/contributor)     | YAML LSP reads `schemas/*.json` → autocomplete + inline errors |
-| CI (`pnpm validate-data`)          | Loads every YAML, runs valibot, fails build on errors          |
-| Runtime (server start / pack load) | Same valibot schemas, fail loudly with question ID context     |
+| Where                              | What                                                                | Status |
+| ---------------------------------- | ------------------------------------------------------------------- | ------ |
+| Editor (developer/contributor)     | YAML LSP reads `schemas/*.json` → autocomplete + inline errors      | ✅     |
+| CI (`pnpm validate-data`)          | Loads every YAML, runs valibot + cross-file checks, fails on errors | ✅     |
+| Runtime (server start / pack load) | Same valibot schemas, fail loudly with question ID context          | ✅     |
 
 ### What CI must catch
 
-- Schema violations.
-- Duplicate IDs (across all questions/packs).
-- Dangling pack references: `questions`, `includes`, `replaced_by` pointing to
+Implemented checks are marked ✅; planned but not yet built are ○.
+
+- ✅ Schema violations (valibot `safeParse` on every YAML file).
+- ✅ Duplicate IDs (across all questions/packs).
+- ✅ Dangling pack references: `questions`, `includes`, `replaced_by` pointing to
   nonexistent IDs.
-- Packs that still reference deprecated questions (warning, not error).
-- Pack `includes` cycles.
-- Missing media files referenced by `media:` refs; `url:`/`youtube:` are
+- ○ Packs that still reference deprecated questions (warning, not error).
+- ✅ Pack `includes` cycles (DFS cycle detection).
+- ✅ Missing media files referenced by `local:` refs; `url:`/`youtube:` are
   format-checked only.
-- `media.kind` disagrees with file extension for local refs.
-- Local media exceeds size cap.
-- `multiple_choice` variant with zero `correct: true` choices.
-- `order` items with duplicate or non-contiguous `position` values.
-- Translation overlays referencing nonexistent question or overlay-setting
-  non-translatable fields (`correct`, `position`, numeric `answer`, variant
-  config like `tolerance`/`min`/`max`).
-- Tag registry: entry in wrong file for its category prefix.
-- Tags used by questions/packs that don't exist in the registry.
-- License identifiers outside the SPDX allowlist.
-- Pack license incompatible with included questions' licenses (warning).
+- ✅ `media.kind` disagrees with file extension for local refs (video-as-audio
+  allowed).
+- ✅ Local media exceeds size cap (100 KB images, 1 MB audio/video).
+- ✅ `multiple_choice` variant with zero `correct: true` choices (valibot
+  `check` on choices array).
+- ✅ `order` items with duplicate or non-contiguous `position` values (valibot
+  `check` on items array).
+- ✅ Translation overlays referencing nonexistent question IDs.
+- ✅ Tag refs on questions/packs that don't exist in the registry.
+- ✅ License identifiers outside the SPDX allowlist (valibot `picklist`).
+- ○ Pack license incompatible with included questions' licenses (warning).
+- ○ Translation overlays setting non-translatable fields (`correct`, `position`,
+  numeric `answer`, variant config) — currently blocked by strict-object
+  schema but not explicitly checked after merge.
 
 ## Runtime integration (SvelteKit remote functions)
 
 Questions and packs are static-ish — load at server startup, validate, hold in
-memory. A self-hosted instance can reload via signal/endpoint when new content
+memory. A self-hosted instance can reload via `reloadDataset()` when new content
 is dropped in.
+
+The data layer is **implemented** (`src/lib/data/`):
+
+- `loadDataset()` — walks `data/`, parses every YAML, validates with valibot,
+  builds `Registry` maps keyed by ID.
+- `runCrossFileChecks()` — dangling refs, tag refs, overlay refs, pack cycles,
+  media files.
+- `queryPool(filter)` — filters the question pool by pack filter semantics.
+- `buildBoard(ds, board, opts)` — resolves a board definition into a 2D grid
+  of question IDs.
+- `store.svelte.ts` — Svelte 5 reactive store (`initDataset`, `getDataset`,
+  `reloadDataset`, `isDatasetLoading`) wrapping the loader.
+
+The **SvelteKit remote-function wiring is not yet built**. The planned
+architecture:
 
 Game sessions use **`query.live`** to stream state to players:
 
@@ -807,8 +887,9 @@ These were debated; the design above reflects the chosen path.
 - **Pack composition via `includes`** instead of forcing authors to copy
   question IDs across packs.
 - **Tag registry split by category file**, not one giant registry.
-- **Media refs use tag-style `prefix:value`** (`media:`, `url:`, `youtube:`) for
-  consistency with tags.
+- **Media refs use tag-style `prefix:value`** (`local:`, `url:`, `youtube:`) for
+  consistency with tags. The local prefix is `local:` (was `media:` in early
+  design — renamed to avoid confusion with the `data/media/` directory).
 - **License is SPDX from a small allowlist**, validated by schema.
 - **No file-level translation completeness output fields** — the loader computes
   that at runtime; nothing leaks back into YAML.
@@ -819,29 +900,50 @@ These were debated; the design above reflects the chosen path.
    pipeline? Start with same repo under `data/packs/community/`.
 2. **Versioning** — should questions carry a `revision` field for "this answer
    was updated"? Probably yes once we hit the first real correction.
-3. **RTL languages** (Arabic, Hebrew) — schema is fine, UI must support from day
-   one to avoid retrofit pain.
-4. **Editor UI** (web-based quiz builder) — out of scope for first pass, but the
-   schema must be friendly to it. Valibot schemas double as form validation via
-   Superforms-equivalent.
-5. **Duplicate-fact detection** — two differently-worded questions for the same
-   fact can co-occur in a pack. Optional future `fact_id` field for loader-level
-   dedup; defer until it actually bites.
-6. **Loader section** — merge semantics, filter operator precedence, shuffle
-   determinism, and pool-build algorithm are referenced throughout but not yet
-   specified. To be added when we start implementing the loader.
+3. **RTL languages** (Arabic, Hebrew) — schema is fine, UI must support from
+   day one to avoid retrofit pain.
+4. **Editor UI** (web-based quiz builder) — out of scope for first pass, but
+   the schema must be friendly to it. Valibot schemas double as form
+   validation via Superforms-equivalent.
+5. **Duplicate-fact detection** — two differently-worded questions for the
+   same fact can co-occur in a pack. Optional future `fact_id` field for
+   loader-level dedup; defer until it actually bites.
+6. **Overlay merge semantics** — the loader currently replaces overlay fields
+   wholesale (no deep merge of variant sub-objects). Is this sufficient, or do
+   we need partial merge (e.g. override one choice text without restating the
+   whole choices array)?
+7. **`pnpm new-question` script** — scaffolds a new question entry with a
+   unique slug, required fields, and correct tag categories. Not yet built.
+8. **Gamemode schema export** — `gamemode.schema.json` is not in the
+   `gen-schemas` targets yet; should it be? (Gamemodes are code + manifest,
+   less editor-driven than questions/packs.)
 
-## Implementation order (suggested)
+## Implementation order
 
-1. Define valibot schemas in `src/lib/schemas/` (question, pack, gamemode,
-   overlay variants).
-2. JSON Schema export script: `pnpm gen:schemas`.
-3. Data loader in `src/lib/data/` (parse YAML → validate → merge overlays →
-   build indexes).
-4. CI workflow: `pnpm check && pnpm lint && pnpm test && pnpm validate-data`.
-5. Example dataset: 1 canonical question file (~10 Qs), 1 German overlay, 1
-   pack, 1 lang-locked question — proves the pipeline end to end.
-6. First gamemode (`classic`) using remote functions + live query for room
-   state. Wires data layer to gameplay.
-7. Second gamemode (`battle_royale` or `music_quiz`) to validate the
-   gamemode-agnostic claim.
+Steps 1–9 are **done**. Remaining steps are next up.
+
+1. ✅ Define valibot schemas in `src/lib/schemas/` (question, question-overlay,
+   pack, pack-overlay, gamemode, board, tag, media, common).
+2. ✅ JSON Schema export script: `pnpm gen:schemas` → 16 schemas committed in
+   `schemas/`.
+3. ✅ Data loader in `src/lib/data/` (parse YAML → validate → build indexes).
+   Cross-file validation (`runCrossFileChecks`): duplicate IDs, dangling
+   refs, tag refs, overlay refs, pack cycles, media existence/kind/size.
+4. ✅ CI scripts: `pnpm validate-data` and `pnpm gen:schemas`.
+5. ✅ Example dataset: 5 canonical question files (~20 Qs across text/numeric/
+   order kinds, with `local:` media refs), German overlays, 1 pack, 6 tag
+   registries (3 populated), 4 flag SVGs.
+6. ✅ Pool query engine (`src/lib/data/query.ts`) — `queryPool(filter)` with
+   ANDed `kinds`, `tags_all`, `tags_any`, `tags_none`, `variants_any`, `limit`.
+7. ✅ Board builder (`src/lib/data/board.ts`) — resolves board categories via
+   explicit IDs, pack refs, or filter queries; deduplicates; deterministic
+   shuffle via `mulberry32` PRNG.
+8. ✅ First gamemode: `grid_quiz` (Jeopardy-style) with manifest + board YAML.
+   No runtime wiring yet (SvelteKit remote functions not connected).
+9. ✅ Schema tests + loader tests: 53 tests across 8 files, all passing.
+10. ○ SvelteKit runtime wiring: `query.live` / `command` / `form` for room
+    state, player answers, scoring — data layer is decoupled and ready.
+11. ○ Second gamemode (`battle_royale` or `music_quiz`) to validate the
+    gamemode-agnostic claim.
+12. ○ `pnpm new-question` scaffolding script.
+13. ○ Deprecated-question warnings in `validate-data`.

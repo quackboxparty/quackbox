@@ -3,22 +3,22 @@
 	"items": {
 		"type": "object",
 		"properties": {
-			"id": {
-				"type": "string",
-				"pattern": "^warning:[a-z0-9][a-z0-9_]*$"
-			},
 			"default_lang": {
 				"type": "string",
 				"pattern": "^[a-z]{2}(-[A-Z]{2})?$"
 			},
-			"label": {
+			"description": {
 				"type": "string"
 			},
-			"description": {
+			"id": {
+				"type": "string",
+				"pattern": "^warning:[a-z0-9][a-z0-9_]*$"
+			},
+			"label": {
 				"type": "string"
 			}
 		},
-		"required": ["id", "default_lang", "label"],
+		"required": ["default_lang", "id", "label"],
 		"additionalProperties": false
 	},
 	"$schema": "http://json-schema.org/draft-07/schema#"

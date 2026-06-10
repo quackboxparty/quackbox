@@ -1,4 +1,4 @@
-[data-theme="chalkboard"] {
+[data-theme='chalkboard'] {
 	/* ── Colors ── */
 	--color-primary: #f0e6c8;
 	--color-primary-hover: #e0d4aa;
@@ -17,6 +17,13 @@
 	--bg-surface-elevated: #3d5a3e;
 	--bg-image: none;
 	--bg-overlay: rgba(45, 74, 46, 0.6);
+
+	/* ── Decorative overlay — chalk smudge ── */
+	--bg-pattern:
+		radial-gradient(ellipse at 25% 40%, rgba(240, 230, 200, 0.12) 0%, transparent 50%),
+		radial-gradient(ellipse at 75% 20%, rgba(240, 230, 200, 0.08) 0%, transparent 40%),
+		radial-gradient(ellipse at 50% 80%, rgba(240, 230, 200, 0.06) 0%, transparent 45%);
+	--bg-pattern-opacity: 1;
 
 	/* ── Typography ── */
 	--font-heading: 'Kalam', cursive;

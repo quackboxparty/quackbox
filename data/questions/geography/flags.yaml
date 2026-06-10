@@ -32,11 +32,7 @@
     prompt:
       text: 'Which country does this flag belong to?'
       media:
-        - {
-            kind: image,
-            ref: 'local:img/flags/ca.svg',
-            alt: 'flag — red with a maple leaf'
-          }
+        - { kind: image, ref: 'local:img/flags/ca.svg', alt: 'flag — red with a maple leaf' }
     answer: Canada
     explanation: 'The red maple leaf was adopted in 1965 after years of debate about what to feature on the flag.'
     variants:
@@ -84,11 +80,7 @@
     prompt:
       text: 'Which country has this flag?'
       media:
-        - {
-            kind: image,
-            ref: 'local:img/flags/ma.svg',
-            alt: 'flag — red with a green pentagram'
-          }
+        - { kind: image, ref: 'local:img/flags/ma.svg', alt: 'flag — red with a green pentagram' }
     answer: Morocco
     explanation: 'The red background represents the Alaouite dynasty, while the green seal represents Islam.'
     variants:

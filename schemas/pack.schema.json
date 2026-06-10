@@ -1,51 +1,30 @@
 {
 	"type": "object",
 	"properties": {
-		"id": {
-			"type": "string",
-			"pattern": "^pack_[a-z0-9][a-z0-9_]*$"
-		},
-		"title": {
-			"type": "string"
-		},
-		"description": {
-			"type": "string"
-		},
 		"author": {
-			"type": "string"
-		},
-		"license": {
-			"enum": ["CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0", "CC-BY-NC-4.0", "CC-BY-ND-4.0", "MIT"],
 			"type": "string"
 		},
 		"default_lang": {
 			"type": "string",
 			"pattern": "^[a-z]{2}(-[A-Z]{2})?$"
 		},
-		"recommended_gamemodes": {
-			"type": "array",
-			"items": {
-				"type": "string",
-				"pattern": "^[a-z0-9][a-z0-9_]*$"
-			}
-		},
-		"includes": {
-			"type": "array",
-			"items": {
-				"type": "string",
-				"pattern": "^pack_[a-z0-9][a-z0-9_]*$"
-			}
-		},
-		"questions": {
-			"type": "array",
-			"items": {
-				"type": "string",
-				"pattern": "^q_[a-z0-9][a-z0-9_]*$"
-			}
+		"description": {
+			"type": "string"
 		},
 		"filter": {
 			"type": "object",
 			"properties": {
+				"kinds": {
+					"type": "array",
+					"items": {
+						"enum": ["text", "numeric", "order"],
+						"type": "string"
+					}
+				},
+				"limit": {
+					"type": "integer",
+					"minimum": 1
+				},
 				"tags_all": {
 					"type": "array",
 					"items": {
@@ -67,27 +46,48 @@
 						"pattern": "^(subject|difficulty|audience|region|format|warning):[a-z0-9][a-z0-9_]*$"
 					}
 				},
-				"kinds": {
-					"type": "array",
-					"items": {
-						"enum": ["text", "numeric", "order"],
-						"type": "string"
-					}
-				},
 				"variants_any": {
 					"type": "array",
 					"items": {
 						"enum": ["multiple_choice", "true_false", "open", "numeric_input", "range"],
 						"type": "string"
 					}
-				},
-				"limit": {
-					"type": "integer",
-					"minimum": 1
 				}
 			},
 			"required": [],
 			"additionalProperties": false
+		},
+		"id": {
+			"type": "string",
+			"pattern": "^pack_[a-z0-9][a-z0-9_]*$"
+		},
+		"includes": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"pattern": "^pack_[a-z0-9][a-z0-9_]*$"
+			}
+		},
+		"license": {
+			"enum": ["CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0", "CC-BY-NC-4.0", "CC-BY-ND-4.0", "MIT"],
+			"type": "string"
+		},
+		"questions": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"pattern": "^q_[a-z0-9][a-z0-9_]*$"
+			}
+		},
+		"recommended_gamemodes": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"pattern": "^[a-z0-9][a-z0-9_]*$"
+			}
+		},
+		"title": {
+			"type": "string"
 		}
 	},
 	"required": ["id", "title"],

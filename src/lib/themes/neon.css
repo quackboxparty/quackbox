@@ -1,4 +1,4 @@
-[data-theme="neon"] {
+[data-theme='neon'] {
 	/* ── Colors ── */
 	--color-primary: #ff2d95;
 	--color-primary-hover: #e0247a;
@@ -17,6 +17,16 @@
 	--bg-surface-elevated: #1a1a3a;
 	--bg-image: none;
 	--bg-overlay: rgba(10, 10, 26, 0.7);
+
+	/* ── Decorative overlay — CRT scanlines ── */
+	--bg-pattern: repeating-linear-gradient(
+		0deg,
+		transparent,
+		transparent 1px,
+		rgba(0, 0, 0, 0.3) 1px,
+		rgba(0, 0, 0, 0.3) 3px
+	);
+	--bg-pattern-opacity: 1;
 
 	/* ── Typography ── */
 	--font-heading: 'Orbitron', sans-serif;
@@ -39,8 +49,12 @@
 
 	/* ── Shadows — neon glow ── */
 	--shadow-sm: 0 0 6px rgba(255, 45, 149, 0.4), 0 0 12px rgba(255, 45, 149, 0.2);
-	--shadow-md: 0 0 8px rgba(255, 45, 149, 0.5), 0 0 20px rgba(255, 45, 149, 0.3), 0 0 40px rgba(255, 45, 149, 0.1);
-	--shadow-lg: 0 0 10px rgba(255, 45, 149, 0.6), 0 0 30px rgba(255, 45, 149, 0.4), 0 0 60px rgba(255, 45, 149, 0.15);
+	--shadow-md:
+		0 0 8px rgba(255, 45, 149, 0.5), 0 0 20px rgba(255, 45, 149, 0.3),
+		0 0 40px rgba(255, 45, 149, 0.1);
+	--shadow-lg:
+		0 0 10px rgba(255, 45, 149, 0.6), 0 0 30px rgba(255, 45, 149, 0.4),
+		0 0 60px rgba(255, 45, 149, 0.15);
 
 	/* ── Motion ── */
 	--duration-fast: 80ms;
@@ -53,5 +67,6 @@
 	--float-drift: 25deg;
 
 	/* ── Focus ring ── */
-	--focus-ring: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-secondary), 0 0 12px var(--color-secondary);
+	--focus-ring:
+		0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-secondary), 0 0 12px var(--color-secondary);
 }

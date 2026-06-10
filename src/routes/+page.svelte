@@ -50,8 +50,13 @@
 			<span class="swatch" style="background: var(--color-primary)"></span> primary
 			<span class="swatch" style="background: var(--color-secondary)"></span> secondary
 			<span class="swatch" style="background: var(--color-accent)"></span> accent
-			<span class="swatch" style="background: var(--color-correct); border-color: var(--color-correct)"></span> correct
-			<span class="swatch" style="background: var(--color-wrong); border-color: var(--color-wrong)"></span> wrong
+			<span
+				class="swatch"
+				style="background: var(--color-correct); border-color: var(--color-correct)"
+			></span>
+			correct
+			<span class="swatch" style="background: var(--color-wrong); border-color: var(--color-wrong)"
+			></span> wrong
 		</div>
 	</section>
 

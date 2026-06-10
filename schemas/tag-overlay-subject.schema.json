@@ -3,14 +3,14 @@
 	"items": {
 		"type": "object",
 		"properties": {
+			"description": {
+				"type": "string"
+			},
 			"id": {
 				"type": "string",
 				"pattern": "^subject:[a-z0-9][a-z0-9_]*$"
 			},
 			"label": {
-				"type": "string"
-			},
-			"description": {
 				"type": "string"
 			}
 		},

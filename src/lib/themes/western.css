@@ -1,4 +1,4 @@
-[data-theme="western"] {
+[data-theme='western'] {
 	/* ── Colors ── */
 	--color-primary: #c07830;
 	--color-primary-hover: #a86420;
@@ -15,8 +15,18 @@
 	--bg-primary: #1a1008;
 	--bg-surface: #2a1a0e;
 	--bg-surface-elevated: #382414;
-	--bg-image: url('/themes/western/leather.svg');
+	--bg-image: none;
 	--bg-overlay: rgba(26, 16, 8, 0.6);
+
+	/* ── Decorative overlay ── */
+	--bg-pattern: repeating-linear-gradient(
+		0deg,
+		transparent,
+		transparent 4px,
+		rgba(139, 94, 60, 0.15) 4px,
+		rgba(139, 94, 60, 0.15) 6px
+	);
+	--bg-pattern-opacity: 1;
 
 	/* ── Typography ── */
 	--font-heading: 'Rye', serif;

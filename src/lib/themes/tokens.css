@@ -26,7 +26,6 @@
 	--bg-surface: #ffffff;
 	--bg-surface-elevated: #ffffff;
 	--bg-image: none;
-	--bg-overlay: rgba(0, 0, 0, 0.4);
 
 	/* ── Typography ── */
 	--font-heading: 'Inter', system-ui, sans-serif;
@@ -73,4 +72,9 @@
 
 	/* ── Focus ring ── */
 	--focus-ring: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-primary);
+
+	/* ── Decorative overlay — theme-specific pseudo-element pattern ── */
+	--bg-overlay: rgba(0, 0, 0, 0.4);
+	--bg-pattern: none;
+	--bg-pattern-opacity: 0;
 }

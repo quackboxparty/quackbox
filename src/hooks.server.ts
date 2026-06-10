@@ -4,7 +4,7 @@ import { getTextDirection } from '$lib/paraglide/runtime';
 import { paraglideMiddleware } from '$lib/paraglide/server';
 import { initDataset } from '$lib/data/store.svelte';
 
-initDataset().catch((e) => {
+initDataset().orTee((e) => {
 	console.error('failed to load dataset:', e);
 	process.exit(1);
 });

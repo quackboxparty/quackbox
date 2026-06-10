@@ -12,12 +12,34 @@ html {
 	background: var(--bg-primary);
 	background-image: var(--bg-image);
 	background-size: cover;
+	transition:
+		background-color var(--duration-slow) var(--easing),
+		color var(--duration-slow) var(--easing);
 }
 
 body {
 	min-height: 100vh;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
+	color: var(--color-text);
+	font-family: var(--font-body);
+	font-size: calc(1rem * var(--font-scale));
+	line-height: var(--line-height);
+	transition:
+		color var(--duration-slow) var(--easing),
+		font-family var(--duration-slow) var(--easing);
+}
+
+/* Decorative pattern overlay via body::before */
+body::before {
+	content: '';
+	position: fixed;
+	inset: 0;
+	background: var(--bg-pattern);
+	opacity: var(--bg-pattern-opacity);
+	pointer-events: none;
+	z-index: 0;
+	transition: opacity var(--duration-slow) var(--easing);
 }
 
 img,

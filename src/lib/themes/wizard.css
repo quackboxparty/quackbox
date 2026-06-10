@@ -1,4 +1,4 @@
-[data-theme="wizard"] {
+[data-theme='wizard'] {
 	/* ── Colors ── */
 	--color-primary: #9b6dff;
 	--color-primary-hover: #8555e8;
@@ -53,5 +53,6 @@
 	--float-drift: 22deg;
 
 	/* ── Focus ring ── */
-	--focus-ring: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-accent), 0 0 12px var(--color-accent);
+	--focus-ring:
+		0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-accent), 0 0 12px var(--color-accent);
 }

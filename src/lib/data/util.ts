@@ -6,53 +6,42 @@ import { parse as parseYaml } from 'yaml';
 import type { LoadIssue } from './load';
 
 export function parse<Schema extends v.GenericSchema>(
-  file: string,
-  schema: Schema,
+	file: string,
+	schema: Schema
 ): ResultAsync<v.InferOutput<Schema>, LoadIssue[]> {
-  return readYaml(file)
-    .mapErr((e) => [e])
-    .andThen((raw) => {
-      const result = v.safeParse(schema, raw);
-      return result.success
-        ? ok(result.output)
-        : err(mapIssues(file, result.issues));
-    });
+	return readYaml(file)
+		.mapErr((e) => [e])
+		.andThen((raw) => {
+			const result = v.safeParse(schema, raw);
+			return result.success ? ok(result.output) : err(mapIssues(file, result.issues));
+		});
 }
 
-export function readYaml(
-  file: string,
-): ResultAsync<unknown, LoadIssue> {
-  return ResultAsync.fromPromise(
-    readFile(file, 'utf8'),
-    (error) => {
-      return { file, message: `failed to parse YAML: ${(error as Error).message}` };
-    }
-  ).andThen((text) => {
-    try {
-      return ok(parseYaml(text));
-    } catch (error) {
-      return err({ file, message: `invalid YAML: ${(error as Error).message}` });
-    }
-  });
+export function readYaml(file: string): ResultAsync<unknown, LoadIssue> {
+	return ResultAsync.fromPromise(readFile(file, 'utf8'), (error) => {
+		return { file, message: `failed to parse YAML: ${(error as Error).message}` };
+	}).andThen((text) => {
+		try {
+			return ok(parseYaml(text));
+		} catch (error) {
+			return err({ file, message: `invalid YAML: ${(error as Error).message}` });
+		}
+	});
 }
 
-function mapIssues(
-  file: string,
-  issues: v.BaseIssue<unknown>[],
-): LoadIssue[] {
-  return issues.map((issue) => ({ file, message: issue.message, path: formatIssuePath(issue) }));
+function mapIssues(file: string, issues: v.BaseIssue<unknown>[]): LoadIssue[] {
+	return issues.map((issue) => ({ file, message: issue.message, path: formatIssuePath(issue) }));
 }
 
 function formatIssuePath(issue: v.BaseIssue<unknown>): string {
-  if (!issue.path) return '';
-  return issue.path
-    .map((p) => {
-      const key = (p as { key?: unknown }).key;
-      if (typeof key === 'number') return `[${key}]`;
-      if (typeof key === 'string') return `.${key}`;
-      return '';
-    })
-    .join('')
-    .replace(/^\./, '');
+	if (!issue.path) return '';
+	return issue.path
+		.map((p) => {
+			const key = (p as { key?: unknown }).key;
+			if (typeof key === 'number') return `[${key}]`;
+			if (typeof key === 'string') return `.${key}`;
+			return '';
+		})
+		.join('')
+		.replace(/^\./, '');
 }
-
