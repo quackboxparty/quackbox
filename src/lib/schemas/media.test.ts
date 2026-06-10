@@ -1,54 +1,68 @@
+import { decodeStrict } from '$lib/schemas/decode';
 import { Media, MediaRef } from '$lib/schemas/media';
-import * as v from 'valibot';
 import { describe, expect, it } from 'vitest';
+
+const decode = decodeStrict;
 
 describe('media', () => {
 	it('accepts valid media refs', () => {
-		expect(v.safeParse(MediaRef, 'local:img/flag.svg').success).toBe(true);
-		expect(v.safeParse(MediaRef, 'url:https://example.com/clip.mp3').success).toBe(true);
-		expect(v.safeParse(MediaRef, 'youtube:abcDEF12345').success).toBe(true);
-		expect(v.safeParse(MediaRef, 'youtube:abcDEF12345?start=10&end=18').success).toBe(true);
+		expect(decode(MediaRef)('local:img/flag.svg')).toBe('local:img/flag.svg');
+		expect(decode(MediaRef)('url:https://example.com/clip.mp3')).toBe(
+			'url:https://example.com/clip.mp3'
+		);
+		expect(decode(MediaRef)('youtube:abcDEF12345')).toBe('youtube:abcDEF12345');
+		expect(decode(MediaRef)('youtube:abcDEF12345?start=10&end=18')).toBe(
+			'youtube:abcDEF12345?start=10&end=18'
+		);
 	});
 
 	it('rejects invalid media refs', () => {
-		expect(v.safeParse(MediaRef, 'local:/abs/path.png').success).toBe(false); // leading /
-		expect(v.safeParse(MediaRef, 'local:../../../etc/passwd').success).toBe(false); // path traversal
-		expect(v.safeParse(MediaRef, 'url:http://insecure.com').success).toBe(false); // http
-		expect(v.safeParse(MediaRef, 'ftp://x.com').success).toBe(false);
+		expect(() => decode(MediaRef)('local:/abs/path.png')).toThrow(); // leading /
+		expect(() => decode(MediaRef)('local:../../../etc/passwd')).toThrow(); // path traversal
+		expect(() => decode(MediaRef)('url:http://insecure.com')).toThrow(); // http
+		expect(() => decode(MediaRef)('ftp://x.com')).toThrow();
 	});
 
 	it('accepts valid media objects', () => {
-		expect(v.safeParse(Media, { kind: 'image', ref: 'local:img/a.png' }).success).toBe(true);
+		expect(decode(Media)({ kind: 'image', ref: 'local:img/a.png' })).toEqual({
+			kind: 'image',
+			ref: 'local:img/a.png'
+		});
 		expect(
-			v.safeParse(Media, {
+			decode(Media)({
 				end_ms: 10000,
 				kind: 'audio',
 				ref: 'local:audio/clip.ogg',
 				start_ms: 2000
-			}).success
-		).toBe(true);
+			})
+		).toEqual({ end_ms: 10000, kind: 'audio', ref: 'local:audio/clip.ogg', start_ms: 2000 });
 	});
 
 	it('rejects media with end_ms < start_ms', () => {
-		const result = v.safeParse(Media, {
-			end_ms: 1000,
-			kind: 'audio',
-			ref: 'url:https://example.com/x.mp3',
-			start_ms: 10000
-		});
-		expect(result.success).toBe(false);
+		expect(() =>
+			decode(Media)({
+				end_ms: 1000,
+				kind: 'audio',
+				ref: 'url:https://example.com/x.mp3',
+				start_ms: 10000
+			})
+		).toThrow();
 	});
 
 	it('rejects start_ms/end_ms on image kind', () => {
-		const result = v.safeParse(Media, {
-			kind: 'image',
-			ref: 'local:img/a.png',
-			start_ms: 0
-		});
-		expect(result.success).toBe(false);
+		expect(() =>
+			decode(Media)({
+				kind: 'image',
+				ref: 'local:img/a.png',
+				start_ms: 0
+			})
+		).toThrow();
 	});
 
 	it('accepts kind: audio with youtube ref', () => {
-		expect(v.safeParse(Media, { kind: 'audio', ref: 'youtube:aB3dE5fGh12' }).success).toBe(true);
+		expect(decode(Media)({ kind: 'audio', ref: 'youtube:aB3dE5fGh12' })).toEqual({
+			kind: 'audio',
+			ref: 'youtube:aB3dE5fGh12'
+		});
 	});
 });

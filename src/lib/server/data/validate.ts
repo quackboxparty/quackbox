@@ -1,8 +1,15 @@
-import { stat } from 'node:fs/promises';
-import { extname, join } from 'node:path';
+import * as Effect from 'effect/Effect';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 
-import type { Question } from '../schemas/question.ts';
-import type { LoadedDataset, LoadIssue } from './load.ts';
+import type { Question } from '../../schemas/index.ts';
+
+import type { LoadedDataset, LoadIssue } from './shared.ts';
+
+const KB = 1024;
+const MB = 1024 * KB;
+const IMAGE_CAP = 100 * KB;
+const MEDIA_CAP = 1 * MB;
 
 const EXT_KIND_MAP: Record<string, 'audio' | 'image' | 'video'> = {
 	'.avif': 'image',
@@ -23,26 +30,35 @@ const EXT_KIND_MAP: Record<string, 'audio' | 'image' | 'video'> = {
 	'.webp': 'image'
 };
 
-export async function runCrossFileChecks(ds: LoadedDataset): Promise<LoadIssue[]> {
-	const issues: LoadIssue[] = [];
+/**
+ * Cross-file validation that can't be expressed inside a single schema —
+ * tag/pack/question refs and media file presence. Returns the issues
+ * without failing the effect (we accumulate by design).
+ */
+export const runCrossFileChecks = (
+	ds: LoadedDataset
+): Effect.Effect<LoadIssue[], never, FileSystem.FileSystem | Path.Path> =>
+	Effect.gen(function* () {
+		const fs = yield* FileSystem.FileSystem;
+		const path = yield* Path.Path;
+		const issues: LoadIssue[] = [];
 
-	checkTagRefs(ds, issues);
-	checkRefs(ds, issues);
-	checkOverlayRefs(ds, issues);
-	checkPackCycles(ds, issues);
+		checkTagRefs(ds, issues);
+		checkRefs(ds, issues);
+		checkOverlayRefs(ds, issues);
+		checkPackCycles(ds, issues);
 
-	const mediaDir = join(ds.dataDir, 'media');
-	for (const { file, item } of ds.questions.values()) {
-		for (const m of collectQuestionMedia(item)) {
-			await checkMediaFile(m.ref, m.kind, file, mediaDir, issues);
+		const mediaDir = path.join(ds.dataDir, 'media');
+		for (const { file, item } of ds.questions.values()) {
+			for (const m of collectQuestionMedia(item)) {
+				yield* checkMediaFile(m.ref, m.kind, file, mediaDir, fs, path, issues);
+			}
 		}
-	}
-
-	return issues;
-}
+		return issues;
+	});
 
 function checkPackCycles(ds: LoadedDataset, issues: LoadIssue[]): void {
-	const packGraph = new Map<string, string[]>();
+	const packGraph = new Map<string, readonly string[]>();
 	const fileById = new Map<string, string>();
 
 	for (const { file, item } of ds.packs.values()) {
@@ -54,7 +70,7 @@ function checkPackCycles(ds: LoadedDataset, issues: LoadIssue[]): void {
 }
 
 function detectCycles(
-	packGraph: Map<string, string[]>,
+	packGraph: Map<string, readonly string[]>,
 	fileById: Map<string, string>
 ): LoadIssue[] {
 	const issues: LoadIssue[] = [];
@@ -163,46 +179,45 @@ function checkOverlayRefs(ds: LoadedDataset, issues: LoadIssue[]): void {
 	}
 }
 
-async function checkMediaFile(
+function checkMediaFile(
 	ref: string,
 	kind: 'audio' | 'image' | 'video',
 	contextFile: string,
 	mediaDir: string,
+	fs: FileSystem.FileSystem,
+	path: Path.Path,
 	issues: LoadIssue[]
-): Promise<void> {
-	if (!ref.startsWith('local:')) return;
+): Effect.Effect<void, never, FileSystem.FileSystem> {
+	if (!ref.startsWith('local:')) return Effect.void;
 	const sub = ref.slice('local:'.length);
-	const full = join(mediaDir, sub);
+	const full = path.join(mediaDir, sub);
 
-	let st;
-	try {
-		st = await stat(full);
-	} catch {
-		issues.push({ file: contextFile, message: `media file missing: ${ref}` });
-		return;
-	}
+	return Effect.gen(function* () {
+		const stat = yield* fs.stat(full).pipe(Effect.option);
+		if (stat._tag === 'None') {
+			issues.push({ file: contextFile, message: `media file missing: ${ref}` });
+			return;
+		}
+		const ext = path.extname(sub).toLowerCase();
+		const actual = EXT_KIND_MAP[ext];
+		if (!actual) {
+			issues.push({ file: contextFile, message: `unknown media extension: ${ext} (${ref})` });
+		} else {
+			const ok = actual === kind || (actual === 'video' && kind === 'audio');
+			if (!ok) {
+				issues.push({
+					file: contextFile,
+					message: `media kind mismatch: declared ${kind} but extension ${ext} is ${actual} (${ref})`
+				});
+			}
+		}
 
-	const ext = extname(sub).toLowerCase();
-	const actual = EXT_KIND_MAP[ext];
-	if (!actual) {
-		issues.push({ file: contextFile, message: `unknown media extension: ${ext} (${ref})` });
-	} else {
-		const ok = actual === kind || (actual === 'video' && kind === 'audio');
-		if (!ok) {
+		const cap = kind === 'image' ? IMAGE_CAP : MEDIA_CAP;
+		if (stat.value.size > cap) {
 			issues.push({
 				file: contextFile,
-				message: `media kind mismatch: declared ${kind} but extension ${ext} is ${actual} (${ref})`
+				message: `media file exceeds size cap (${stat.value.size}B > ${cap}B): ${ref}`
 			});
 		}
-	}
-
-	const KB = 1024;
-	const MB = 1024 * KB;
-	const cap = kind === 'image' ? 100 * KB : 1 * MB;
-	if (st.size > cap) {
-		issues.push({
-			file: contextFile,
-			message: `media file exceeds size cap (${st.size}B > ${cap}B): ${ref}`
-		});
-	}
+	});
 }

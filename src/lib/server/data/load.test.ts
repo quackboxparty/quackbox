@@ -1,14 +1,28 @@
-import { loadDataset, runCrossFileChecks } from '$lib/data/load';
+import * as Effect from 'effect/Effect';
+import * as Layer from 'effect/Layer';
+import * as NodeFileSystem from '@effect/platform-node/NodeFileSystem';
+import * as NodePath from '@effect/platform-node/NodePath';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-async function validate(files: Record<string, string>) {
+import { loadDataset, runCrossFileChecks } from './load.ts';
+import type { LoadedDataset } from './shared.ts';
+
+const Live = Layer.mergeAll(NodeFileSystem.layer, NodePath.layer);
+
+async function load(files: Record<string, string>): Promise<LoadedDataset> {
 	const root = await fixture(files);
 	try {
-		const ds = (await loadDataset({ dataDir: root }))._unsafeUnwrap();
-		ds.issues.push(...(await runCrossFileChecks(ds)));
+		const ds = await Effect.runPromise(
+			Effect.gen(function* () {
+				const ds = yield* loadDataset({ dataDir: root });
+				const cross = yield* runCrossFileChecks(ds);
+				ds.issues.push(...cross);
+				return ds;
+			}).pipe(Effect.provide(Live))
+		);
 		return ds;
 	} finally {
 		await destroy(root);
@@ -76,7 +90,7 @@ questions: [q_alpha_one]
 
 describe('happy path', () => {
 	it('loads a valid question, registry, and pack with zero issues', async () => {
-		const ds = await validate({
+		const ds = await load({
 			...VALID_REGISTRIES,
 			'packs/alpha.yaml': VALID_PACK,
 			'questions/test.yaml': VALID_QUESTION
@@ -88,14 +102,14 @@ describe('happy path', () => {
 	});
 
 	it('loads an empty data dir without errors', async () => {
-		const ds = await validate({});
+		const ds = await load({});
 		expect(ds.issues).toEqual([]);
 	});
 });
 
 describe('schema validation', () => {
 	it('catches missing variants on a text question', async () => {
-		const ds = await validate({
+		const ds = await load({
 			...VALID_REGISTRIES,
 			'questions/bad.yaml': `
 - id: q_novar
@@ -113,7 +127,7 @@ describe('schema validation', () => {
 	});
 
 	it('catches multiple_choice with no correct choice', async () => {
-		const ds = await validate({
+		const ds = await load({
 			...VALID_REGISTRIES,
 			'questions/bad.yaml': `
 - id: q_nocorrect
@@ -134,7 +148,7 @@ describe('schema validation', () => {
 	});
 
 	it('catches non-contiguous order positions', async () => {
-		const ds = await validate({
+		const ds = await load({
 			...VALID_REGISTRIES,
 			'questions/bad.yaml': `
 - id: q_jumpy
@@ -152,7 +166,7 @@ describe('schema validation', () => {
 	});
 
 	it('catches overlay with non-translatable fields', async () => {
-		const ds = await validate({
+		const ds = await load({
 			...VALID_REGISTRIES,
 			'i18n/de/questions/ok.yaml': `
 - id: q_alpha_one
@@ -171,7 +185,7 @@ describe('schema validation', () => {
 
 describe('cross-file checks', () => {
 	it('catches duplicate question ids', async () => {
-		const ds = await validate({
+		const ds = await load({
 			...VALID_REGISTRIES,
 			'questions/a.yaml': VALID_QUESTION,
 			'questions/b.yaml': VALID_QUESTION // same id q_alpha_one
@@ -180,7 +194,7 @@ describe('cross-file checks', () => {
 	});
 
 	it('catches pack referencing unknown question', async () => {
-		const ds = await validate({
+		const ds = await load({
 			...VALID_REGISTRIES,
 			'packs/ghost.yaml': `id: pack_ghost
 title: Ghost
@@ -191,7 +205,7 @@ questions: [q_does_not_exist]
 	});
 
 	it('catches pack includes unknown pack', async () => {
-		const ds = await validate({
+		const ds = await load({
 			...VALID_REGISTRIES,
 			'packs/a.yaml': `id: pack_a
 title: A
@@ -203,7 +217,7 @@ questions: []
 	});
 
 	it('catches replaced_by pointing nowhere', async () => {
-		const ds = await validate({
+		const ds = await load({
 			...VALID_REGISTRIES,
 			'questions/a.yaml': `
 - id: q_old
@@ -221,7 +235,7 @@ questions: []
 	});
 
 	it('catches question overlay referencing unknown id', async () => {
-		const ds = await validate({
+		const ds = await load({
 			...VALID_REGISTRIES,
 			'i18n/de/questions/ghost.yaml': `
 - id: q_not_real
@@ -233,7 +247,7 @@ questions: []
 	});
 
 	it('catches unknown tag on question', async () => {
-		const ds = await validate({
+		const ds = await load({
 			...VALID_REGISTRIES,
 			'questions/a.yaml': `
 - id: q_taggy
@@ -250,7 +264,7 @@ questions: []
 	});
 
 	it('catches pack includes cycle', async () => {
-		const ds = await validate({
+		const ds = await load({
 			...VALID_REGISTRIES,
 			'packs/a.yaml': `id: pack_a
 title: A
@@ -269,7 +283,7 @@ questions: []
 
 describe('media checks', () => {
 	it('catches missing media file', async () => {
-		const ds = await validate({
+		const ds = await load({
 			...VALID_REGISTRIES,
 			'questions/a.yaml': `
 - id: q_pic
@@ -307,8 +321,14 @@ describe('media checks', () => {
 `
 		});
 		try {
-			const ds = (await loadDataset({ dataDir: root }))._unsafeUnwrap();
-			ds.issues.push(...(await runCrossFileChecks(ds)));
+			const ds = await Effect.runPromise(
+				Effect.gen(function* () {
+					const ds = yield* loadDataset({ dataDir: root });
+					const cross = yield* runCrossFileChecks(ds);
+					ds.issues.push(...cross);
+					return ds;
+				}).pipe(Effect.provide(Live))
+			);
 			expect(ds.issues.some((i) => i.message.includes('kind mismatch'))).toBe(true);
 		} finally {
 			await destroy(root);
@@ -334,8 +354,14 @@ describe('media checks', () => {
 `
 		});
 		try {
-			const ds = (await loadDataset({ dataDir: root }))._unsafeUnwrap();
-			ds.issues.push(...(await runCrossFileChecks(ds)));
+			const ds = await Effect.runPromise(
+				Effect.gen(function* () {
+					const ds = yield* loadDataset({ dataDir: root });
+					const cross = yield* runCrossFileChecks(ds);
+					ds.issues.push(...cross);
+					return ds;
+				}).pipe(Effect.provide(Live))
+			);
 			expect(ds.issues.some((i) => i.message.includes('media'))).toBe(false);
 		} finally {
 			await destroy(root);
@@ -361,8 +387,14 @@ describe('media checks', () => {
 `
 		});
 		try {
-			const ds = (await loadDataset({ dataDir: root }))._unsafeUnwrap();
-			ds.issues.push(...(await runCrossFileChecks(ds)));
+			const ds = await Effect.runPromise(
+				Effect.gen(function* () {
+					const ds = yield* loadDataset({ dataDir: root });
+					const cross = yield* runCrossFileChecks(ds);
+					ds.issues.push(...cross);
+					return ds;
+				}).pipe(Effect.provide(Live))
+			);
 			expect(ds.issues.some((i) => i.message.includes('size cap'))).toBe(true);
 		} finally {
 			await destroy(root);

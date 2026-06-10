@@ -1,4 +1,4 @@
-import * as v from 'valibot';
+import { Schema } from 'effect';
 
 import { LocalId, QuestionId } from './common.ts';
 import { MediaList } from './media.ts';
@@ -13,31 +13,31 @@ import { MediaList } from './media.ts';
  * - No variant config: `tolerance`, `min`, `max`, `step`, `normalize`.
  * - No `default_lang`, no tags/license/sources/lang_locked/deprecated.
  *
- * Strict objects enforce all of the above by rejecting unknown keys.
+ * Schema.Struct rejects unknown keys (strict by default in v4).
  *
  * Overlay files don't carry `kind` — they're keyed only by `id` and patch
  * whichever fields are present. Loader resolves the kind from the canonical
- * question and applies the matching shape. A single catch-all strict object
- * (all fields optional) avoids valibot disambiguation issues with all-optional
- * union branches. Kind-specific field mismatches (e.g. `unit` on a text
- * question) are silently ignored at merge-time.
+ * question and applies the matching shape. A single catch-all struct
+ * (all fields optional) avoids disambiguation issues with all-optional union
+ * branches. Kind-specific field mismatches (e.g. `unit` on a text question)
+ * are silently ignored at merge-time.
  */
 
-const ChoiceOverlay = v.strictObject({
+const ChoiceOverlay = Schema.Struct({
 	id: LocalId,
-	media: v.optional(MediaList),
-	text: v.optional(v.string())
+	media: Schema.optionalKey(MediaList),
+	text: Schema.optionalKey(Schema.String)
 });
 
-const PromptOverlay = v.strictObject({
-	media: v.optional(MediaList),
-	text: v.optional(v.string())
+const PromptOverlay = Schema.Struct({
+	media: Schema.optionalKey(MediaList),
+	text: Schema.optionalKey(Schema.String)
 });
 
-const OrderItemOverlay = v.strictObject({
+const OrderItemOverlay = Schema.Struct({
 	id: LocalId,
-	media: v.optional(MediaList),
-	text: v.optional(v.string())
+	media: Schema.optionalKey(MediaList),
+	text: Schema.optionalKey(Schema.String)
 });
 
 /**
@@ -47,22 +47,22 @@ const OrderItemOverlay = v.strictObject({
  * `tolerance`, `min`/`max`/`step`, `normalize`, `default_lang`) are
  * deliberately absent to reject them at schema level.
  */
-const ContentOverlay = v.strictObject({
-	answer: v.optional(v.string()),
-	explanation: v.optional(v.string()),
-	items: v.optional(v.array(OrderItemOverlay)),
-	prompt: v.optional(PromptOverlay),
-	unit: v.optional(v.string()),
-	variants: v.optional(
-		v.strictObject({
-			multiple_choice: v.optional(
-				v.strictObject({
-					choices: v.optional(v.array(ChoiceOverlay))
+const ContentOverlay = Schema.Struct({
+	answer: Schema.optionalKey(Schema.String),
+	explanation: Schema.optionalKey(Schema.String),
+	items: Schema.optionalKey(Schema.Array(OrderItemOverlay)),
+	prompt: Schema.optionalKey(PromptOverlay),
+	unit: Schema.optionalKey(Schema.String),
+	variants: Schema.optionalKey(
+		Schema.Struct({
+			multiple_choice: Schema.optionalKey(
+				Schema.Struct({
+					choices: Schema.optionalKey(Schema.Array(ChoiceOverlay))
 				})
 			),
-			open: v.optional(
-				v.strictObject({
-					accepted: v.optional(v.array(v.string()))
+			open: Schema.optionalKey(
+				Schema.Struct({
+					accepted: Schema.optionalKey(Schema.Array(Schema.String))
 				})
 			)
 			// true_false, numeric_input, range have no translatable fields
@@ -70,11 +70,11 @@ const ContentOverlay = v.strictObject({
 	)
 });
 
-export const QuestionOverlay = v.strictObject({
+export const QuestionOverlay = Schema.Struct({
 	content: ContentOverlay,
 	id: QuestionId
 });
-export type QuestionOverlay = v.InferOutput<typeof QuestionOverlay>;
+export type QuestionOverlay = typeof QuestionOverlay.Type;
 
-export const QuestionOverlayFile = v.array(QuestionOverlay);
-export type QuestionOverlayFile = v.InferOutput<typeof QuestionOverlayFile>;
+export const QuestionOverlayFile = Schema.Array(QuestionOverlay);
+export type QuestionOverlayFile = typeof QuestionOverlayFile.Type;

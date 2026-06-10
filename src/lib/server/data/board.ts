@@ -1,23 +1,28 @@
-import { join } from 'node:path';
+import type * as Effect from 'effect/Effect';
+import type * as FileSystem from 'effect/FileSystem';
+import { BoardFile } from '../../schemas/index.ts';
+import type { BoardCategory } from '../../schemas/index.ts';
 
-import type { LoadedDataset, LoadIssue } from './load.ts';
-import type { ResultAsync } from 'neverthrow';
-
-import { type BoardCategory, BoardFile } from '../schemas/board.ts';
+import type { LoadedDataset, LoadIssue } from './shared.ts';
 import { parse } from './util.ts';
-import { queryPool } from './query.ts';
 
 /** A resolved 2D grid — `grid[categoryIndex][pointIndex] = questionId | null`. */
-export type BoardGrid = (string | null)[][];
+export type BoardGrid = (null | string)[][];
 
 export interface BuildBoardOptions {
 	locale: string;
 	seed?: number;
 }
 
-/** Load and validate a board YAML file. Returns err with issues on failure. */
-export function loadBoard(dir: string, filename: string): ResultAsync<BoardFile, LoadIssue[]> {
-	return parse(join(dir, filename), BoardFile);
+/**
+ * Load and validate a board YAML file. The caller passes the full path —
+ * keeps `loadBoard` free of the `Path` service and matches the loader
+ * convention of taking absolute paths.
+ */
+export function loadBoard(
+	file: string
+): Effect.Effect<BoardFile, LoadIssue[], FileSystem.FileSystem> {
+	return parse(file, BoardFile);
 }
 
 /**
@@ -32,10 +37,16 @@ export function buildBoard(
 	const issues: LoadIssue[] = [];
 	const grid: BoardGrid = [];
 	const rng = mulberry32(opts.seed ?? 42);
-	const diffMap = board.difficulty_map ?? {};
+	const diffMap = board.difficulty_map
+		? Object.fromEntries(
+				Object.entries(board.difficulty_map).map(([k, v]) => [
+					k,
+					Array.isArray(v) ? v : Array.from(v)
+				])
+			)
+		: {};
 
 	const packCache = new Map<string, string[]>();
-
 	const used = new Set<string>();
 
 	for (const cat of board.categories) {
@@ -50,7 +61,9 @@ export function buildBoard(
 				continue;
 			}
 
-			const candidates = buildCandidates(cat, pointKey, ds, packCache, diffMap);
+			const candidates = Array.isArray(cat.question_ids?.[pointKey])
+				? []
+				: buildCandidates(cat, pointKey, ds, packCache, diffMap);
 			const unused = candidates.filter((id) => !used.has(id));
 			const pool = unused.length > 0 ? unused : candidates;
 
@@ -127,13 +140,10 @@ function resolvePack(
 	const ids: string[] = [];
 	const pack = ds.packs.get(packId);
 	if (!pack) return ids;
-	// includes
 	for (const incl of pack.item.includes ?? []) {
 		ids.push(...resolvePack(ds, packCache, incl));
 	}
-	// explicit questions
 	ids.push(...(pack.item.questions ?? []));
-	// pack filter query
 	if (pack.item.filter) {
 		ids.push(...queryPool(ds, pack.item.filter));
 	}
@@ -141,3 +151,7 @@ function resolvePack(
 	packCache.set(packId, unique);
 	return unique;
 }
+
+// Imported late to keep this file's bottom (effects, types) free of the
+// query engine's pure function imports.
+import { queryPool } from './query.ts';

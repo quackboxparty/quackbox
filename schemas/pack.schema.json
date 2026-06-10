@@ -1,96 +1,134 @@
 {
-	"type": "object",
-	"properties": {
-		"author": {
-			"type": "string"
-		},
-		"default_lang": {
-			"type": "string",
-			"pattern": "^[a-z]{2}(-[A-Z]{2})?$"
-		},
-		"description": {
-			"type": "string"
-		},
-		"filter": {
-			"type": "object",
-			"properties": {
-				"kinds": {
-					"type": "array",
-					"items": {
-						"enum": ["text", "numeric", "order"],
-						"type": "string"
+	"dialect": "draft-2020-12",
+	"schema": {
+		"type": "object",
+		"properties": {
+			"author": {
+				"type": "string"
+			},
+			"default_lang": {
+				"type": "string",
+				"allOf": [
+					{
+						"pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+					}
+				]
+			},
+			"description": {
+				"type": "string"
+			},
+			"filter": {
+				"type": "object",
+				"properties": {
+					"kinds": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"enum": ["text", "numeric", "order"]
+						}
+					},
+					"limit": {
+						"type": "integer",
+						"allOf": [
+							{
+								"minimum": 1
+							}
+						]
+					},
+					"tags_all": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"allOf": [
+								{
+									"pattern": "^(subject|difficulty|audience|region|format|warning):[a-z0-9][a-z0-9_]*$"
+								}
+							]
+						}
+					},
+					"tags_any": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"allOf": [
+								{
+									"pattern": "^(subject|difficulty|audience|region|format|warning):[a-z0-9][a-z0-9_]*$"
+								}
+							]
+						}
+					},
+					"tags_none": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"allOf": [
+								{
+									"pattern": "^(subject|difficulty|audience|region|format|warning):[a-z0-9][a-z0-9_]*$"
+								}
+							]
+						}
+					},
+					"variants_any": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"enum": ["multiple_choice", "true_false", "open", "numeric_input", "range"]
+						}
 					}
 				},
-				"limit": {
-					"type": "integer",
-					"minimum": 1
-				},
-				"tags_all": {
-					"type": "array",
-					"items": {
-						"type": "string",
-						"pattern": "^(subject|difficulty|audience|region|format|warning):[a-z0-9][a-z0-9_]*$"
+				"additionalProperties": false
+			},
+			"id": {
+				"type": "string",
+				"allOf": [
+					{
+						"pattern": "^pack_[a-z0-9][a-z0-9_]*$"
 					}
-				},
-				"tags_any": {
-					"type": "array",
-					"items": {
-						"type": "string",
-						"pattern": "^(subject|difficulty|audience|region|format|warning):[a-z0-9][a-z0-9_]*$"
-					}
-				},
-				"tags_none": {
-					"type": "array",
-					"items": {
-						"type": "string",
-						"pattern": "^(subject|difficulty|audience|region|format|warning):[a-z0-9][a-z0-9_]*$"
-					}
-				},
-				"variants_any": {
-					"type": "array",
-					"items": {
-						"enum": ["multiple_choice", "true_false", "open", "numeric_input", "range"],
-						"type": "string"
-					}
+				]
+			},
+			"includes": {
+				"type": "array",
+				"items": {
+					"type": "string",
+					"allOf": [
+						{
+							"pattern": "^pack_[a-z0-9][a-z0-9_]*$"
+						}
+					]
 				}
 			},
-			"required": [],
-			"additionalProperties": false
-		},
-		"id": {
-			"type": "string",
-			"pattern": "^pack_[a-z0-9][a-z0-9_]*$"
-		},
-		"includes": {
-			"type": "array",
-			"items": {
+			"license": {
 				"type": "string",
-				"pattern": "^pack_[a-z0-9][a-z0-9_]*$"
+				"enum": ["CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0", "CC-BY-NC-4.0", "CC-BY-ND-4.0", "MIT"]
+			},
+			"questions": {
+				"type": "array",
+				"items": {
+					"type": "string",
+					"allOf": [
+						{
+							"pattern": "^q_[a-z0-9][a-z0-9_]*$"
+						}
+					]
+				}
+			},
+			"recommended_gamemodes": {
+				"type": "array",
+				"items": {
+					"type": "string",
+					"allOf": [
+						{
+							"pattern": "^[a-z0-9][a-z0-9_]*$"
+						}
+					]
+				}
+			},
+			"title": {
+				"type": "string"
 			}
 		},
-		"license": {
-			"enum": ["CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0", "CC-BY-NC-4.0", "CC-BY-ND-4.0", "MIT"],
-			"type": "string"
-		},
-		"questions": {
-			"type": "array",
-			"items": {
-				"type": "string",
-				"pattern": "^q_[a-z0-9][a-z0-9_]*$"
-			}
-		},
-		"recommended_gamemodes": {
-			"type": "array",
-			"items": {
-				"type": "string",
-				"pattern": "^[a-z0-9][a-z0-9_]*$"
-			}
-		},
-		"title": {
-			"type": "string"
-		}
+		"required": ["id", "title"],
+		"additionalProperties": false
 	},
-	"required": ["id", "title"],
-	"additionalProperties": false,
-	"$schema": "http://json-schema.org/draft-07/schema#"
+	"definitions": {}
 }

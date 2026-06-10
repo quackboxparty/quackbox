@@ -1,43 +1,50 @@
-import * as v from 'valibot';
+import { Schema } from 'effect';
 
 import { GamemodeId } from './common.ts';
 import { QuestionKind, VariantName } from './question.ts';
 
-const Accepts = v.pipe(
-	v.strictObject({
-		kinds: v.pipe(v.array(QuestionKind), v.minLength(1)),
-		max_choices: v.optional(v.pipe(v.number(), v.integer(), v.minValue(2))),
-		min_choices: v.optional(v.pipe(v.number(), v.integer(), v.minValue(2))),
-		variants: v.pipe(v.array(VariantName), v.minLength(1))
-	}),
-	v.check(
-		(a) =>
-			a.min_choices === undefined || a.max_choices === undefined || a.max_choices >= a.min_choices,
-		'accepts.max_choices must be >= min_choices'
+const Accepts = Schema.Struct({
+	kinds: Schema.Array(QuestionKind).check(Schema.isMinLength(1)),
+	max_choices: Schema.optionalKey(
+		Schema.Number.check(Schema.isInt(), Schema.isGreaterThanOrEqualTo(2))
+	),
+	min_choices: Schema.optionalKey(
+		Schema.Number.check(Schema.isInt(), Schema.isGreaterThanOrEqualTo(2))
+	),
+	variants: Schema.Array(VariantName).check(Schema.isMinLength(1))
+}).check(
+	Schema.makeFilter((a) =>
+		a.min_choices === undefined || a.max_choices === undefined || a.max_choices >= a.min_choices
+			? undefined
+			: 'accepts.max_choices must be >= min_choices'
 	)
 );
 
-const Requires = v.strictObject({
-	max_players: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
-	min_players: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
-	timer: v.optional(v.boolean())
+const Requires = Schema.Struct({
+	max_players: Schema.optionalKey(
+		Schema.Number.check(Schema.isInt(), Schema.isGreaterThanOrEqualTo(1))
+	),
+	min_players: Schema.optionalKey(
+		Schema.Number.check(Schema.isInt(), Schema.isGreaterThanOrEqualTo(1))
+	),
+	timer: Schema.optionalKey(Schema.Boolean)
 });
 
 // Svelte component file names; loader resolves them inside the gamemode dir.
-const UiFile = v.pipe(v.string(), v.regex(/^[A-Za-z0-9_.-]+\.svelte$/));
+const UiFile = Schema.String.check(Schema.isPattern(/^[A-Za-z0-9_.-]+\.svelte$/));
 
-const Ui = v.strictObject({
+const Ui = Schema.Struct({
 	host_view: UiFile,
 	player_view: UiFile,
-	spectator_view: v.optional(UiFile)
+	spectator_view: Schema.optionalKey(UiFile)
 });
 
-export const GamemodeManifest = v.strictObject({
+export const GamemodeManifest = Schema.Struct({
 	accepts: Accepts,
-	description: v.optional(v.string()),
+	description: Schema.optionalKey(Schema.String),
 	id: GamemodeId,
-	name: v.string(),
-	requires: v.optional(Requires),
+	name: Schema.String,
+	requires: Schema.optionalKey(Requires),
 	ui: Ui
 });
-export type GamemodeManifest = v.InferOutput<typeof GamemodeManifest>;
+export type GamemodeManifest = typeof GamemodeManifest.Type;

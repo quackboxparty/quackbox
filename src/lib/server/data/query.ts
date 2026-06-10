@@ -1,6 +1,7 @@
-import type { PackFilter } from '../schemas/pack.ts';
-import type { Question, VariantName } from '../schemas/question.ts';
-import type { LoadedDataset } from './load.ts';
+import type { PackFilter } from '../../schemas/index.ts';
+import type { Question, VariantName } from '../../schemas/index.ts';
+
+import type { LoadedDataset } from './shared.ts';
 
 /**
  * Query the question pool using a PackFilter.

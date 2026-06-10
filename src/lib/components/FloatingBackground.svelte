@@ -40,7 +40,7 @@
 	}
 
 	let currentTheme = $state<ThemeId>('modern');
-	let particles = $state<Particle[]>(buildParticles('modern'));
+	let particles = $derived(buildParticles(currentTheme));
 
 	$effect(() => {
 		if (!browser) return;
@@ -61,12 +61,9 @@
 			attributes: true,
 			attributeFilter: ['data-theme']
 		});
-		return () => observer.disconnect();
-	});
-
-	// Rebuild particles when theme changes
-	$effect(() => {
-		particles = buildParticles(currentTheme);
+		return () => {
+			observer.disconnect();
+		};
 	});
 </script>
 

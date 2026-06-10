@@ -2,10 +2,12 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * Repo root, resolved relative to this file. Keeps the loader usable both
- * from `scripts/` and from runtime code without an env var.
+ * Repo root. Uses process.cwd() when running from scripts, falling back
+ * to module path resolution for runtime/SvelteKit environments.
  */
-export const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+export const REPO_ROOT = process.cwd().endsWith('quackbox')
+	? process.cwd()
+	: resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
 
 export const DATA_DIR = join(REPO_ROOT, 'data');
 

@@ -1,21 +1,21 @@
-import * as v from 'valibot';
+import { Schema } from 'effect';
 
 import { LocaleCode, type TagCategory, tagRefFor } from './common.ts';
 
-type TagCategoryValue = v.InferOutput<typeof TagCategory>;
+type TagCategoryValue = typeof TagCategory.Type;
 
 /** Canonical registry file: one category per file, all entries share the prefix. */
 export function tagRegistryFile(category: TagCategoryValue) {
-	return v.array(tagRegistryEntry(category));
+	return Schema.Array(tagRegistryEntry(category));
 }
 
 /** Single entry in a tag registry file. `id` is constrained per-category. */
 export function tagRegistryEntry(category: TagCategoryValue) {
-	return v.strictObject({
+	return Schema.Struct({
 		default_lang: LocaleCode,
-		description: v.optional(v.string()),
+		description: Schema.optionalKey(Schema.String),
 		id: tagRefFor(category),
-		label: v.string()
+		label: Schema.String
 	});
 }
 
@@ -29,20 +29,23 @@ export const TagRegistryFiles = {
 } as const;
 
 export function tagOverlayFile(category: TagCategoryValue) {
-	return v.array(tagOverlayEntry(category));
+	return Schema.Array(tagOverlayEntry(category));
 }
 
 /** Overlay entry: only translatable fields. `default_lang` is canonical-only. */
 export function tagOverlayEntry(category: TagCategoryValue) {
-	return v.strictObject({
-		description: v.optional(v.string()),
+	return Schema.Struct({
+		description: Schema.optionalKey(Schema.String),
 		id: tagRefFor(category),
-		label: v.optional(v.string())
+		label: Schema.optionalKey(Schema.String)
 	});
 }
 
-export type Tag = v.InferOutput<ReturnType<typeof tagRegistryEntry>>;
-export type TagOverlay = v.InferOutput<ReturnType<typeof tagOverlayEntry>>;
+type TagEntrySchema = ReturnType<typeof tagRegistryEntry>;
+export type Tag = TagEntrySchema extends Schema.Top ? TagEntrySchema['Type'] : never;
+
+type TagOverlaySchema = ReturnType<typeof tagOverlayEntry>;
+export type TagOverlay = TagOverlaySchema extends Schema.Top ? TagOverlaySchema['Type'] : never;
 
 export const TagOverlayFiles = {
 	audience: tagOverlayFile('audience'),

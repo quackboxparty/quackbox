@@ -1,613 +1,117 @@
 {
-	"type": "array",
-	"items": {
-		"oneOf": [
-			{
-				"type": "object",
-				"properties": {
-					"deprecated": {
-						"type": "object",
-						"properties": {
-							"reason": {
-								"type": "string"
-							},
-							"replaced_by": {
-								"type": "string",
-								"pattern": "^q_[a-z0-9][a-z0-9_]*$"
-							}
-						},
-						"required": ["reason"],
-						"additionalProperties": false
-					},
-					"id": {
-						"type": "string",
-						"pattern": "^q_[a-z0-9][a-z0-9_]*$"
-					},
-					"lang_locked": {
-						"type": "string",
-						"pattern": "^[a-z]{2}(-[A-Z]{2})?$"
-					},
-					"license": {
-						"enum": ["CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0", "CC-BY-NC-4.0", "CC-BY-ND-4.0", "MIT"],
-						"type": "string"
-					},
-					"sources": {
-						"type": "array",
-						"items": {
+	"dialect": "draft-2020-12",
+	"schema": {
+		"type": "array",
+		"items": {
+			"anyOf": [
+				{
+					"type": "object",
+					"properties": {
+						"deprecated": {
 							"type": "object",
 							"properties": {
-								"accessed": {
-									"type": "string",
-									"pattern": "^\\d{4}-\\d{2}-\\d{2}$"
-								},
-								"note": {
+								"reason": {
 									"type": "string"
 								},
-								"url": {
+								"replaced_by": {
 									"type": "string",
-									"format": "uri"
-								}
-							},
-							"required": ["url"],
-							"additionalProperties": false
-						}
-					},
-					"tags": {
-						"type": "array",
-						"items": {
-							"type": "string",
-							"pattern": "^(subject|difficulty|audience|region|format|warning):[a-z0-9][a-z0-9_]*$"
-						}
-					},
-					"content": {
-						"type": "object",
-						"properties": {
-							"answer": {
-								"type": "string"
-							},
-							"default_lang": {
-								"type": "string",
-								"pattern": "^[a-z]{2}(-[A-Z]{2})?$"
-							},
-							"explanation": {
-								"type": "string"
-							},
-							"prompt": {
-								"type": "object",
-								"properties": {
-									"media": {
-										"type": "array",
-										"items": {
-											"type": "object",
-											"properties": {
-												"alt": {
-													"type": "string"
-												},
-												"duration_ms": {
-													"type": "integer",
-													"minimum": 0
-												},
-												"end_ms": {
-													"type": "integer",
-													"minimum": 1
-												},
-												"height": {
-													"type": "integer",
-													"minimum": 1
-												},
-												"kind": {
-													"enum": ["image", "audio", "video"],
-													"type": "string"
-												},
-												"ref": {
-													"anyOf": [
-														{
-															"type": "string",
-															"pattern": "^local:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
-														},
-														{
-															"type": "string",
-															"pattern": "^url:https:\\/\\/\\S+$"
-														},
-														{
-															"type": "string",
-															"pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
-														}
-													]
-												},
-												"start_ms": {
-													"type": "integer",
-													"minimum": 0
-												},
-												"width": {
-													"type": "integer",
-													"minimum": 1
-												}
-											},
-											"required": ["kind", "ref"],
-											"additionalProperties": false
+									"allOf": [
+										{
+											"pattern": "^q_[a-z0-9][a-z0-9_]*$"
 										}
-									},
-									"text": {
-										"type": "string"
-									}
-								},
-								"required": ["text"],
-								"additionalProperties": false
-							},
-							"variants": {
-								"type": "object",
-								"properties": {
-									"multiple_choice": {
-										"type": "object",
-										"properties": {
-											"choices": {
-												"type": "array",
-												"items": {
-													"type": "object",
-													"properties": {
-														"correct": {
-															"const": true
-														},
-														"id": {
-															"type": "string",
-															"pattern": "^[a-z0-9][a-z0-9_]*$"
-														},
-														"media": {
-															"type": "array",
-															"items": {
-																"type": "object",
-																"properties": {
-																	"alt": {
-																		"type": "string"
-																	},
-																	"duration_ms": {
-																		"type": "integer",
-																		"minimum": 0
-																	},
-																	"end_ms": {
-																		"type": "integer",
-																		"minimum": 1
-																	},
-																	"height": {
-																		"type": "integer",
-																		"minimum": 1
-																	},
-																	"kind": {
-																		"enum": ["image", "audio", "video"],
-																		"type": "string"
-																	},
-																	"ref": {
-																		"anyOf": [
-																			{
-																				"type": "string",
-																				"pattern": "^local:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
-																			},
-																			{
-																				"type": "string",
-																				"pattern": "^url:https:\\/\\/\\S+$"
-																			},
-																			{
-																				"type": "string",
-																				"pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
-																			}
-																		]
-																	},
-																	"start_ms": {
-																		"type": "integer",
-																		"minimum": 0
-																	},
-																	"width": {
-																		"type": "integer",
-																		"minimum": 1
-																	}
-																},
-																"required": ["kind", "ref"],
-																"additionalProperties": false
-															}
-														},
-														"text": {
-															"type": "string"
-														}
-													},
-													"required": ["id", "text"],
-													"additionalProperties": false
-												},
-												"minItems": 2
-											}
-										},
-										"required": ["choices"],
-										"additionalProperties": false
-									},
-									"open": {
-										"type": "object",
-										"properties": {
-											"accepted": {
-												"type": "array",
-												"items": {
-													"type": "string"
-												},
-												"minItems": 1
-											},
-											"normalize": {
-												"type": "array",
-												"items": {
-													"enum": [
-														"lowercase",
-														"strip_diacritics",
-														"strip_punctuation",
-														"strip_whitespace",
-														"strip_articles"
-													],
-													"type": "string"
-												}
-											}
-										},
-										"required": ["accepted"],
-										"additionalProperties": false
-									},
-									"true_false": {
-										"type": "object",
-										"properties": {},
-										"required": [],
-										"additionalProperties": false
-									}
-								},
-								"required": [],
-								"additionalProperties": false
-							}
-						},
-						"required": ["answer", "default_lang", "prompt", "variants"],
-						"additionalProperties": false
-					},
-					"kind": {
-						"const": "text"
-					}
-				},
-				"required": ["id", "tags", "content", "kind"],
-				"additionalProperties": false
-			},
-			{
-				"type": "object",
-				"properties": {
-					"deprecated": {
-						"type": "object",
-						"properties": {
-							"reason": {
-								"type": "string"
-							},
-							"replaced_by": {
-								"type": "string",
-								"pattern": "^q_[a-z0-9][a-z0-9_]*$"
-							}
-						},
-						"required": ["reason"],
-						"additionalProperties": false
-					},
-					"id": {
-						"type": "string",
-						"pattern": "^q_[a-z0-9][a-z0-9_]*$"
-					},
-					"lang_locked": {
-						"type": "string",
-						"pattern": "^[a-z]{2}(-[A-Z]{2})?$"
-					},
-					"license": {
-						"enum": ["CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0", "CC-BY-NC-4.0", "CC-BY-ND-4.0", "MIT"],
-						"type": "string"
-					},
-					"sources": {
-						"type": "array",
-						"items": {
-							"type": "object",
-							"properties": {
-								"accessed": {
-									"type": "string",
-									"pattern": "^\\d{4}-\\d{2}-\\d{2}$"
-								},
-								"note": {
-									"type": "string"
-								},
-								"url": {
-									"type": "string",
-									"format": "uri"
+									]
 								}
 							},
-							"required": ["url"],
+							"required": ["reason"],
 							"additionalProperties": false
-						}
-					},
-					"tags": {
-						"type": "array",
-						"items": {
+						},
+						"id": {
 							"type": "string",
-							"pattern": "^(subject|difficulty|audience|region|format|warning):[a-z0-9][a-z0-9_]*$"
-						}
-					},
-					"content": {
-						"type": "object",
-						"properties": {
-							"answer": {
-								"type": "number"
-							},
-							"default_lang": {
-								"type": "string",
-								"pattern": "^[a-z]{2}(-[A-Z]{2})?$"
-							},
-							"explanation": {
-								"type": "string"
-							},
-							"prompt": {
-								"type": "object",
-								"properties": {
-									"media": {
-										"type": "array",
-										"items": {
-											"type": "object",
-											"properties": {
-												"alt": {
-													"type": "string"
-												},
-												"duration_ms": {
-													"type": "integer",
-													"minimum": 0
-												},
-												"end_ms": {
-													"type": "integer",
-													"minimum": 1
-												},
-												"height": {
-													"type": "integer",
-													"minimum": 1
-												},
-												"kind": {
-													"enum": ["image", "audio", "video"],
-													"type": "string"
-												},
-												"ref": {
-													"anyOf": [
-														{
-															"type": "string",
-															"pattern": "^local:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
-														},
-														{
-															"type": "string",
-															"pattern": "^url:https:\\/\\/\\S+$"
-														},
-														{
-															"type": "string",
-															"pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
-														}
-													]
-												},
-												"start_ms": {
-													"type": "integer",
-													"minimum": 0
-												},
-												"width": {
-													"type": "integer",
-													"minimum": 1
-												}
-											},
-											"required": ["kind", "ref"],
-											"additionalProperties": false
-										}
-									},
-									"text": {
-										"type": "string"
-									}
-								},
-								"required": ["text"],
-								"additionalProperties": false
-							},
-							"unit": {
-								"type": "string"
-							},
-							"variants": {
-								"type": "object",
-								"properties": {
-									"multiple_choice": {
-										"type": "object",
-										"properties": {
-											"choices": {
-												"type": "array",
-												"items": {
-													"type": "object",
-													"properties": {
-														"correct": {
-															"const": true
-														},
-														"id": {
-															"type": "string",
-															"pattern": "^[a-z0-9][a-z0-9_]*$"
-														},
-														"media": {
-															"type": "array",
-															"items": {
-																"type": "object",
-																"properties": {
-																	"alt": {
-																		"type": "string"
-																	},
-																	"duration_ms": {
-																		"type": "integer",
-																		"minimum": 0
-																	},
-																	"end_ms": {
-																		"type": "integer",
-																		"minimum": 1
-																	},
-																	"height": {
-																		"type": "integer",
-																		"minimum": 1
-																	},
-																	"kind": {
-																		"enum": ["image", "audio", "video"],
-																		"type": "string"
-																	},
-																	"ref": {
-																		"anyOf": [
-																			{
-																				"type": "string",
-																				"pattern": "^local:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
-																			},
-																			{
-																				"type": "string",
-																				"pattern": "^url:https:\\/\\/\\S+$"
-																			},
-																			{
-																				"type": "string",
-																				"pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
-																			}
-																		]
-																	},
-																	"start_ms": {
-																		"type": "integer",
-																		"minimum": 0
-																	},
-																	"width": {
-																		"type": "integer",
-																		"minimum": 1
-																	}
-																},
-																"required": ["kind", "ref"],
-																"additionalProperties": false
-															}
-														},
-														"text": {
-															"type": "string"
-														}
-													},
-													"required": ["id", "text"],
-													"additionalProperties": false
-												},
-												"minItems": 2
-											}
-										},
-										"required": ["choices"],
-										"additionalProperties": false
-									},
-									"numeric_input": {
-										"type": "object",
-										"properties": {
-											"tolerance": {
-												"type": "number",
-												"minimum": 0,
-												"default": 0
-											}
-										},
-										"required": [],
-										"additionalProperties": false
-									},
-									"range": {
-										"type": "object",
-										"properties": {
-											"max": {
-												"type": "number"
-											},
-											"min": {
-												"type": "number"
-											},
-											"step": {
-												"type": "number",
-												"minimum": 0,
-												"default": 1
-											}
-										},
-										"required": ["max", "min"],
-										"additionalProperties": false
-									}
-								},
-								"required": [],
-								"additionalProperties": false
-							}
-						},
-						"required": ["answer", "default_lang", "prompt", "variants"],
-						"additionalProperties": false
-					},
-					"kind": {
-						"const": "numeric"
-					}
-				},
-				"required": ["id", "tags", "content", "kind"],
-				"additionalProperties": false
-			},
-			{
-				"type": "object",
-				"properties": {
-					"deprecated": {
-						"type": "object",
-						"properties": {
-							"reason": {
-								"type": "string"
-							},
-							"replaced_by": {
-								"type": "string",
-								"pattern": "^q_[a-z0-9][a-z0-9_]*$"
-							}
-						},
-						"required": ["reason"],
-						"additionalProperties": false
-					},
-					"id": {
-						"type": "string",
-						"pattern": "^q_[a-z0-9][a-z0-9_]*$"
-					},
-					"lang_locked": {
-						"type": "string",
-						"pattern": "^[a-z]{2}(-[A-Z]{2})?$"
-					},
-					"license": {
-						"enum": ["CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0", "CC-BY-NC-4.0", "CC-BY-ND-4.0", "MIT"],
-						"type": "string"
-					},
-					"sources": {
-						"type": "array",
-						"items": {
-							"type": "object",
-							"properties": {
-								"accessed": {
-									"type": "string",
-									"pattern": "^\\d{4}-\\d{2}-\\d{2}$"
-								},
-								"note": {
-									"type": "string"
-								},
-								"url": {
-									"type": "string",
-									"format": "uri"
+							"allOf": [
+								{
+									"pattern": "^q_[a-z0-9][a-z0-9_]*$"
 								}
-							},
-							"required": ["url"],
-							"additionalProperties": false
-						}
-					},
-					"tags": {
-						"type": "array",
-						"items": {
+							]
+						},
+						"lang_locked": {
 							"type": "string",
-							"pattern": "^(subject|difficulty|audience|region|format|warning):[a-z0-9][a-z0-9_]*$"
-						}
-					},
-					"content": {
-						"type": "object",
-						"properties": {
-							"default_lang": {
-								"type": "string",
-								"pattern": "^[a-z]{2}(-[A-Z]{2})?$"
-							},
-							"explanation": {
-								"type": "string"
-							},
+							"allOf": [
+								{
+									"pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+								}
+							]
+						},
+						"license": {
+							"type": "string",
+							"enum": [
+								"CC0-1.0",
+								"CC-BY-4.0",
+								"CC-BY-SA-4.0",
+								"CC-BY-NC-4.0",
+								"CC-BY-ND-4.0",
+								"MIT"
+							]
+						},
+						"sources": {
+							"type": "array",
 							"items": {
-								"type": "array",
-								"items": {
+								"type": "object",
+								"properties": {
+									"accessed": {
+										"type": "string",
+										"allOf": [
+											{
+												"pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+											}
+										]
+									},
+									"note": {
+										"type": "string"
+									},
+									"url": {
+										"type": "string",
+										"allOf": [
+											{
+												"pattern": "^https?:\\/\\/"
+											}
+										]
+									}
+								},
+								"required": ["url"],
+								"additionalProperties": false
+							}
+						},
+						"tags": {
+							"type": "array",
+							"items": {
+								"type": "string",
+								"allOf": [
+									{
+										"pattern": "^(subject|difficulty|audience|region|format|warning):[a-z0-9][a-z0-9_]*$"
+									}
+								]
+							}
+						},
+						"content": {
+							"type": "object",
+							"properties": {
+								"answer": {
+									"type": "string"
+								},
+								"default_lang": {
+									"type": "string",
+									"allOf": [
+										{
+											"pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+										}
+									]
+								},
+								"explanation": {
+									"type": "string"
+								},
+								"prompt": {
 									"type": "object",
 									"properties": {
-										"id": {
-											"type": "string",
-											"pattern": "^[a-z0-9][a-z0-9_]*$"
-										},
 										"media": {
 											"type": "array",
 											"items": {
@@ -618,137 +122,949 @@
 													},
 													"duration_ms": {
 														"type": "integer",
-														"minimum": 0
+														"allOf": [
+															{
+																"minimum": 0
+															}
+														]
 													},
 													"end_ms": {
 														"type": "integer",
-														"minimum": 1
+														"allOf": [
+															{
+																"minimum": 1
+															}
+														]
 													},
 													"height": {
 														"type": "integer",
-														"minimum": 1
+														"allOf": [
+															{
+																"minimum": 1
+															}
+														]
 													},
 													"kind": {
-														"enum": ["image", "audio", "video"],
-														"type": "string"
+														"type": "string",
+														"enum": ["image", "audio", "video"]
 													},
 													"ref": {
 														"anyOf": [
 															{
 																"type": "string",
-																"pattern": "^local:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
+																"allOf": [
+																	{
+																		"pattern": "^local:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
+																	}
+																]
 															},
 															{
 																"type": "string",
-																"pattern": "^url:https:\\/\\/\\S+$"
+																"allOf": [
+																	{
+																		"pattern": "^url:https:\\/\\/\\S+$"
+																	}
+																]
 															},
 															{
 																"type": "string",
-																"pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
+																"allOf": [
+																	{
+																		"pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
+																	}
+																]
 															}
 														]
 													},
 													"start_ms": {
 														"type": "integer",
-														"minimum": 0
+														"allOf": [
+															{
+																"minimum": 0
+															}
+														]
 													},
 													"width": {
 														"type": "integer",
-														"minimum": 1
+														"allOf": [
+															{
+																"minimum": 1
+															}
+														]
 													}
 												},
 												"required": ["kind", "ref"],
 												"additionalProperties": false
 											}
 										},
-										"position": {
-											"type": "integer",
-											"minimum": 1
+										"text": {
+											"type": "string"
+										}
+									},
+									"required": ["text"],
+									"additionalProperties": false
+								},
+								"variants": {
+									"type": "object",
+									"properties": {
+										"multiple_choice": {
+											"type": "object",
+											"properties": {
+												"choices": {
+													"$ref": "#/$defs/ChoicesList"
+												}
+											},
+											"required": ["choices"],
+											"additionalProperties": false
+										},
+										"open": {
+											"type": "object",
+											"properties": {
+												"accepted": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"allOf": [
+														{
+															"minItems": 1
+														}
+													]
+												},
+												"normalize": {
+													"type": "array",
+													"items": {
+														"type": "string",
+														"enum": [
+															"lowercase",
+															"strip_diacritics",
+															"strip_punctuation",
+															"strip_whitespace",
+															"strip_articles"
+														]
+													}
+												}
+											},
+											"required": ["accepted"],
+											"additionalProperties": false
+										},
+										"true_false": {
+											"anyOf": [
+												{
+													"type": "object"
+												},
+												{
+													"type": "array"
+												}
+											]
+										}
+									},
+									"additionalProperties": false
+								}
+							},
+							"required": ["answer", "default_lang", "prompt", "variants"],
+							"additionalProperties": false
+						},
+						"kind": {
+							"type": "string",
+							"enum": ["text"]
+						}
+					},
+					"required": ["id", "tags", "content", "kind"],
+					"additionalProperties": false
+				},
+				{
+					"type": "object",
+					"properties": {
+						"deprecated": {
+							"type": "object",
+							"properties": {
+								"reason": {
+									"type": "string"
+								},
+								"replaced_by": {
+									"type": "string",
+									"allOf": [
+										{
+											"pattern": "^q_[a-z0-9][a-z0-9_]*$"
+										}
+									]
+								}
+							},
+							"required": ["reason"],
+							"additionalProperties": false
+						},
+						"id": {
+							"type": "string",
+							"allOf": [
+								{
+									"pattern": "^q_[a-z0-9][a-z0-9_]*$"
+								}
+							]
+						},
+						"lang_locked": {
+							"type": "string",
+							"allOf": [
+								{
+									"pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+								}
+							]
+						},
+						"license": {
+							"type": "string",
+							"enum": [
+								"CC0-1.0",
+								"CC-BY-4.0",
+								"CC-BY-SA-4.0",
+								"CC-BY-NC-4.0",
+								"CC-BY-ND-4.0",
+								"MIT"
+							]
+						},
+						"sources": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"properties": {
+									"accessed": {
+										"type": "string",
+										"allOf": [
+											{
+												"pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+											}
+										]
+									},
+									"note": {
+										"type": "string"
+									},
+									"url": {
+										"type": "string",
+										"allOf": [
+											{
+												"pattern": "^https?:\\/\\/"
+											}
+										]
+									}
+								},
+								"required": ["url"],
+								"additionalProperties": false
+							}
+						},
+						"tags": {
+							"type": "array",
+							"items": {
+								"type": "string",
+								"allOf": [
+									{
+										"pattern": "^(subject|difficulty|audience|region|format|warning):[a-z0-9][a-z0-9_]*$"
+									}
+								]
+							}
+						},
+						"content": {
+							"type": "object",
+							"properties": {
+								"answer": {
+									"anyOf": [
+										{
+											"type": "number"
+										},
+										{
+											"type": "string",
+											"enum": ["NaN"]
+										},
+										{
+											"type": "string",
+											"enum": ["Infinity"]
+										},
+										{
+											"type": "string",
+											"enum": ["-Infinity"]
+										}
+									]
+								},
+								"default_lang": {
+									"type": "string",
+									"allOf": [
+										{
+											"pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+										}
+									]
+								},
+								"explanation": {
+									"type": "string"
+								},
+								"prompt": {
+									"type": "object",
+									"properties": {
+										"media": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"alt": {
+														"type": "string"
+													},
+													"duration_ms": {
+														"type": "integer",
+														"allOf": [
+															{
+																"minimum": 0
+															}
+														]
+													},
+													"end_ms": {
+														"type": "integer",
+														"allOf": [
+															{
+																"minimum": 1
+															}
+														]
+													},
+													"height": {
+														"type": "integer",
+														"allOf": [
+															{
+																"minimum": 1
+															}
+														]
+													},
+													"kind": {
+														"type": "string",
+														"enum": ["image", "audio", "video"]
+													},
+													"ref": {
+														"anyOf": [
+															{
+																"type": "string",
+																"allOf": [
+																	{
+																		"pattern": "^local:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
+																	}
+																]
+															},
+															{
+																"type": "string",
+																"allOf": [
+																	{
+																		"pattern": "^url:https:\\/\\/\\S+$"
+																	}
+																]
+															},
+															{
+																"type": "string",
+																"allOf": [
+																	{
+																		"pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
+																	}
+																]
+															}
+														]
+													},
+													"start_ms": {
+														"type": "integer",
+														"allOf": [
+															{
+																"minimum": 0
+															}
+														]
+													},
+													"width": {
+														"type": "integer",
+														"allOf": [
+															{
+																"minimum": 1
+															}
+														]
+													}
+												},
+												"required": ["kind", "ref"],
+												"additionalProperties": false
+											}
 										},
 										"text": {
 											"type": "string"
 										}
 									},
-									"required": ["id", "position", "text"],
+									"required": ["text"],
 									"additionalProperties": false
 								},
-								"minItems": 2
-							},
-							"prompt": {
-								"type": "object",
-								"properties": {
-									"media": {
-										"type": "array",
-										"items": {
+								"unit": {
+									"type": "string"
+								},
+								"variants": {
+									"type": "object",
+									"properties": {
+										"multiple_choice": {
 											"type": "object",
 											"properties": {
-												"alt": {
-													"type": "string"
-												},
-												"duration_ms": {
-													"type": "integer",
-													"minimum": 0
-												},
-												"end_ms": {
-													"type": "integer",
-													"minimum": 1
-												},
-												"height": {
-													"type": "integer",
-													"minimum": 1
-												},
-												"kind": {
-													"enum": ["image", "audio", "video"],
-													"type": "string"
-												},
-												"ref": {
+												"choices": {
+													"$ref": "#/$defs/ChoicesList"
+												}
+											},
+											"required": ["choices"],
+											"additionalProperties": false
+										},
+										"numeric_input": {
+											"type": "object",
+											"properties": {
+												"tolerance": {
 													"anyOf": [
 														{
-															"type": "string",
-															"pattern": "^local:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
+															"type": "number"
 														},
 														{
 															"type": "string",
-															"pattern": "^url:https:\\/\\/\\S+$"
+															"enum": ["NaN"]
 														},
 														{
 															"type": "string",
-															"pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
+															"enum": ["Infinity"]
+														},
+														{
+															"type": "string",
+															"enum": ["-Infinity"]
+														}
+													],
+													"allOf": [
+														{
+															"minimum": 0
+														}
+													]
+												}
+											},
+											"additionalProperties": false
+										},
+										"range": {
+											"type": "object",
+											"properties": {
+												"max": {
+													"anyOf": [
+														{
+															"type": "number"
+														},
+														{
+															"type": "string",
+															"enum": ["NaN"]
+														},
+														{
+															"type": "string",
+															"enum": ["Infinity"]
+														},
+														{
+															"type": "string",
+															"enum": ["-Infinity"]
 														}
 													]
 												},
-												"start_ms": {
-													"type": "integer",
-													"minimum": 0
+												"min": {
+													"anyOf": [
+														{
+															"type": "number"
+														},
+														{
+															"type": "string",
+															"enum": ["NaN"]
+														},
+														{
+															"type": "string",
+															"enum": ["Infinity"]
+														},
+														{
+															"type": "string",
+															"enum": ["-Infinity"]
+														}
+													]
 												},
-												"width": {
-													"type": "integer",
-													"minimum": 1
+												"step": {
+													"anyOf": [
+														{
+															"type": "number"
+														},
+														{
+															"type": "string",
+															"enum": ["NaN"]
+														},
+														{
+															"type": "string",
+															"enum": ["Infinity"]
+														},
+														{
+															"type": "string",
+															"enum": ["-Infinity"]
+														}
+													],
+													"allOf": [
+														{
+															"minimum": 0
+														}
+													]
 												}
 											},
-											"required": ["kind", "ref"],
+											"required": ["max", "min"],
 											"additionalProperties": false
 										}
 									},
-									"text": {
+									"additionalProperties": false
+								}
+							},
+							"required": ["answer", "default_lang", "prompt", "variants"],
+							"additionalProperties": false
+						},
+						"kind": {
+							"type": "string",
+							"enum": ["numeric"]
+						}
+					},
+					"required": ["id", "tags", "content", "kind"],
+					"additionalProperties": false
+				},
+				{
+					"type": "object",
+					"properties": {
+						"deprecated": {
+							"type": "object",
+							"properties": {
+								"reason": {
+									"type": "string"
+								},
+								"replaced_by": {
+									"type": "string",
+									"allOf": [
+										{
+											"pattern": "^q_[a-z0-9][a-z0-9_]*$"
+										}
+									]
+								}
+							},
+							"required": ["reason"],
+							"additionalProperties": false
+						},
+						"id": {
+							"type": "string",
+							"allOf": [
+								{
+									"pattern": "^q_[a-z0-9][a-z0-9_]*$"
+								}
+							]
+						},
+						"lang_locked": {
+							"type": "string",
+							"allOf": [
+								{
+									"pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+								}
+							]
+						},
+						"license": {
+							"type": "string",
+							"enum": [
+								"CC0-1.0",
+								"CC-BY-4.0",
+								"CC-BY-SA-4.0",
+								"CC-BY-NC-4.0",
+								"CC-BY-ND-4.0",
+								"MIT"
+							]
+						},
+						"sources": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"properties": {
+									"accessed": {
+										"type": "string",
+										"allOf": [
+											{
+												"pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+											}
+										]
+									},
+									"note": {
 										"type": "string"
+									},
+									"url": {
+										"type": "string",
+										"allOf": [
+											{
+												"pattern": "^https?:\\/\\/"
+											}
+										]
 									}
 								},
-								"required": ["text"],
+								"required": ["url"],
 								"additionalProperties": false
 							}
 						},
-						"required": ["default_lang", "items", "prompt"],
-						"additionalProperties": false
+						"tags": {
+							"type": "array",
+							"items": {
+								"type": "string",
+								"allOf": [
+									{
+										"pattern": "^(subject|difficulty|audience|region|format|warning):[a-z0-9][a-z0-9_]*$"
+									}
+								]
+							}
+						},
+						"content": {
+							"type": "object",
+							"properties": {
+								"default_lang": {
+									"type": "string",
+									"allOf": [
+										{
+											"pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+										}
+									]
+								},
+								"explanation": {
+									"type": "string"
+								},
+								"items": {
+									"type": "array",
+									"items": {
+										"type": "object",
+										"properties": {
+											"id": {
+												"type": "string",
+												"allOf": [
+													{
+														"pattern": "^[a-z0-9][a-z0-9_]*$"
+													}
+												]
+											},
+											"media": {
+												"type": "array",
+												"items": {
+													"type": "object",
+													"properties": {
+														"alt": {
+															"type": "string"
+														},
+														"duration_ms": {
+															"type": "integer",
+															"allOf": [
+																{
+																	"minimum": 0
+																}
+															]
+														},
+														"end_ms": {
+															"type": "integer",
+															"allOf": [
+																{
+																	"minimum": 1
+																}
+															]
+														},
+														"height": {
+															"type": "integer",
+															"allOf": [
+																{
+																	"minimum": 1
+																}
+															]
+														},
+														"kind": {
+															"type": "string",
+															"enum": ["image", "audio", "video"]
+														},
+														"ref": {
+															"anyOf": [
+																{
+																	"type": "string",
+																	"allOf": [
+																		{
+																			"pattern": "^local:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
+																		}
+																	]
+																},
+																{
+																	"type": "string",
+																	"allOf": [
+																		{
+																			"pattern": "^url:https:\\/\\/\\S+$"
+																		}
+																	]
+																},
+																{
+																	"type": "string",
+																	"allOf": [
+																		{
+																			"pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
+																		}
+																	]
+																}
+															]
+														},
+														"start_ms": {
+															"type": "integer",
+															"allOf": [
+																{
+																	"minimum": 0
+																}
+															]
+														},
+														"width": {
+															"type": "integer",
+															"allOf": [
+																{
+																	"minimum": 1
+																}
+															]
+														}
+													},
+													"required": ["kind", "ref"],
+													"additionalProperties": false
+												}
+											},
+											"position": {
+												"type": "integer",
+												"allOf": [
+													{
+														"minimum": 1
+													}
+												]
+											},
+											"text": {
+												"type": "string"
+											}
+										},
+										"required": ["id", "position", "text"],
+										"additionalProperties": false
+									},
+									"allOf": [
+										{
+											"minItems": 2
+										}
+									]
+								},
+								"prompt": {
+									"type": "object",
+									"properties": {
+										"media": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"alt": {
+														"type": "string"
+													},
+													"duration_ms": {
+														"type": "integer",
+														"allOf": [
+															{
+																"minimum": 0
+															}
+														]
+													},
+													"end_ms": {
+														"type": "integer",
+														"allOf": [
+															{
+																"minimum": 1
+															}
+														]
+													},
+													"height": {
+														"type": "integer",
+														"allOf": [
+															{
+																"minimum": 1
+															}
+														]
+													},
+													"kind": {
+														"type": "string",
+														"enum": ["image", "audio", "video"]
+													},
+													"ref": {
+														"anyOf": [
+															{
+																"type": "string",
+																"allOf": [
+																	{
+																		"pattern": "^local:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
+																	}
+																]
+															},
+															{
+																"type": "string",
+																"allOf": [
+																	{
+																		"pattern": "^url:https:\\/\\/\\S+$"
+																	}
+																]
+															},
+															{
+																"type": "string",
+																"allOf": [
+																	{
+																		"pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
+																	}
+																]
+															}
+														]
+													},
+													"start_ms": {
+														"type": "integer",
+														"allOf": [
+															{
+																"minimum": 0
+															}
+														]
+													},
+													"width": {
+														"type": "integer",
+														"allOf": [
+															{
+																"minimum": 1
+															}
+														]
+													}
+												},
+												"required": ["kind", "ref"],
+												"additionalProperties": false
+											}
+										},
+										"text": {
+											"type": "string"
+										}
+									},
+									"required": ["text"],
+									"additionalProperties": false
+								}
+							},
+							"required": ["default_lang", "items", "prompt"],
+							"additionalProperties": false
+						},
+						"kind": {
+							"type": "string",
+							"enum": ["order"]
+						}
 					},
-					"kind": {
-						"const": "order"
+					"required": ["id", "tags", "content", "kind"],
+					"additionalProperties": false
+				}
+			]
+		}
+	},
+	"definitions": {
+		"ChoicesList": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"correct": {
+						"type": "boolean",
+						"enum": [true]
+					},
+					"id": {
+						"type": "string",
+						"allOf": [
+							{
+								"pattern": "^[a-z0-9][a-z0-9_]*$"
+							}
+						]
+					},
+					"media": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"alt": {
+									"type": "string"
+								},
+								"duration_ms": {
+									"type": "integer",
+									"allOf": [
+										{
+											"minimum": 0
+										}
+									]
+								},
+								"end_ms": {
+									"type": "integer",
+									"allOf": [
+										{
+											"minimum": 1
+										}
+									]
+								},
+								"height": {
+									"type": "integer",
+									"allOf": [
+										{
+											"minimum": 1
+										}
+									]
+								},
+								"kind": {
+									"type": "string",
+									"enum": ["image", "audio", "video"]
+								},
+								"ref": {
+									"anyOf": [
+										{
+											"type": "string",
+											"allOf": [
+												{
+													"pattern": "^local:(?!\\/)(?!.*\\.\\.)[A-Za-z0-9._\\-/]+$"
+												}
+											]
+										},
+										{
+											"type": "string",
+											"allOf": [
+												{
+													"pattern": "^url:https:\\/\\/\\S+$"
+												}
+											]
+										},
+										{
+											"type": "string",
+											"allOf": [
+												{
+													"pattern": "^youtube:[A-Za-z0-9_-]{8,24}(\\?[A-Za-z0-9_=&-]*)?$"
+												}
+											]
+										}
+									]
+								},
+								"start_ms": {
+									"type": "integer",
+									"allOf": [
+										{
+											"minimum": 0
+										}
+									]
+								},
+								"width": {
+									"type": "integer",
+									"allOf": [
+										{
+											"minimum": 1
+										}
+									]
+								}
+							},
+							"required": ["kind", "ref"],
+							"additionalProperties": false
+						}
+					},
+					"text": {
+						"type": "string"
 					}
 				},
-				"required": ["id", "tags", "content", "kind"],
+				"required": ["id", "text"],
 				"additionalProperties": false
-			}
-		]
-	},
-	"$schema": "http://json-schema.org/draft-07/schema#"
+			},
+			"allOf": [
+				{
+					"minItems": 2
+				}
+			]
+		}
+	}
 }

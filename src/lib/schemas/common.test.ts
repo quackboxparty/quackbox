@@ -7,70 +7,72 @@ import {
 	TagRef,
 	tagRefFor
 } from '$lib/schemas/common';
-import * as v from 'valibot';
+import { decodeStrict } from '$lib/schemas/decode';
 import { describe, expect, it } from 'vitest';
+
+const decode = decodeStrict;
 
 describe('common', () => {
 	it('accepts valid locale codes', () => {
-		expect(v.safeParse(LocaleCode, 'en').success).toBe(true);
-		expect(v.safeParse(LocaleCode, 'de').success).toBe(true);
-		expect(v.safeParse(LocaleCode, 'en-US').success).toBe(true);
+		expect(decode(LocaleCode)('en')).toBe('en');
+		expect(decode(LocaleCode)('de')).toBe('de');
+		expect(decode(LocaleCode)('en-US')).toBe('en-US');
 	});
 
 	it('rejects invalid locale codes', () => {
-		expect(v.safeParse(LocaleCode, 'EN').success).toBe(false);
-		expect(v.safeParse(LocaleCode, 'de_DE').success).toBe(false);
-		expect(v.safeParse(LocaleCode, 'en-us').success).toBe(false);
-		expect(v.safeParse(LocaleCode, 'english').success).toBe(false);
+		expect(() => decode(LocaleCode)('EN')).toThrow();
+		expect(() => decode(LocaleCode)('de_DE')).toThrow();
+		expect(() => decode(LocaleCode)('en-us')).toThrow();
+		expect(() => decode(LocaleCode)('english')).toThrow();
 	});
 
 	it('accepts valid question ids', () => {
-		expect(v.safeParse(QuestionId, 'q_france_capital').success).toBe(true);
-		expect(v.safeParse(QuestionId, 'q_one2').success).toBe(true);
+		expect(decode(QuestionId)('q_france_capital')).toBe('q_france_capital');
+		expect(decode(QuestionId)('q_one2')).toBe('q_one2');
 	});
 
 	it('rejects invalid question ids', () => {
-		expect(v.safeParse(QuestionId, 'france_capital').success).toBe(false);
-		expect(v.safeParse(QuestionId, 'Q_upper').success).toBe(false);
-		expect(v.safeParse(QuestionId, 'q_').success).toBe(false);
+		expect(() => decode(QuestionId)('france_capital')).toThrow();
+		expect(() => decode(QuestionId)('Q_upper')).toThrow();
+		expect(() => decode(QuestionId)('q_')).toThrow();
 	});
 
 	it('accepts valid pack ids', () => {
-		expect(v.safeParse(PackId, 'pack_britpop').success).toBe(true);
+		expect(decode(PackId)('pack_britpop')).toBe('pack_britpop');
 	});
 
 	it('rejects invalid pack ids', () => {
-		expect(v.safeParse(PackId, 'britpop').success).toBe(false);
+		expect(() => decode(PackId)('britpop')).toThrow();
 	});
 
 	it('accepts valid tag refs', () => {
-		expect(v.safeParse(TagRef, 'subject:chemistry').success).toBe(true);
-		expect(v.safeParse(TagRef, 'warning:nsfw').success).toBe(true);
+		expect(decode(TagRef)('subject:chemistry')).toBe('subject:chemistry');
+		expect(decode(TagRef)('warning:nsfw')).toBe('warning:nsfw');
 	});
 
 	it('rejects invalid tag refs', () => {
-		expect(v.safeParse(TagRef, 'custom:tag').success).toBe(false); // unknown category
-		expect(v.safeParse(TagRef, 'SUBJECT:x').success).toBe(false);
-		expect(v.safeParse(TagRef, 'tag').success).toBe(false);
+		expect(() => decode(TagRef)('custom:tag')).toThrow(); // unknown category
+		expect(() => decode(TagRef)('SUBJECT:x')).toThrow();
+		expect(() => decode(TagRef)('tag')).toThrow();
 	});
 
 	it('enforces category-specific tag refs', () => {
 		const subjectTag = tagRefFor('subject');
-		expect(v.safeParse(subjectTag, 'subject:geo').success).toBe(true);
-		expect(v.safeParse(subjectTag, 'difficulty:easy').success).toBe(false);
+		expect(decode(subjectTag)('subject:geo')).toBe('subject:geo');
+		expect(() => decode(subjectTag)('difficulty:easy')).toThrow();
 	});
 
 	it('accepts valid license identifiers', () => {
-		expect(v.safeParse(License, 'CC0-1.0').success).toBe(true);
-		expect(v.safeParse(License, 'MIT').success).toBe(true);
+		expect(decode(License)('CC0-1.0')).toBe('CC0-1.0');
+		expect(decode(License)('MIT')).toBe('MIT');
 	});
 
 	it('rejects unknown license identifiers', () => {
-		expect(v.safeParse(License, 'GPL-3.0').success).toBe(false);
+		expect(() => decode(License)('GPL-3.0')).toThrow();
 	});
 
 	it('accepts valid gamemode ids', () => {
-		expect(v.safeParse(GamemodeId, 'classic').success).toBe(true);
-		expect(v.safeParse(GamemodeId, 'battle_royale').success).toBe(true);
+		expect(decode(GamemodeId)('classic')).toBe('classic');
+		expect(decode(GamemodeId)('battle_royale')).toBe('battle_royale');
 	});
 });
