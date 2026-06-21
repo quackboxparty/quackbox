@@ -1,4 +1,6 @@
 mod config;
+mod data;
+
 use std::sync::Arc;
 
 use axum::Router;
@@ -7,17 +9,15 @@ use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::{AppConfig, load};
+use crate::data::DataStore;
 
 struct AppState {
     config: AppConfig,
+    data: DataStore,
 }
 
 #[tokio::main]
 async fn main() {
-    let state = Arc::new(AppState {
-        config: load().expect("couldn't load config"),
-    });
-
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
@@ -26,6 +26,31 @@ async fn main() {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
+
+    let config = load().expect("couldn't load config");
+
+    let data = DataStore::load("../data").expect("failed to load data");
+    if data.issues().is_empty() {
+        tracing::info!(
+            "dataset loaded: {} questions, {} packs, {} tags",
+            data.questions().len(),
+            data.packs().len(),
+            data.tags().len()
+        );
+    } else {
+        tracing::info!(
+            "dataset loaded: {} questions, {} packs, {} tags ({} issues)",
+            data.questions().len(),
+            data.packs().len(),
+            data.tags().len(),
+            data.issues().len()
+        );
+        for issue in data.issues() {
+            tracing::warn!("{issue}");
+        }
+    }
+
+    let state = Arc::new(AppState { config, data });
 
     let serve_dir =
         ServeDir::new("../build").not_found_service(ServeFile::new("../build/index.html"));
