@@ -1,0 +1,22 @@
+[package]
+name = "api"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum = { version = "0.8.9", features = ["ws", "tracing"] }
+config = { version = "0.15.24", default-features = false, features = ["toml", "convert-case" ]}
+garde = { version = "0.23.0", features = ["derive"] }
+opentelemetry = "0.32.0"
+opentelemetry-otlp = "0.32.0"
+opentelemetry-semantic-conventions = "0.32.0"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+tokio = { version = "1.52.3", features = ["full"] }
+tower-http = { version = "0.7.0", features = ["fs", "trace"] }
+tracing = "0.1.44"
+tracing-opentelemetry = "0.33.0"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
+
+[dev-dependencies]
+ts-rs = "12.0.1"

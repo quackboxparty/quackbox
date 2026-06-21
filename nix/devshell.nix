@@ -4,6 +4,15 @@ pkgs.mkShell {
     nodejs_26
     pnpm_11
     playwright-driver.browsers
+
+    cargo
+    rustc
+    rustfmt
+    clippy
+    rust-analyzer
+    bacon
+
+    pkg-config
   ];
 
   PLAYWRIGHT_NODEJS_PATH = "${pkgs.nodejs}/bin/node";

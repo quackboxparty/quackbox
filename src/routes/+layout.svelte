@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
+import { getTextDirection, getLocale } from '$lib/paraglide/runtime';
+
 	import favicon from '$lib/assets/favicon.svg';
 	import { initTheme } from '$lib/themes';
 	import FloatingBackground from '$lib/components/FloatingBackground.svelte';
@@ -20,6 +22,11 @@
 	let { children }: { children: Snippet } = $props();
 
 	initTheme();
+
+	$effect(() => {
+		document.documentElement.lang = getLocale();
+		document.documentElement.dir = getTextDirection();
+	});
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
