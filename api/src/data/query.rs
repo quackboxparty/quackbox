@@ -2,7 +2,42 @@
 //!
 //! All filter operators are ANDed together. Mirrors `query.ts`.
 
+use std::collections::{HashMap, HashSet};
+
 use super::types::*;
+
+/// Cache of pack id → resolved question ids, reused across board slots.
+pub type PackCache = HashMap<String, Vec<String>>;
+
+/// Resolve a pack to its full list of question IDs: included packs first
+/// (recursively), then explicit `questions`, then `filter` matches.
+/// Order-preserving dedup. Unknown packs resolve to empty.
+pub fn resolve_pack(ds: &LoadedDataset, cache: &mut PackCache, pack_id: &str) -> Vec<String> {
+    if let Some(cached) = cache.get(pack_id) {
+        return cached.clone();
+    }
+
+    let Some(entry) = ds.packs.get(pack_id) else {
+        return Vec::new();
+    };
+    let pack = &entry.item;
+
+    let mut ids = Vec::new();
+
+    for incl in pack.includes.iter().flatten() {
+        ids.extend(resolve_pack(ds, cache, incl));
+    }
+    ids.extend(pack.questions.iter().flatten().cloned());
+    if let Some(ref filter) = pack.filter {
+        ids.extend(query_pool(ds, filter));
+    }
+
+    let mut seen = HashSet::new();
+    ids.retain(|id| seen.insert(id.clone()));
+
+    cache.insert(pack_id.to_owned(), ids.clone());
+    ids
+}
 
 /// Returns question IDs matching all filter criteria.
 pub fn query_pool(ds: &LoadedDataset, filter: &PackFilter) -> Vec<String> {

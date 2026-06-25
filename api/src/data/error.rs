@@ -6,9 +6,4 @@ use thiserror::Error;
 pub enum LoadError {
     #[error("IO: {0}")]
     Io(#[from] std::io::Error),
-    #[error("YAML parse: {path}: {source}")]
-    Yaml {
-        path: String,
-        source: serde_yaml::Error,
-    },
 }

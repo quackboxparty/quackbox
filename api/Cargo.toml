@@ -6,7 +6,8 @@ edition = "2024"
 [dependencies]
 axum = { version = "0.8.9", features = ["ws", "tracing"] }
 config = { version = "0.15.24", default-features = false, features = ["toml", "convert-case" ]}
-garde = { version = "0.23.0", features = ["derive"] }
+garde = { version = "0.23.0", features = ["derive", "regex"] }
+regex = "1"
 opentelemetry = "0.32.0"
 opentelemetry-otlp = "0.32.0"
 opentelemetry-semantic-conventions = "0.32.0"

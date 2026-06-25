@@ -17,6 +17,7 @@ pub struct Prompt {
 #[derive(Debug, Clone, Deserialize, Validate)]
 #[garde(allow_unvalidated)]
 pub struct Choice {
+    #[garde(custom(valid_slug))]
     pub id: String,
     pub text: String,
     pub correct: Option<bool>,
@@ -145,6 +146,7 @@ fn numeric_has_variant(v: &NumericVariants, _ctx: &()) -> garde::Result {
 #[derive(Debug, Clone, Deserialize, Validate)]
 #[garde(allow_unvalidated)]
 pub struct TextContent {
+    #[garde(custom(valid_locale))]
     pub default_lang: String,
     #[garde(dive)]
     pub prompt: Prompt,
@@ -157,6 +159,7 @@ pub struct TextContent {
 #[derive(Debug, Clone, Deserialize, Validate)]
 #[garde(allow_unvalidated)]
 pub struct NumericContent {
+    #[garde(custom(valid_locale))]
     pub default_lang: String,
     #[garde(dive)]
     pub prompt: Prompt,
@@ -170,6 +173,7 @@ pub struct NumericContent {
 #[derive(Debug, Clone, Deserialize, Validate)]
 #[garde(allow_unvalidated)]
 pub struct OrderItem {
+    #[garde(custom(valid_slug))]
     pub id: String,
     pub text: String,
     #[garde(range(min = 1))]
@@ -182,6 +186,7 @@ pub struct OrderItem {
 #[derive(Debug, Clone, Deserialize, Validate)]
 #[garde(allow_unvalidated)]
 pub struct OrderContent {
+    #[garde(custom(valid_locale))]
     pub default_lang: String,
     #[garde(dive)]
     pub prompt: Prompt,
@@ -218,11 +223,15 @@ fn order_items_valid(items: &[OrderItem], _ctx: &()) -> garde::Result {
 #[derive(Debug, Clone, Deserialize, Validate)]
 #[garde(allow_unvalidated)]
 pub struct QuestionBase {
+    #[garde(custom(valid_question_id))]
     pub id: String,
+    #[garde(custom(valid_tag_refs))]
     pub tags: Vec<String>,
     pub deprecated: Option<Deprecation>,
+    #[garde(custom(valid_opt_locale))]
     pub lang_locked: Option<String>,
     pub license: Option<License>,
+    #[garde(dive)]
     pub sources: Option<Vec<Source>>,
 }
 

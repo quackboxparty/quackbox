@@ -2,11 +2,13 @@ use garde::Validate;
 use serde::Deserialize;
 use std::collections::HashMap;
 
+use super::common::*;
 use super::pack::PackFilter;
 
 #[derive(Debug, Clone, Deserialize, Validate)]
 #[garde(allow_unvalidated)]
 pub struct BoardFile {
+    #[garde(custom(valid_board_id))]
     pub id: String,
     pub title: String,
     #[serde(default)]

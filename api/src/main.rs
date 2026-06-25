@@ -9,11 +9,11 @@ use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::{AppConfig, load};
-use crate::data::DataStore;
+use crate::data::LoadedDataset;
 
 struct AppState {
     config: AppConfig,
-    data: DataStore,
+    data: LoadedDataset,
 }
 
 #[tokio::main]
@@ -29,23 +29,23 @@ async fn main() {
 
     let config = load().expect("couldn't load config");
 
-    let data = DataStore::load("../data").expect("failed to load data");
-    if data.issues().is_empty() {
+    let data = data::load("../data").expect("failed to load data");
+    if data.issues.is_empty() {
         tracing::info!(
             "dataset loaded: {} questions, {} packs, {} tags",
-            data.questions().len(),
-            data.packs().len(),
-            data.tags().len()
+            data.questions.len(),
+            data.packs.len(),
+            data.tags.len()
         );
     } else {
         tracing::info!(
             "dataset loaded: {} questions, {} packs, {} tags ({} issues)",
-            data.questions().len(),
-            data.packs().len(),
-            data.tags().len(),
-            data.issues().len()
+            data.questions.len(),
+            data.packs.len(),
+            data.tags.len(),
+            data.issues.len()
         );
-        for issue in data.issues() {
+        for issue in &data.issues {
             tracing::warn!("{issue}");
         }
     }

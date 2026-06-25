@@ -5,7 +5,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use super::query::query_pool;
+use super::query::{query_pool, resolve_pack, PackCache};
 use super::types::*;
 
 /// Resolved board: `grid[category_idx][point_idx] = Some(question_id) | None`.
@@ -34,7 +34,7 @@ pub fn build_board(
     let issues = Vec::new();
     let mut rng = Mulberry32::new(opts.seed);
     let mut used = HashSet::new();
-    let mut pack_cache: HashMap<String, Vec<String>> = HashMap::new();
+    let mut pack_cache: PackCache = PackCache::new();
 
     let diff_map: HashMap<&str, &[String]> = board
         .difficulty_map
@@ -86,7 +86,7 @@ fn build_candidates(
     cat: &BoardCategory,
     point_key: &str,
     ds: &LoadedDataset,
-    pack_cache: &mut HashMap<String, Vec<String>>,
+    pack_cache: &mut PackCache,
     diff_map: &HashMap<&str, &[String]>,
 ) -> Vec<String> {
     let mut candidates = Vec::new();
@@ -116,38 +116,6 @@ fn build_candidates(
     }
 
     candidates
-}
-
-fn resolve_pack(
-    ds: &LoadedDataset,
-    cache: &mut HashMap<String, Vec<String>>,
-    pack_id: &str,
-) -> Vec<String> {
-    if let Some(cached) = cache.get(pack_id) {
-        return cached.clone();
-    }
-
-    let Some(entry) = ds.packs.get(pack_id) else {
-        return Vec::new();
-    };
-    let pack = &entry.item;
-
-    let mut ids = Vec::new();
-
-    for incl in pack.includes.iter().flatten() {
-        ids.extend(resolve_pack(ds, cache, incl));
-    }
-    ids.extend(pack.questions.iter().flatten().cloned());
-    if let Some(ref filter) = pack.filter {
-        ids.extend(query_pool(ds, filter));
-    }
-
-    // Deduplicate preserving order
-    let mut seen = HashSet::new();
-    ids.retain(|id| seen.insert(id.clone()));
-
-    cache.insert(pack_id.to_owned(), ids.clone());
-    ids
 }
 
 fn pick_random(pool: &[&String], rng: &mut Mulberry32) -> Option<String> {

@@ -1,3 +1,4 @@
+use garde::Validate;
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq, Hash)]
@@ -17,9 +18,12 @@ pub enum License {
     MIT,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Validate)]
+#[garde(allow_unvalidated)]
 pub struct Source {
+    #[garde(pattern(r"^https?://"))]
     pub url: String,
+    #[garde(pattern(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$"))]
     #[serde(default)]
     pub accessed: Option<String>,
     #[serde(default)]
@@ -69,3 +73,98 @@ pub const TAG_CATEGORIES: &[&str] = &[
     "format",
     "warning",
 ];
+
+use std::sync::LazyLock;
+use regex::Regex;
+
+static TAG_REF_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^(subject|difficulty|audience|region|format|warning):[a-z0-9][a-z0-9_]*$").unwrap()
+});
+static SLUG_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^[a-z0-9][a-z0-9_]*$").unwrap()
+});
+static QUESTION_ID_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^q_[a-z0-9][a-z0-9_]*$").unwrap()
+});
+static PACK_ID_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^pack_[a-z0-9][a-z0-9_]*$").unwrap()
+});
+static BOARD_ID_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^board_[a-z0-9][a-z0-9_]*$").unwrap()
+});
+static LOCALE_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^[a-z]{2}(-[A-Z]{2})?$").unwrap()
+});
+
+pub fn valid_tag_ref(value: &str, _ctx: &()) -> garde::Result {
+    if TAG_REF_RE.is_match(value) { Ok(()) }
+    else { Err(garde::Error::new(format!("invalid tag ref: '{value}'")))}
+}
+
+pub fn valid_tag_refs(value: &[String], _ctx: &()) -> garde::Result {
+    for v in value {
+        if !TAG_REF_RE.is_match(v) {
+            return Err(garde::Error::new(format!("invalid tag ref: '{v}'")));
+        }
+    }
+    Ok(())
+}
+
+pub fn valid_opt_tag_refs(value: &Option<Vec<String>>, _ctx: &()) -> garde::Result {
+    for v in value.iter().flatten() {
+        if !TAG_REF_RE.is_match(v) {
+            return Err(garde::Error::new(format!("invalid tag ref: '{v}'")));
+        }
+    }
+    Ok(())
+}
+
+pub fn valid_slug(value: &str, _ctx: &()) -> garde::Result {
+    if SLUG_RE.is_match(value) { Ok(()) }
+    else { Err(garde::Error::new(format!("invalid slug: '{value}'")))}
+}
+
+pub fn valid_question_id(value: &str, _ctx: &()) -> garde::Result {
+    if QUESTION_ID_RE.is_match(value) { Ok(()) }
+    else { Err(garde::Error::new(format!("invalid question id: '{value}'")))}
+}
+
+pub fn valid_opt_question_ids(value: &Option<Vec<String>>, _ctx: &()) -> garde::Result {
+    for v in value.iter().flatten() {
+        if !QUESTION_ID_RE.is_match(v) {
+            return Err(garde::Error::new(format!("invalid question id: '{v}'")));
+        }
+    }
+    Ok(())
+}
+
+pub fn valid_pack_id(value: &str, _ctx: &()) -> garde::Result {
+    if PACK_ID_RE.is_match(value) { Ok(()) }
+    else { Err(garde::Error::new(format!("invalid pack id: '{value}'")))}
+}
+
+pub fn valid_pack_ids(value: &Option<Vec<String>>, _ctx: &()) -> garde::Result {
+    for v in value.iter().flatten() {
+        if !PACK_ID_RE.is_match(v) {
+            return Err(garde::Error::new(format!("invalid pack id: '{v}'")));
+        }
+    }
+    Ok(())
+}
+
+pub fn valid_board_id(value: &str, _ctx: &()) -> garde::Result {
+    if BOARD_ID_RE.is_match(value) { Ok(()) }
+    else { Err(garde::Error::new(format!("invalid board id: '{value}'")))}
+}
+
+pub fn valid_locale(value: &str, _ctx: &()) -> garde::Result {
+    if LOCALE_RE.is_match(value) { Ok(()) }
+    else { Err(garde::Error::new(format!("invalid locale: '{value}'")))}
+}
+
+pub fn valid_opt_locale(value: &Option<String>, _ctx: &()) -> garde::Result {
+    match value {
+        Some(v) => valid_locale(v, _ctx),
+        None => Ok(()),
+    }
+}
