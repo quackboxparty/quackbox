@@ -14,17 +14,15 @@ content they accept.
 
 ## Status
 
-> **Architecture migration in progress.** The backend is moving to **Rust +
-> axum**; SvelteKit is becoming a pure static frontend (no server, no remote
-> functions). The data layer is being ported from TS/valibot to Rust
-> (`api/src/data/`); `ts-rs` exports Rust types to TS. The TS data layer
-> (`src/lib/server/data/`, `src/lib/schemas/`) is **legacy**, to be removed at
-> parity. The tech-stack and remote-function notes below predate this shift and
-> apply only to the legacy TS side. **`docs/architecture.md` is the canonical
-> runtime reference** (backend ownership, transport, concurrency, game-session
-> model); `docs/data-model.md` remains canonical for content shape.
+> **Backend is Rust + axum**; SvelteKit is a pure static frontend (no server, no
+> remote functions). The data layer lives in Rust (`api/src/data/`); `ts-rs`
+> exports Rust types to TS. The legacy TS data layer (`src/lib/server/data/`,
+> `src/lib/schemas/`) and its valibot/effect schemas have been **removed** — Rust
+> reached parity. **`docs/architecture.md` is the canonical runtime reference**
+> (backend ownership, transport, concurrency, game-session model);
+> `docs/data-model.md` remains canonical for content shape.
 
-Data layer implemented (TS, being ported to Rust): schemas, JSON Schema export, YAML loader, cross-file validation, pool query engine, board builder, and example dataset (20 questions, German overlays, 1 pack, grid_quiz gamemode). Game runtime and UI not yet built.
+Data layer implemented in Rust: types, garde validation, YAML loader, cross-file validation, pool query engine, board builder, and example dataset (20 questions, German overlays, 1 pack, grid_quiz gamemode). Game runtime and UI not yet built. JSON Schema export for editor YAML LSP is not yet re-sourced from Rust (the old TS-generated `schemas/*.json` were removed).
 
 ## Tech stack
 
@@ -45,10 +43,6 @@ Data layer implemented (TS, being ported to Rust): schemas, JSON Schema export, 
 - **Vitest** + **Playwright** for tests; **ESLint + Prettier**.
 - **pnpm** workspaces.
 
-**Legacy (being removed at parity):** the TS data layer
-(`src/lib/server/data/`) and valibot schemas (`src/lib/schemas/`), superseded
-by the Rust port in `api/src/data/`.
-
 Runtime concurrency: each game room is an isolated `tokio` task (mpsc in,
 broadcast out); state streams to clients over WebSocket as role-specific
 projections. See `docs/architecture.md`.
@@ -63,8 +57,6 @@ api/                # Rust backend
     data/           # loader, validate, query, board, error, types/
 src/                # SvelteKit static frontend
   lib/
-    schemas/        # LEGACY valibot schemas — removed at Rust parity
-    server/data/    # LEGACY TS data layer — removed at Rust parity
     paraglide/      # generated UI i18n runtime — do not edit
     themes/         # CSS theme tokens + per-theme stylesheets
     components/     # shared Svelte components
@@ -78,9 +70,7 @@ docs/
   glossary.md       # domain vocabulary
   decisions/        # ADRs
 data/               # content: questions/, i18n/, packs/, tags/, media/
-schemas/            # generated JSON Schemas (committed) — 16 files
 gamemodes/          # grid_quiz/ with manifest.yaml + boards/
-scripts/            # gen-schemas.ts, validate-data.ts (legacy TS tooling)
 ```
 
 ## Architectural rules (from data-model.md)
@@ -102,8 +92,9 @@ scripts/            # gen-schemas.ts, validate-data.ts (legacy TS tooling)
 - **Licenses are SPDX from an allowlist**, schema-validated.
 - **IDs are public API** — `q_<slug>`, `pack_<slug>`, `board_<slug>`, gamemode bare slug.
   No rename/delete without deprecation marker.
-- **Validation runs at three points:** editor (YAML LSP), CI (validate-data),
-  runtime (server start). Same schema definitions everywhere.
+- **Validation runs at:** CI (validate step) and runtime (server start, via
+  `cargo run` loading `../data`). Editor YAML LSP is pending a Rust-sourced
+  JSON Schema export. Same Rust schema definitions everywhere.
 
 When in doubt about content shape, **read `docs/data-model.md`**; for the
 runtime, **read `docs/architecture.md`** — they are the spec, this file is just
@@ -121,97 +112,43 @@ pnpm format           # prettier --write
 pnpm test:unit        # vitest
 pnpm test:e2e         # playwright (auto-installs browsers)
 pnpm test             # unit + e2e
-pnpm gen:schemas     # JSON Schema export (writes schemas/) — legacy TS tooling
-pnpm validate-data   # load + validate all YAML data (requires nix develop) — legacy TS tooling
 ```
 
 Backend (Rust), from `api/`:
 
 ```sh
-cargo run             # load ../data, serve ../build + API
+cargo run             # load ../data (validates, logs issues), serve ../build + API
 cargo test
 ```
 
-Planned (not yet implemented): `new-question` scaffolding.
-
-> The `neverthrow` guidance below applies to the **legacy TS data layer** only.
-> Rust code uses `Result` / `thiserror` idiomatically.
-
-## neverthrow usage
-
-We use `neverthrow` (`Result` / `ResultAsync`) for operations where success and
-failure need **different handling** — the caller branches on the outcome.
-
-### When to use
-
-- **Parse/validation boundaries** — `parse()` in `util.ts` returns
-  `ResultAsync<Schema, LoadIssue[]>` because callers either use the parsed
-  value or collect issues.
-- **Init functions** — `loadDataset()`, `initDataset()` return
-  `ResultAsync` so catastrophic failures (unreadable dir, broken YAML)
-  flow through the error channel, not as thrown exceptions.
-- **Accessors with precondition** — `getDataset()` returns
-  `Result<LoadedDataset, 'not_initialized'>` instead of throwing,
-  forcing callers to handle the uninitialized case at the type level.
-
-### When NOT to use
-
-- **Diagnostic accumulation** — when you always collect both files AND
-  issues and never branch (e.g. `walkYaml`), use plain `{ files, issues }`
-  return. Wrapping in Result adds ceremony with no real benefit.
-- **Simple existence checks** — `try { await stat(f) } catch { continue }`
-  is clearer than a `ResultAsync` chain when you just skip on ENOENT.
-- **Side-effect-only error handling** — use `.orTee()` not `.match()`
-  when only the error path matters (avoids empty ok callback, lint noise).
-
-### Key API patterns
-
-- `fromAsyncThrowable` over `ResultAsync.fromPromise` — catches sync throws
-  AND promise rejections. Use it for wrapping async functions that could
-  throw before returning a promise.
-- `.map()` accepts async callbacks (`Promise<U>`) with no type change.
-- `.andTee()` / `.orTee()` for side effects that must not affect the
-  result (logging, cleanup).
-- `_unsafeUnwrap()` in tests — neverthrow's recommended test pattern,
-  cleaner than `.match()` with throw.
-
-### Never guess at neverthrow API
-
-**Always read the neverthrow docs before using an API.** Don't assume a
-method exists (e.g. `.finally()` does not exist on `ResultAsync`) or
-guess at callback signatures (e.g. `.match()` callbacks are sync-only,
-can't `await` inside them; `.andThen()` already narrows to Ok so chaining
-`.andThen().match()` with redundant ok unwrap is a smell). Check first.
-
-Docs: https://github.com/supermacro/neverthrow
+Planned (not yet implemented): `new-question` scaffolding, Rust JSON Schema
+export for editor YAML LSP.
 
 ## Conventions
 
 - Svelte 5 runes (`$state`, `$derived`, `$effect`), not legacy reactive `$:`.
 - Frontend talks to the backend over REST (cold content) + WebSocket (live game
   state); no SvelteKit server logic (the adapter is static).
-- Schema definitions are the source of truth; JSON Schema is generated, never
-  hand-edited. (Definitions live in Rust `api/src/data/types/` post-port;
-  valibot `src/lib/schemas/` until then.)
+- Schema definitions are the source of truth and live in Rust
+  (`api/src/data/types/`, validated by `garde`); TS types are generated via
+  `ts-rs`, never hand-edited.
+- Rust code uses `Result` / `thiserror` idiomatically for fallible paths.
 - No comments restating what code does; comment only non-obvious _why_.
 - Don't edit `src/lib/paraglide/**` — generated.
 
 ## Implementation order (from data-model.md §Implementation order)
 
-Steps 1–9 done on the legacy TS data layer. See `docs/data-model.md` for details.
+Data layer (schemas, loader, validation, query, board, example dataset, first
+gamemode) is done and ported to Rust (`api/src/data/`); the legacy TS layer has
+been removed. See `docs/data-model.md` for details. Remaining:
 
-1. ✅ Schema definitions (legacy valibot in `src/lib/schemas/`).
-2. ✅ JSON Schema export.
-3. ✅ Data loader.
-4. ✅ CI scripts: validate-data + schema export.
-5. ✅ Example dataset (20 questions, German overlays, 1 pack, grid_quiz).
-6. ✅ Pool query engine + board builder.
-7. ✅ First gamemode: `grid_quiz` (manifest + boards; no runtime wiring yet).
-8. ✅ Tests: 53 across 8 files.
-9. ○ Port the data layer to Rust (`api/src/data/`); remove the legacy TS layer.
-10. ○ Game runtime (rooms, WebSocket, scoring) — see `docs/architecture.md`.
-11. ○ Second gamemode to validate gamemode-agnostic claim.
-12. ○ `new-question` scaffolding script.
+1. ✅ Data layer in Rust: types, loader, cross-file validation, query, board.
+2. ✅ Example dataset (20 questions, German overlays, 1 pack, grid_quiz).
+3. ✅ First gamemode: `grid_quiz` (manifest + boards; no runtime wiring yet).
+4. ○ Game runtime (rooms, WebSocket, scoring) — see `docs/architecture.md`.
+5. ○ Second gamemode to validate gamemode-agnostic claim.
+6. ○ `new-question` scaffolding script.
+7. ○ Rust JSON Schema export for editor YAML LSP.
 
 ## Open questions
 

@@ -6,14 +6,13 @@
 > (questions, packs, gamemodes, media, translations) is stored on disk,
 > validated, and loaded at runtime.
 >
-> **Migration note:** the data layer is being ported from TypeScript/valibot to
-> **Rust** (`api/src/data/`, validation via `garde`, types exported to TS via
-> `ts-rs`). This doc remains canonical for **content shape**; the runtime is now
-> Rust + axum (REST + WebSocket), documented in `docs/architecture.md` (see also
-> ADR `docs/decisions/0001-rust-axum-backend-sveltekit-static.md`). Tooling
-> references below that name valibot / `src/lib/` / SvelteKit remote functions
-> describe the legacy TS implementation being replaced; the **validation checks
-> and content rules themselves are unchanged** across the port.
+> **Stack note:** the data layer lives in **Rust** (`api/src/data/`, validation
+> via `garde`, types exported to TS via `ts-rs`); the legacy TS/valibot
+> implementation has been removed at parity. This doc remains canonical for
+> **content shape**; the runtime is Rust + axum (REST + WebSocket), documented in
+> `docs/architecture.md` (see also ADR
+> `docs/decisions/0001-rust-axum-backend-sveltekit-static.md`). The validation
+> checks and content rules are unchanged from the original TS implementation.
 
 ## Goals
 
@@ -505,7 +504,7 @@ internet; only `local:` is guaranteed offline — see the offline-capable note i
 - For `local:` refs: file must exist under `data/media/`, file extension must
   match declared `kind` (e.g. `kind: audio` rejects `.png`).
 - For `local:` refs: file size cap (**100 KB for images**, **1 MB for
-  audio/video** — enforced by `validate-data`; large clips should be `url:` or
+  audio/video** — enforced at load/validate; large clips should be `url:` or
   `youtube:`).
 - For `url:` refs: must be `https://`, scheme-validated only — no liveness
   check in CI (too flaky).
@@ -797,19 +796,19 @@ pack references.
 
 ### Schemas
 
-The schema definitions are the single source of truth (TS/valibot today,
-porting to Rust types validated by `garde`). They drive three things:
+The schema definitions are the single source of truth — Rust types validated by
+`garde` (`api/src/data/types/`). They drive:
 
-1. **Native types** — inferred (valibot) or derived (Rust) for the data layer.
-2. **TS types for the frontend** — via `ts-rs` on the Rust side.
-3. **JSON Schema** — written to `schemas/*.schema.json`, committed for editor
-   support (YAML LSP).
+1. **Native types** for the data layer.
+2. **TS types for the frontend** — via `ts-rs`.
+3. **JSON Schema** for editor YAML LSP — not yet re-sourced from Rust (the old
+   TS-generated `schemas/*.json` were removed with the legacy layer).
 
 ### Validation points
 
 | Where                              | What                                                          | Status |
 | ---------------------------------- | ------------------------------------------------------------- | ------ |
-| Editor (developer/contributor)     | YAML LSP reads `schemas/*.json` → autocomplete + inline errors | ✅     |
+| Editor (developer/contributor)     | YAML LSP via JSON Schema — pending Rust-sourced export         | ○     |
 | CI                                 | Loads every YAML, runs schema + cross-file checks, fails on errors | ✅     |
 | Runtime (server start / pack load) | Same schemas, fail loudly with question ID context            | ✅     |
 
@@ -904,37 +903,36 @@ These were debated; the design above reflects the chosen path.
    whole choices array)?
 7. **`pnpm new-question` script** — scaffolds a new question entry with a
    unique slug, required fields, and correct tag categories. Not yet built.
-8. **Gamemode schema export** — `gamemode.schema.json` is not in the schema-export
-   targets yet; should it be? (Gamemodes are code + manifest, less editor-driven
-   than questions/packs.)
+8. **Gamemode manifest validation** — gamemode manifests are not parsed/validated
+   by the Rust data layer yet (only `recommended_gamemodes` IDs on packs are
+   checked). Add a Rust manifest type + validation if/when gamemode loading is
+   wired. (Gamemodes are code + manifest, less editor-driven than
+   questions/packs.)
 
 ## Implementation order
 
-Steps 1–9 were completed on the **legacy TS data layer**; that layer is now
-being ported to Rust (`api/src/data/`) — same content rules, same checks. The
-descriptions below note the original TS locations for history.
+Steps 1–6 are done in Rust (`api/src/data/`); the data layer was first built in
+TS and then ported to Rust at parity, after which the legacy TS layer
+(`src/lib/server/data/`, `src/lib/schemas/`) was removed — same content rules,
+same checks.
 
-1. ✅ Schema definitions (question, question-overlay, pack, pack-overlay,
-   gamemode, board, tag, media, common).
-2. ✅ JSON Schema export → 16 schemas committed in `schemas/`.
-3. ✅ Data loader (parse YAML → validate → build indexes). Cross-file validation:
+1. ✅ Schema definitions / types (question, question-overlay, pack, pack-overlay,
+   board, tag, media, common) — Rust, validated by `garde`.
+2. ✅ Data loader (parse YAML → validate → build indexes). Cross-file validation:
    duplicate IDs, dangling refs, tag refs, overlay refs, pack cycles, media
    existence/kind/size.
-4. ✅ CI scripts: validate-data + schema export.
-5. ✅ Example dataset: 5 canonical question files (~20 Qs across text/numeric/
+3. ✅ Example dataset: 5 canonical question files (~20 Qs across text/numeric/
    order kinds, with `local:` media refs), German overlays, 1 pack, 6 tag
    registries (3 populated), 4 flag SVGs.
-6. ✅ Pool query engine — `queryPool(filter)` with ANDed `kinds`, `tags_all`,
+4. ✅ Pool query engine — `query_pool(filter)` with ANDed `kinds`, `tags_all`,
    `tags_any`, `tags_none`, `variants_any`, `limit`.
-7. ✅ Board builder — resolves board categories via explicit IDs, pack refs, or
+5. ✅ Board builder — resolves board categories via explicit IDs, pack refs, or
    filter queries; deduplicates; deterministic shuffle via `mulberry32` PRNG.
-8. ✅ First gamemode: `grid_quiz` (Jeopardy-style) with manifest + board YAML.
+6. ✅ First gamemode: `grid_quiz` (Jeopardy-style) with manifest + board YAML.
    No runtime wiring yet.
-9. ✅ Schema tests + loader tests: 53 tests across 8 files (legacy TS).
-10. ○ **Port the data layer to Rust** (`api/src/data/`) to parity, then remove the
-    legacy TS layer (`src/lib/server/data/`, `src/lib/schemas/`).
-11. ○ Game runtime (rooms, WebSocket, scoring) — see `docs/architecture.md`.
-12. ○ Second gamemode (`battle_royale` or `music_quiz`) to validate the
-    gamemode-agnostic claim.
-13. ○ `new-question` scaffolding script.
-14. ○ Deprecated-question warnings in validation.
+7. ○ Game runtime (rooms, WebSocket, scoring) — see `docs/architecture.md`.
+8. ○ Second gamemode (`battle_royale` or `music_quiz`) to validate the
+   gamemode-agnostic claim.
+9. ○ `new-question` scaffolding script.
+10. ○ Rust JSON Schema export for editor YAML LSP.
+11. ○ Deprecated-question warnings in validation.

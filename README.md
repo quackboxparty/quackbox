@@ -41,10 +41,10 @@ pnpm test:unit    # vitest
 
 ```sh
 cd api
-cargo run         # loads ../data, serves ../build + the API
+cargo run         # loads ../data (validates, logs issues), serves ../build + the API
 cargo test
 ```
 
-The data layer is being ported from the legacy TS implementation
-(`src/lib/server/data/`, `src/lib/schemas/`) to Rust (`api/src/data/`); the TS
-layer is removed at parity.
+The data layer (content load/validate/query/board) lives in Rust
+(`api/src/data/`); the legacy TS implementation has been removed now that Rust
+reached parity.

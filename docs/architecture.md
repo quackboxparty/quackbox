@@ -1,7 +1,7 @@
 # Quackbox — Runtime Architecture
 
 > Status: **design**. The data layer (content load/validate/query/board) is
-> implemented and being ported to Rust; the game runtime described here is not
+> implemented in Rust (`api/src/data/`); the game runtime described here is not
 > built yet. Scope: how the backend serves content and drives live multiplayer
 > game sessions. Content shape is in `data-model.md`; UX flow is in
 > `game-flow.md`. This doc is the canonical reference for backend ownership,
@@ -30,9 +30,9 @@ LLM judge) are opt-in and **gracefully absent offline**, never a hard dependency
 for core play. Keep the core play path free of outbound calls. See
 `docs/decisions/0003-offline-capable-self-host.md`.
 
-The TS data layer (`src/lib/server/data/`) and valibot schemas
-(`src/lib/schemas/`) are **legacy** — superseded by the Rust port in
-`api/src/data/`. They should be removed once the Rust port reaches parity.
+The legacy TS data layer (`src/lib/server/data/`) and its schemas
+(`src/lib/schemas/`) have been **removed** — the Rust port in `api/src/data/`
+reached parity and is now the sole data layer.
 
 ### Why Rust owns the data layer
 
@@ -348,7 +348,7 @@ The room task's `select!` races `mpsc recv` against `sleep_until(deadline)`.
 
 | Decision | Choice | Deferred / future |
 | --- | --- | --- |
-| Backend owner | Rust + axum owns data + runtime | remove legacy TS data layer |
+| Backend owner | Rust + axum owns data + runtime | — |
 | Types | `ts-rs` Rust → TS, Rust is source of truth | — |
 | Transport | REST (cold content) + WS (hot state) | — |
 | Concurrency | actor-per-room: owning task + mpsc in + broadcast out | — |
