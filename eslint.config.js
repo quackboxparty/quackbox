@@ -4,7 +4,6 @@ import svelte from 'eslint-plugin-svelte';
 import { defineConfig } from 'eslint/config';
 import globals from 'globals';
 import ts from 'typescript-eslint';
-import effectPlugin from '@effect/eslint-plugin';
 
 import svelteConfig from './svelte.config.js';
 
@@ -16,11 +15,11 @@ export default defineConfig(
 			'build/**',
 			'dist/**',
 			'node_modules/**',
+			'api/target/**',
 			'src/lib/paraglide/**',
 			'coverage/**',
 			'playwright-report/**',
-			'test-results/**',
-			'schemas/**'
+			'test-results/**'
 		]
 	},
 
@@ -103,23 +102,5 @@ export default defineConfig(
 			'@typescript-eslint/no-explicit-any': 'off',
 			'@typescript-eslint/no-non-null-assertion': 'off'
 		}
-	},
-
-	// Force specific submodule imports over the `effect` barrel, mirroring the
-	// Effect language service's `importFromBarrel` diagnostic. Keeps tree-shaking
-	// honest and matches the v4 split-package convention.
-	//
-	// Exception: the `src/lib/schemas/` directory is a leaf that genuinely
-	// needs the whole Schema namespace — `effect/Schema` doesn't re-export
-	// one, and listing every individual import would obscure the schema
-	// definitions. We rely on the `import type` rule (above) to keep the
-	// client bundle clean and on SvelteKit's `$lib/server/` convention for
-	// the runtime values.
-	{
-		plugins: { '@effect': effectPlugin },
-		rules: {
-			'@effect/no-import-from-barrel-package': ['error', { packageNames: ['effect'] }]
-		},
-		ignores: ['src/lib/schemas/**']
 	}
 );

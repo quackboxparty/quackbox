@@ -14,48 +14,73 @@ content they accept.
 
 ## Status
 
-Data layer implemented: valibot schemas, JSON Schema export, YAML loader, cross-file validation, pool query engine, board builder, and example dataset (20 questions, German overlays, 1 pack, grid_quiz gamemode). Runtime wiring (SvelteKit remote functions) and UI not yet built. Design doc is `docs/data-model.md` (canonical reference for schema, i18n, tagging, packs, media, gamemodes, boards).
+> **Architecture migration in progress.** The backend is moving to **Rust +
+> axum**; SvelteKit is becoming a pure static frontend (no server, no remote
+> functions). The data layer is being ported from TS/valibot to Rust
+> (`api/src/data/`); `ts-rs` exports Rust types to TS. The TS data layer
+> (`src/lib/server/data/`, `src/lib/schemas/`) is **legacy**, to be removed at
+> parity. The tech-stack and remote-function notes below predate this shift and
+> apply only to the legacy TS side. **`docs/architecture.md` is the canonical
+> runtime reference** (backend ownership, transport, concurrency, game-session
+> model); `docs/data-model.md` remains canonical for content shape.
+
+Data layer implemented (TS, being ported to Rust): schemas, JSON Schema export, YAML loader, cross-file validation, pool query engine, board builder, and example dataset (20 questions, German overlays, 1 pack, grid_quiz gamemode). Game runtime and UI not yet built.
 
 ## Tech stack
 
-- **SvelteKit 2 + Svelte 5** (runes), Node adapter (`@sveltejs/adapter-node`)
-- **TypeScript** (strict)
-- **Vite 8** for build/dev
-- **Valibot** for schemas — single source of truth for TS types **and**
-  JSON Schema (via `@valibot/to-json-schema`) exported to `schemas/*.json`
-  for YAML LSP editor support
-- **YAML** (`yaml` package) for all content files
-- **Paraglide JS** (inlang) for UI i18n; messages in `messages/{en,de}.json`
-- **Vitest** (unit + component via `vitest-browser-svelte`) and
-  **Playwright** for e2e
-- **ESLint + Prettier** (+ `prettier-plugin-svelte`, `eslint-plugin-svelte`)
-- **pnpm** workspaces
+**Backend (Rust):**
 
-Runtime concurrency uses SvelteKit **remote functions** (`query.live`,
-`command`, `form`) to stream game state to clients. Data layer has zero
-coupling to SvelteKit.
+- **Rust + axum** (`api/`) — data layer + live game runtime. Serves the static
+  frontend and the API (REST for cold content, WebSocket for live game state).
+- **`garde`** for validation, **`serde_yaml`** for content parsing.
+- **`ts-rs`** exports Rust types to TS — single source of truth for shared types.
+- **`tokio`** for the per-room actor concurrency model.
+
+**Frontend (SvelteKit, static):**
+
+- **SvelteKit 2 + Svelte 5** (runes), **`@sveltejs/adapter-static`** — no server,
+  no SSR, built to `build/` and served by the Rust backend.
+- **TypeScript** (strict), **Vite** for build/dev.
+- **Paraglide JS** (inlang) for UI i18n; messages in `messages/{en,de}.json`.
+- **Vitest** + **Playwright** for tests; **ESLint + Prettier**.
+- **pnpm** workspaces.
+
+**Legacy (being removed at parity):** the TS data layer
+(`src/lib/server/data/`) and valibot schemas (`src/lib/schemas/`), superseded
+by the Rust port in `api/src/data/`.
+
+Runtime concurrency: each game room is an isolated `tokio` task (mpsc in,
+broadcast out); state streams to clients over WebSocket as role-specific
+projections. See `docs/architecture.md`.
 
 ## Layout (current + planned)
 
 ```
-src/
+api/                # Rust backend
+  src/
+    main.rs         # axum: load data, serve build/ + API
+    config.rs
+    data/           # loader, validate, query, board, error, types/
+src/                # SvelteKit static frontend
   lib/
-    schemas/        # valibot schemas — question, question-overlay, pack, pack-overlay, gamemode, board, tag, media, common
-    data/           # loader: YAML → validate → build indexes → cross-file checks → pool query → board builder
+    schemas/        # LEGACY valibot schemas — removed at Rust parity
+    server/data/    # LEGACY TS data layer — removed at Rust parity
     paraglide/      # generated UI i18n runtime — do not edit
     themes/         # CSS theme tokens + per-theme stylesheets
     components/     # shared Svelte components
   routes/           # SvelteKit routes
   hooks.ts          # paraglide locale handling
-  hooks.server.ts
 messages/           # paraglide UI strings (en, de)
 project.inlang/     # paraglide config
 docs/
-  data-model.md     # canonical design doc — read first
+  architecture.md   # canonical runtime reference
+  data-model.md     # canonical content reference
+  glossary.md       # domain vocabulary
+  decisions/        # ADRs
 data/               # content: questions/, i18n/, packs/, tags/, media/
 schemas/            # generated JSON Schemas (committed) — 16 files
 gamemodes/          # grid_quiz/ with manifest.yaml + boards/
-scripts/            # gen-schemas.ts, validate-data.ts
+scripts/            # gen-schemas.ts, validate-data.ts (legacy TS tooling)
 ```
 
 ## Architectural rules (from data-model.md)
@@ -77,12 +102,12 @@ scripts/            # gen-schemas.ts, validate-data.ts
 - **Licenses are SPDX from an allowlist**, schema-validated.
 - **IDs are public API** — `q_<slug>`, `pack_<slug>`, `board_<slug>`, gamemode bare slug.
   No rename/delete without deprecation marker.
-- **Validation runs at three points:** editor (YAML LSP), CI
-  (`pnpm validate-data`), runtime (server start). Same valibot schemas
-  everywhere.
+- **Validation runs at three points:** editor (YAML LSP), CI (validate-data),
+  runtime (server start). Same schema definitions everywhere.
 
-When in doubt about content shape, **read `docs/data-model.md`** — it is
-the spec, this file is just orientation.
+When in doubt about content shape, **read `docs/data-model.md`**; for the
+runtime, **read `docs/architecture.md`** — they are the spec, this file is just
+orientation.
 
 ## Scripts
 
@@ -96,11 +121,21 @@ pnpm format           # prettier --write
 pnpm test:unit        # vitest
 pnpm test:e2e         # playwright (auto-installs browsers)
 pnpm test             # unit + e2e
-pnpm gen:schemas     # valibot → JSON Schema export (writes schemas/)
-pnpm validate-data   # load + validate all YAML data (requires nix develop)
+pnpm gen:schemas     # JSON Schema export (writes schemas/) — legacy TS tooling
+pnpm validate-data   # load + validate all YAML data (requires nix develop) — legacy TS tooling
 ```
 
-Planned (not yet implemented): `pnpm new-question`.
+Backend (Rust), from `api/`:
+
+```sh
+cargo run             # load ../data, serve ../build + API
+cargo test
+```
+
+Planned (not yet implemented): `new-question` scaffolding.
+
+> The `neverthrow` guidance below applies to the **legacy TS data layer** only.
+> Rust code uses `Result` / `thiserror` idiomatically.
 
 ## neverthrow usage
 
@@ -153,28 +188,30 @@ Docs: https://github.com/supermacro/neverthrow
 ## Conventions
 
 - Svelte 5 runes (`$state`, `$derived`, `$effect`), not legacy reactive `$:`.
-- Server logic in remote functions, not ad-hoc `+server.ts` where
-  avoidable — keeps validation (valibot) co-located with the call.
-- New content schema = valibot first, JSON Schema generated, never
-  hand-edited.
+- Frontend talks to the backend over REST (cold content) + WebSocket (live game
+  state); no SvelteKit server logic (the adapter is static).
+- Schema definitions are the source of truth; JSON Schema is generated, never
+  hand-edited. (Definitions live in Rust `api/src/data/types/` post-port;
+  valibot `src/lib/schemas/` until then.)
 - No comments restating what code does; comment only non-obvious _why_.
 - Don't edit `src/lib/paraglide/**` — generated.
 
 ## Implementation order (from data-model.md §Implementation order)
 
-Steps 1–9 done. See `docs/data-model.md` for details.
+Steps 1–9 done on the legacy TS data layer. See `docs/data-model.md` for details.
 
-1. ✅ Valibot schemas in `src/lib/schemas/`.
-2. ✅ `pnpm gen:schemas` JSON Schema export.
-3. ✅ Data loader in `src/lib/data/`.
-4. ✅ CI scripts: `validate-data` and `gen:schemas`.
+1. ✅ Schema definitions (legacy valibot in `src/lib/schemas/`).
+2. ✅ JSON Schema export.
+3. ✅ Data loader.
+4. ✅ CI scripts: validate-data + schema export.
 5. ✅ Example dataset (20 questions, German overlays, 1 pack, grid_quiz).
 6. ✅ Pool query engine + board builder.
 7. ✅ First gamemode: `grid_quiz` (manifest + boards; no runtime wiring yet).
 8. ✅ Tests: 53 across 8 files.
-9. ○ SvelteKit runtime wiring (remote functions).
-10. ○ Second gamemode to validate gamemode-agnostic claim.
-11. ○ `pnpm new-question` scaffolding script.
+9. ○ Port the data layer to Rust (`api/src/data/`); remove the legacy TS layer.
+10. ○ Game runtime (rooms, WebSocket, scoring) — see `docs/architecture.md`.
+11. ○ Second gamemode to validate gamemode-agnostic claim.
+12. ○ `new-question` scaffolding script.
 
 ## Open questions
 

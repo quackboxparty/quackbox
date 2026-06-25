@@ -200,8 +200,9 @@ flow is gamemode-specific and will be documented per gamemode.
 
 General principles:
 
-- State is streamed via SvelteKit `query.live` — all clients see updates in
-  real-time
+- State is streamed over WebSocket from the Rust backend — all clients see
+  updates in real-time (each connection gets a role-specific projection; see
+  `docs/architecture.md`)
 - Players on phones see the **player view** (their answer input)
 - The big screen shows the **board/public view** (question, scores, animations)
 - Admin controls are an overlay on the host/display view, not a separate page

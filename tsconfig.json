@@ -1,5 +1,4 @@
 {
-	"$schema": "./node_modules/@effect/language-service/schema.json",
 	"extends": "./.svelte-kit/tsconfig.json",
 	"include": [
 		"ambient.d.ts",
@@ -40,8 +39,7 @@
 		"verbatimModuleSyntax": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
-		"moduleResolution": "bundler",
-		"plugins": [{ "name": "@effect/language-service" }]
+		"moduleResolution": "bundler"
 	}
 	// Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
 	// except $lib which is handled by https://svelte.dev/docs/kit/configuration#files

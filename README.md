@@ -1,42 +1,50 @@
-# sv
+# Quackbox
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Self-hostable, multi-gamemode, open quiz platform — think Kahoot/ClassQuiz, but
+with multiple gamemodes (classic, battle royale, survival, music quiz, jeopardy,
+…) sharing a single pool of community-contributed, translatable questions.
 
-## Creating a project
+Content (questions, packs, tags, media) lives in the repo as human-editable,
+PR-reviewable YAML. A self-hosted instance runs the core game loop **offline**
+after setup — set it up at home, play on a LAN, no internet required.
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Architecture
 
-```sh
-# create a new project
-npx sv create my-app
-```
+- **Rust + axum backend** (`api/`) — owns content loading/validation/query/board
+  and the live game runtime (rooms over WebSocket). Single source of truth for
+  shared types via `ts-rs`.
+- **SvelteKit static frontend** (`adapter-static`) — built to `build/`, served
+  by the Rust backend. No SvelteKit server, no SSR.
 
-To recreate this project with the same configuration:
+See the docs for the full picture:
 
-```sh
-# recreate this project
-pnpm dlx sv@0.15.3 create --template minimal --types ts --add prettier eslint vitest="usages:unit,component" playwright paraglide="languageTags:en,de+demo:no" sveltekit-adapter="adapter:node" --install pnpm quackbox
-```
+- `docs/architecture.md` — runtime: backend ownership, transport, concurrency,
+  game-session model. **Canonical runtime reference.**
+- `docs/data-model.md` — content shape: schemas, i18n, tagging, packs, media,
+  gamemodes, boards. **Canonical content reference.**
+- `docs/game-flow.md` — host & player UX journeys.
+- `docs/glossary.md` — domain vocabulary.
+- `docs/decisions/` — architecture decision records.
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
+## Frontend (SvelteKit)
 
 ```sh
-npm run build
+pnpm install
+pnpm dev          # vite dev server
+pnpm build        # static build → build/
+pnpm check        # svelte-kit sync + svelte-check
+pnpm lint         # prettier --check + eslint
+pnpm test:unit    # vitest
 ```
 
-You can preview the production build with `npm run preview`.
+## Backend (Rust)
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+```sh
+cd api
+cargo run         # loads ../data, serves ../build + the API
+cargo test
+```
+
+The data layer is being ported from the legacy TS implementation
+(`src/lib/server/data/`, `src/lib/schemas/`) to Rust (`api/src/data/`); the TS
+layer is removed at parity.
