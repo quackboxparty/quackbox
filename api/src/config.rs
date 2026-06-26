@@ -8,6 +8,8 @@ pub struct AppConfig {
 
     #[serde(default = "default_port")]
     pub port: u16,
+
+    pub admin_secret: Option<String>,
 }
 
 fn default_host() -> String {
@@ -21,8 +23,5 @@ pub fn load() -> Result<AppConfig, ConfigError> {
     Config::builder()
         .add_source(Environment::with_prefix("APP"))
         .build()
-        .map(|s| {
-            s.try_deserialize()
-                .expect("couldn't convert into AppConfig")
-        })
+        .and_then(|s| s.try_deserialize())
 }

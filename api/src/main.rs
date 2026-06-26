@@ -1,20 +1,23 @@
 mod config;
 mod data;
+mod game;
+mod http;
+mod protocol;
+mod state;
 
 use std::sync::Arc;
 
 use axum::Router;
+use axum::extract::State;
+use axum::routing::get;
+use dashmap::DashMap;
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::config::{AppConfig, load};
-use crate::data::LoadedDataset;
-
-struct AppState {
-    config: AppConfig,
-    data: LoadedDataset,
-}
+use crate::config::load;
+use crate::http::{rest, ws};
+use crate::state::AppState;
 
 #[tokio::main]
 async fn main() {
@@ -50,16 +53,23 @@ async fn main() {
         }
     }
 
-    let state = Arc::new(AppState { config, data });
+    let state = Arc::new(AppState {
+        config,
+        data,
+        rooms: DashMap::new(),
+    });
+    let addr = format!("{}:{}", state.config.host, state.config.port);
 
     let serve_dir =
         ServeDir::new("../build").not_found_service(ServeFile::new("../build/index.html"));
 
     let app = Router::new()
+        .nest("/api", rest::router())
+        .merge(ws::router())
         .fallback_service(serve_dir)
-        .layer(TraceLayer::new_for_http());
+        .layer(TraceLayer::new_for_http())
+        .with_state(state);
 
-    let addr = format!("{}:{}", state.config.host, state.config.port);
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     tracing::debug!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
