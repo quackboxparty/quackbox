@@ -4,8 +4,8 @@ use axum::{Json, Router, extract::State, http::StatusCode, response::IntoRespons
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    game::room::spawn_room,
-    state::{AppState, JoinCode},
+    game::room::{JoinCode, spawn_room},
+    state::AppState,
 };
 
 #[derive(Serialize, Deserialize)]

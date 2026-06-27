@@ -23,6 +23,7 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
 dashmap = "6.2.1"
 rand = "0.10.1"
 futures-util = "0.3.32"
+uuid = { version = "1.23.4", features = ["v4"] }
 
 [dev-dependencies]
 tempfile = "3"

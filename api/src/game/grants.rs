@@ -9,3 +9,16 @@
 //! its own. Joiner = {Play}; others assigned via a moderator-only Grant command.
 //!
 //! TODO: Grant enum, GrantSet, helpers.
+
+use std::collections::HashSet;
+
+use serde::Serialize;
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, Serialize)]
+pub enum Grant {
+    Play,
+    Present,
+    Moderate,
+}
+
+pub type GrantSet = HashSet<Grant>;

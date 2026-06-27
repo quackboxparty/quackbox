@@ -11,41 +11,89 @@
 //!
 //! TODO: RoomHandle, spawn_room, the select! loop.
 
+use std::collections::{HashMap, HashSet};
+
+use rand::RngExt;
 use tokio::sync::{broadcast, mpsc};
 
 use crate::{
-    protocol::{
-        ClientView, Command,
-        ServerMessage::{self, Snapshot},
+    game::{
+        grants::Grant::Play,
+        state::{GameState, PlayerSlot, Token},
     },
-    state::{JoinCode, RoomHandle},
+    protocol::{JoinError, RoomMessage},
 };
 
-pub fn spawn_room(code: JoinCode) -> RoomHandle {
-    let (command_tx, mut command_rx) = mpsc::channel::<Command>(64);
-    let (server_tx, _) = broadcast::channel::<ServerMessage>(16);
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct JoinCode(pub String);
 
-    let server_tx_loop = server_tx.clone();
+const ALPHABET: &[u8] = b"ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no 0 O 1 I L
+const LEN: usize = 6;
+
+impl JoinCode {
+    pub fn generate() -> Self {
+        let mut rng = rand::rng();
+        JoinCode(
+            (0..LEN)
+                .map(|_| {
+                    let i = rng.random_range(0..ALPHABET.len());
+                    ALPHABET[i] as char
+                })
+                .collect(),
+        )
+    }
+}
+
+#[derive(Clone)]
+pub struct RoomHandle {
+    pub command_tx: mpsc::Sender<RoomMessage>,
+    pub state_tx: broadcast::Sender<GameState>,
+}
+
+pub fn spawn_room(code: JoinCode) -> RoomHandle {
+    let (room_msg_tx, mut room_msg_rx) = mpsc::channel::<RoomMessage>(64);
+    let (state_tx, _) = broadcast::channel::<GameState>(16);
+
+    let state_tx_loop = state_tx.clone();
     tokio::spawn(async move {
-        let mut state = ClientView {
-            players: Vec::new(),
+        let mut state = GameState {
+            player_slots: HashMap::new(),
         };
-        while let Some(command) = command_rx.recv().await {
-            tracing::info!("command {:?} received in room {}", command, &code.0);
-            match command {
-                Command::Join { name } => {
-                    state.players.push(name);
+        while let Some(room_msg) = room_msg_rx.recv().await {
+            match room_msg {
+                RoomMessage::Join { name, reply } => {
+                    tracing::info!("player {} wants to join", &name);
+                    let taken = state.player_slots.values().any(|slot| slot.name == name);
+                    if taken {
+                        let _ = reply.send(Err(JoinError::NameTaken));
+                    } else {
+                        let token = Token::generate();
+                        state.player_slots.insert(
+                            token.clone(),
+                            PlayerSlot {
+                                name,
+                                connected: true,
+                                grants: HashSet::new(),
+                            },
+                        );
+                        let _ = reply.send(Ok(token));
+                        let _ = state_tx_loop.send(state.clone());
+                    }
+                }
+                RoomMessage::Client { token, cmd } => {
+                    tracing::info!("command {:?} received in room {}", cmd, &code.0);
+                    state.apply(cmd);
+                    let _ = state_tx_loop.send(state.clone());
                 }
                 _ => {
-                    todo!()
+                    todo!("rest of room msg")
                 }
             }
-            let _ = server_tx_loop.send(Snapshot(state.clone()));
         }
     });
 
     RoomHandle {
-        command_tx,
-        server_tx,
+        command_tx: room_msg_tx,
+        state_tx,
     }
 }

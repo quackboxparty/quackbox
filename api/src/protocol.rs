@@ -21,13 +21,44 @@
 //! TODO: define ServerMsg, ClientView; flesh out Command's full variant set.
 
 use serde::{Deserialize, Serialize};
+use tokio::sync::oneshot;
+
+use crate::game::state::Token;
+
+#[derive(Debug)]
+pub enum RoomMessage {
+    Join {
+        name: String,
+        reply: oneshot::Sender<Result<Token, JoinError>>,
+    },
+    Client {
+        token: Token,
+        cmd: Command,
+    },
+    Disconnect {
+        token: Token,
+    },
+}
+
+#[derive(Debug)]
+pub enum JoinError {
+    NameTaken,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "type")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[cfg_attr(test, ts(export, export_to = "ClientMessage.ts"))]
+pub enum ClientMessage {
+    Join { name: String },
+    Authed { token: String, cmd: Command },
+}
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type")]
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[cfg_attr(test, ts(export, export_to = "Command.ts"))]
 pub enum Command {
-    Join { name: String },
     Buzz,
     Answer { text: String },
     ExtendTimer { delta_secs: u32 },
@@ -38,6 +69,7 @@ pub enum Command {
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[cfg_attr(test, ts(export, export_to = "ServerMessage.ts"))]
 pub enum ServerMessage {
+    Joined { token: String },
     Snapshot(ClientView),
     Notify(Notification),
     Error { message: String },

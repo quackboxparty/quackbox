@@ -25,8 +25,17 @@ use axum::{
     routing::any,
 };
 use futures_util::{SinkExt, StreamExt};
+use tokio::sync::oneshot;
 
-use crate::{AppState, protocol::Command, state::JoinCode};
+use crate::{
+    AppState,
+    game::{room::JoinCode, state::Token},
+    protocol::{
+        ClientMessage, Command, JoinError,
+        RoomMessage::{self, Client},
+        ServerMessage,
+    },
+};
 
 pub fn router() -> Router<Arc<AppState>> {
     Router::new().route("/ws/{join_code}", any(ws_handler))
@@ -46,27 +55,74 @@ async fn handle_socket(socket: WebSocket, join_code: String, state: Arc<AppState
     };
 
     let command_tx = room.command_tx.clone();
-    let mut server_rx = room.server_tx.subscribe();
+    let mut state_rx = room.state_tx.subscribe();
+    let (reply_tx, reply_rx) = oneshot::channel::<Result<Token, JoinError>>();
 
     let (mut ws_out, mut ws_in) = socket.split();
 
     let mut read_task = tokio::spawn(async move {
+        let Some(Ok(Message::Text(txt))) = ws_in.next().await else {
+            return;
+        };
+        let Ok(first) = serde_json::from_str::<ClientMessage>(&txt) else {
+            return;
+        };
+        match first {
+            ClientMessage::Join { name } => {
+                let _ = command_tx
+                    .send(RoomMessage::Join {
+                        name,
+                        reply: reply_tx,
+                    })
+                    .await;
+            }
+            ClientMessage::Authed { token, cmd } => {
+                let _ = command_tx
+                    .send(RoomMessage::Client {
+                        token: Token(token),
+                        cmd,
+                    })
+                    .await;
+            }
+        };
         while let Some(Ok(msg)) = ws_in.next().await {
             if let Message::Text(txt) = msg
-                && let Ok(cmd) = serde_json::from_str::<Command>(&txt)
+                && let Ok(ClientMessage::Authed { token, cmd }) = serde_json::from_str(&txt)
             {
-                let _ = command_tx.send(cmd).await;
+                let _ = command_tx
+                    .send(RoomMessage::Client {
+                        token: Token(token),
+                        cmd,
+                    })
+                    .await;
             }
         }
     });
 
     let mut write_task = tokio::spawn(async move {
-        while let Ok(snapshot) = server_rx.recv().await {
-            let json = serde_json::to_string(&snapshot).unwrap();
-            if ws_out.send(Message::Text(json.into())).await.is_err() {
-                break;
+        match reply_rx.await {
+            Ok(Ok(token)) => {
+                let joined = ServerMessage::Joined {
+                    token: token.0.clone(),
+                };
+                let json = serde_json::to_string(&joined).unwrap();
+                if ws_out.send(Message::Text(json.into())).await.is_err() {
+                    return;
+                }
+
+                while let Ok(gamestate) = state_rx.recv().await {
+                    todo!("the projection happens here")
+                    // let json = serde_json::to_string(&gamestate).unwrap();
+                    // if ws_out.send(Message::Text(json.into())).await.is_err() {
+                    //     break;
+                    // }
+                }
             }
-        }
+            Ok(Err(e)) => {
+                todo!("send error to client")
+            }
+            Err(_) => return,
+        };
     });
 
     tokio::select! {

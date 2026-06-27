@@ -11,44 +11,15 @@
 //! TODO: move `AppState` here out of `main.rs`; add the `rooms` registry.
 
 use dashmap::DashMap;
-use rand::RngExt;
-use serde::{Deserialize, Serialize};
-use tokio::sync::{broadcast, mpsc};
 
 use crate::{
     config::AppConfig,
     data::LoadedDataset,
-    protocol::{Command, ServerMessage},
+    game::room::{JoinCode, RoomHandle},
 };
 
 pub struct AppState {
     pub config: AppConfig,
     pub data: LoadedDataset,
     pub rooms: DashMap<JoinCode, RoomHandle>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct JoinCode(pub String);
-
-const ALPHABET: &[u8] = b"ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no 0 O 1 I L
-const LEN: usize = 6;
-
-impl JoinCode {
-    pub fn generate() -> Self {
-        let mut rng = rand::rng();
-        JoinCode(
-            (0..LEN)
-                .map(|_| {
-                    let i = rng.random_range(0..ALPHABET.len());
-                    ALPHABET[i] as char
-                })
-                .collect(),
-        )
-    }
-}
-
-#[derive(Clone)]
-pub struct RoomHandle {
-    pub command_tx: mpsc::Sender<Command>,
-    pub server_tx: broadcast::Sender<ServerMessage>,
 }
