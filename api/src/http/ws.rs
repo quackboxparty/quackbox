@@ -29,7 +29,7 @@ use tokio::sync::oneshot;
 
 use crate::{
     AppState,
-    game::{room::JoinCode, state::Token},
+    game::{project::project, room::JoinCode, state::Token},
     protocol::{
         ClientMessage, Command, JoinError,
         RoomMessage::{self, Client},
@@ -86,9 +86,11 @@ async fn handle_socket(socket: WebSocket, join_code: String, state: Arc<AppState
             }
         };
         while let Some(Ok(msg)) = ws_in.next().await {
-            if let Message::Text(txt) = msg
-                && let Ok(ClientMessage::Authed { token, cmd }) = serde_json::from_str(&txt)
-            {
+            if let Message::Text(txt) = msg {
+                let Ok(ClientMessage::Authed { token, cmd }) = serde_json::from_str(&txt) else {
+                    tracing::debug!("closing socket because of invalid packet");
+                    break;
+                };
                 let _ = command_tx
                     .send(RoomMessage::Client {
                         token: Token(token),
@@ -100,29 +102,49 @@ async fn handle_socket(socket: WebSocket, join_code: String, state: Arc<AppState
     });
 
     let mut write_task = tokio::spawn(async move {
-        match reply_rx.await {
-            Ok(Ok(token)) => {
-                let joined = ServerMessage::Joined {
-                    token: token.0.clone(),
-                };
-                let json = serde_json::to_string(&joined).unwrap();
-                if ws_out.send(Message::Text(json.into())).await.is_err() {
-                    return;
-                }
-
-                while let Ok(gamestate) = state_rx.recv().await {
-                    todo!("the projection happens here")
-                    // let json = serde_json::to_string(&gamestate).unwrap();
-                    // if ws_out.send(Message::Text(json.into())).await.is_err() {
-                    //     break;
-                    // }
-                }
-            }
+        let token = match reply_rx.await {
+            Ok(Ok(token)) => token,
             Ok(Err(e)) => {
-                todo!("send error to client")
+                let msg = match e {
+                    JoinError::NameTaken => "Username is already taken!",
+                };
+                let json = serde_json::to_string(&ServerMessage::Error {
+                    message: msg.into(),
+                })
+                .expect("serde infallible");
+                let _ = ws_out.send(Message::Text(json.into())).await;
+                return;
             }
             Err(_) => return,
         };
+
+        let joined = ServerMessage::Joined {
+            token: token.0.clone(),
+        };
+        let json = serde_json::to_string(&joined).expect("serde infallible");
+        if ws_out.send(Message::Text(json.into())).await.is_err() {
+            return;
+        }
+
+        while let Ok(gamestate) = state_rx.recv().await {
+            let grants = gamestate.grants_for(&token);
+            let view = match grants {
+                Some(grants) => project(&gamestate, grants),
+                None => {
+                    tracing::debug!("slot gone for live token; closing stream");
+                    let json = serde_json::to_string(&ServerMessage::Error {
+                        message: "You are no longer in this game.".into(),
+                    })
+                    .expect("serde infallible");
+                    let _ = ws_out.send(Message::Text(json.into())).await;
+                    break;
+                }
+            };
+            let json = serde_json::to_string(&view).expect("serde infallible");
+            if ws_out.send(Message::Text(json.into())).await.is_err() {
+                break;
+            }
+        }
     });
 
     tokio::select! {

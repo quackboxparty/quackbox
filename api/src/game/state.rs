@@ -27,6 +27,13 @@ impl GameState {
             }
         }
     }
+
+    pub(crate) fn grants_for(&self, token: &Token) -> Option<&GrantSet> {
+        match self.player_slots.get(token) {
+            Some(slot) => Some(&slot.grants),
+            None => None,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

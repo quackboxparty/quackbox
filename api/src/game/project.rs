@@ -9,3 +9,19 @@
 //! Carries a test: a {Play}-only view must never contain `correct_answer`.
 //!
 //! TODO: project() + the {Play}-excludes-correct_answer test.
+
+use crate::{
+    game::{grants::GrantSet, state::GameState},
+    protocol::ClientView,
+};
+
+pub fn project(gamestate: &GameState, grants: &GrantSet) -> ClientView {
+    let mut players: Vec<String> = gamestate
+        .player_slots
+        .values()
+        .map(|slot| slot.name.clone())
+        .collect();
+    players.sort();
+
+    ClientView { players }
+}
