@@ -17,8 +17,8 @@
 	--color-text: #1e293b;
 	--color-text-muted: #64748b;
 	--color-text-inverse: #ffffff;
-	--color-correct: #22c55e;
-	--color-wrong: #ef4444;
+	--color-success: #22c55e;
+	--color-danger: #ef4444;
 	--color-warning: #f59e0b;
 
 	/* ── Surfaces ── */

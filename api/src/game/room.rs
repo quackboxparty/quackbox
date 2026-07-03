@@ -21,7 +21,7 @@ use crate::{
         grants::Grant::Play,
         state::{GameState, PlayerSlot, Token},
     },
-    protocol::{JoinError, RoomMessage},
+    protocol::{ConnectionError, RoomMessage},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -60,12 +60,13 @@ pub fn spawn_room(code: JoinCode) -> RoomHandle {
             player_slots: HashMap::new(),
         };
         while let Some(room_msg) = room_msg_rx.recv().await {
+            tracing::info!("room msg {:?}", &room_msg);
             match room_msg {
                 RoomMessage::Join { name, reply } => {
                     tracing::info!("player {} wants to join", &name);
                     let taken = state.player_slots.values().any(|slot| slot.name == name);
                     if taken {
-                        let _ = reply.send(Err(JoinError::NameTaken));
+                        let _ = reply.send(Err(ConnectionError::NameTaken));
                     } else {
                         let token = Token::generate();
                         state.player_slots.insert(
@@ -76,13 +77,30 @@ pub fn spawn_room(code: JoinCode) -> RoomHandle {
                                 grants: HashSet::new(),
                             },
                         );
+
                         let _ = reply.send(Ok(token));
                         let _ = state_tx_loop.send(state.clone());
                     }
                 }
+                RoomMessage::Reconnect { token, reply } => {
+                    if let Some(slot) = state.player_slots.get_mut(&token) {
+                        slot.connected = true;
+
+                        let _ = reply.send(Ok(token));
+                        let _ = state_tx_loop.send(state.clone());
+                    } else {
+                        let _ = reply.send(Err(ConnectionError::SlotGone));
+                    }
+                }
+                RoomMessage::Disconnect { token } => {
+                    if let Some(slot) = state.player_slots.get_mut(&token) {
+                        slot.connected = false;
+                    }
+                }
                 RoomMessage::Client { token, cmd } => {
                     tracing::info!("command {:?} received in room {}", cmd, &code.0);
-                    state.apply(cmd);
+
+                    state.apply(token, cmd);
                     let _ = state_tx_loop.send(state.clone());
                 }
                 _ => {

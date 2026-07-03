@@ -4,6 +4,8 @@
 	"join_game": "Spiel beitreten",
 	"enter_join_code": "Beitrittscode eingeben",
 	"join": "Beitreten",
+	"room_not_found": "Raum existiert nicht!",
+	"error_generic": "Etwas ist schiefgelaufen!",
 	"host": "Hosten",
 	"menu": "Menü",
 	"settings": "Einstellungen",

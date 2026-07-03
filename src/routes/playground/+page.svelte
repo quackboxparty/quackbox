@@ -2,6 +2,7 @@
 	import Logo from '$lib/components/Logo.svelte';
 	import { themes, getTheme, setTheme, type ThemeId } from '$lib/themes';
 	import { themeLabel } from '$lib/i18n.svelte';
+	import { toast } from '$lib/toast.svelte';
 
 	let theme = $state<ThemeId>(getTheme());
 </script>
@@ -71,11 +72,20 @@
 			<span class="swatch" style="background: var(--color-accent)"></span> accent
 			<span
 				class="swatch"
-				style="background: var(--color-correct); border-color: var(--color-correct)"
+				style="background: var(--color-success); border-color: var(--color-success)"
 			></span>
-			correct
-			<span class="swatch" style="background: var(--color-wrong); border-color: var(--color-wrong)"
-			></span> wrong
+			success
+			<span class="swatch" style="background: var(--color-danger); border-color: var(--color-danger)"
+			></span> danger
+		</div>
+	</section>
+
+	<section class="demo">
+		<h2>Toast</h2>
+		<div class="color-row">
+			<button onclick={() => toast.success('Saved successfully')}>success</button>
+			<button onclick={() => toast.error('Something went wrong')}>error</button>
+			<button onclick={() => toast.info('Heads up')}>info</button>
 		</div>
 	</section>
 

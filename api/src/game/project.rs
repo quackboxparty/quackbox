@@ -19,6 +19,7 @@ pub fn project(gamestate: &GameState, grants: &GrantSet) -> ClientView {
     let mut players: Vec<String> = gamestate
         .player_slots
         .values()
+        .filter(|slot| slot.connected)
         .map(|slot| slot.name.clone())
         .collect();
     players.sort();

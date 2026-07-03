@@ -4,6 +4,8 @@
 	"join_game": "Join game",
 	"enter_join_code": "Enter join code",
 	"join": "Join",
+	"room_not_found": "Room does not exist!",
+	"error_generic": "Something went wrong!",
 	"host": "Host",
 	"menu": "Menu",
 	"settings": "Settings",

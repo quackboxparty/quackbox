@@ -21,7 +21,8 @@ pkgs.mkShell {
   PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = true;
   PLAYWRIGHT_HOST_PLATFORM_OVERRIDE = "ubuntu-24.04";
 
-  shellHook = ''
-    echo "dev env started"
-  '';
+  shellHook = # sh
+    ''
+      echo "dev env started"
+    '';
 }

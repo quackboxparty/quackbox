@@ -2,15 +2,43 @@
 	import Logo from '$lib/components/Logo.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import CodeInput from '$lib/components/CodeInput.svelte';
+	import TextInput from '$lib/components/TextInput.svelte';
 	import { m } from '$lib/paraglide/messages';
+	import { goto } from '$app/navigation';
+	import { api } from '$lib/api';
+	import { toast } from '$lib/toast.svelte';
 
 	let joinOpen = $state(false);
 	let hostOpen = $state(false);
 	let joinCode = $state('');
+	let secret = $state('');
 
-	function join() {
+	async function join() {
 		if (joinCode.length !== 6) return;
-		console.log('join', joinCode);
+
+		const result = await api.room.exists(joinCode);
+
+		if (!result.ok) {
+			toast.error(m.error_generic());
+			return;
+		}
+		if (!result.value) {
+			toast.error(m.room_not_found());
+			return;
+		}
+
+		await goto(`/room/${joinCode}`);
+	}
+
+	async function create() {
+		const result = await api.room.create(secret);
+
+		if (!result.ok) {
+			toast.error(m.error_generic());
+			return;
+		}
+
+		await goto(`/room/${result.value.join_code}`);
 	}
 </script>
 
@@ -26,9 +54,15 @@
 
 <Dialog bind:open={joinOpen} title={m.join_game()} description={m.enter_join_code()}>
 	<CodeInput bind:value={joinCode} onComplete={join} />
-	<button class="btn btn-primary" disabled={joinCode.length !== 6} onclick={join}>{m.join()}</button>
+	<button class="btn btn-primary" disabled={joinCode.length !== 6} onclick={join}>
+		{m.join()}
+	</button>
 </Dialog>
-<Dialog bind:open={hostOpen} title={m.host()} />
+<Dialog bind:open={hostOpen} title={m.host()}>
+	<form onsubmit={create}>
+		<TextInput bind:value={secret} placeholder="Secret" />
+	</form>
+</Dialog>
 
 <style>
 	.hero {

@@ -1,0 +1,7 @@
+#:schema https://dystroy.org/bacon/.bacon.schema.json
+
+# bacon defaults already define check, clippy, test, run, run-long, etc.
+# This file only holds overrides.
+
+[keybindings]
+l = "job:run-long"

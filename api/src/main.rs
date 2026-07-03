@@ -8,8 +8,6 @@ mod state;
 use std::sync::Arc;
 
 use axum::Router;
-use axum::extract::State;
-use axum::routing::get;
 use dashmap::DashMap;
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;

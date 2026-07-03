@@ -7,6 +7,7 @@ import { getTextDirection, getLocale } from '$lib/paraglide/runtime';
 	import favicon from '$lib/assets/favicon.svg';
 	import { initTheme } from '$lib/themes';
 	import FloatingBackground from '$lib/components/FloatingBackground.svelte';
+	import Toaster from '$lib/components/Toaster.svelte';
 
 	import '$lib/themes/reset.css';
 	import '$lib/themes/fonts.css';
@@ -39,3 +40,4 @@ import { getTextDirection, getLocale } from '$lib/paraglide/runtime';
 
 <FloatingBackground />
 {@render children()}
+<Toaster />

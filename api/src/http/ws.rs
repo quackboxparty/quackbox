@@ -31,8 +31,8 @@ use crate::{
     AppState,
     game::{project::project, room::JoinCode, state::Token},
     protocol::{
-        ClientMessage, Command, JoinError,
-        RoomMessage::{self, Client},
+        ClientMessage, ConnectionError,
+        RoomMessage::{self},
         ServerMessage,
     },
 };
@@ -55,8 +55,9 @@ async fn handle_socket(socket: WebSocket, join_code: String, state: Arc<AppState
     };
 
     let command_tx = room.command_tx.clone();
+    let disconnect_tx = room.command_tx.clone();
     let mut state_rx = room.state_tx.subscribe();
-    let (reply_tx, reply_rx) = oneshot::channel::<Result<Token, JoinError>>();
+    let (reply_tx, reply_rx) = oneshot::channel::<Result<Token, ConnectionError>>();
 
     let (mut ws_out, mut ws_in) = socket.split();
 
@@ -72,6 +73,14 @@ async fn handle_socket(socket: WebSocket, join_code: String, state: Arc<AppState
                 let _ = command_tx
                     .send(RoomMessage::Join {
                         name,
+                        reply: reply_tx,
+                    })
+                    .await;
+            }
+            ClientMessage::Reconnect { token } => {
+                let _ = command_tx
+                    .send(RoomMessage::Reconnect {
+                        token: Token(token),
                         reply: reply_tx,
                     })
                     .await;
@@ -101,12 +110,15 @@ async fn handle_socket(socket: WebSocket, join_code: String, state: Arc<AppState
         }
     });
 
+    let (token_tx, token_rx) = oneshot::channel::<Token>();
+
     let mut write_task = tokio::spawn(async move {
         let token = match reply_rx.await {
             Ok(Ok(token)) => token,
             Ok(Err(e)) => {
                 let msg = match e {
-                    JoinError::NameTaken => "Username is already taken!",
+                    ConnectionError::NameTaken => "Username is already taken!",
+                    ConnectionError::SlotGone => "You are not part of the room!",
                 };
                 let json = serde_json::to_string(&ServerMessage::Error {
                     message: msg.into(),
@@ -117,6 +129,7 @@ async fn handle_socket(socket: WebSocket, join_code: String, state: Arc<AppState
             }
             Err(_) => return,
         };
+        let _ = token_tx.send(token.clone());
 
         let joined = ServerMessage::Joined {
             token: token.0.clone(),
@@ -140,7 +153,8 @@ async fn handle_socket(socket: WebSocket, join_code: String, state: Arc<AppState
                     break;
                 }
             };
-            let json = serde_json::to_string(&view).expect("serde infallible");
+            let json =
+                serde_json::to_string(&ServerMessage::Snapshot(view)).expect("serde infallible");
             if ws_out.send(Message::Text(json.into())).await.is_err() {
                 break;
             }
@@ -150,5 +164,9 @@ async fn handle_socket(socket: WebSocket, join_code: String, state: Arc<AppState
     tokio::select! {
         _ = &mut read_task => write_task.abort(),
         _ = &mut write_task => read_task.abort()
+    }
+
+    if let Ok(token) = token_rx.await {
+        let _ = disconnect_tx.send(RoomMessage::Disconnect { token }).await;
     }
 }

@@ -105,6 +105,12 @@ its state, so it can snapshot per state-transition without locks, and boot
 restores the DashMap from rows. Persist timer **deadline timestamps**, not
 remaining seconds, so clocks survive wall-clock gaps.
 
+The full design for durable persistence and a highly available multi-pod
+Kubernetes deployment (a `Store` trait — SQLite self-host / Postgres cluster —
+plus room-affinity registry, redirect routing, and lease/fence failover) is
+recorded in `docs/decisions/0004-persistence-and-horizontal-scaling.md`. v1 code
+stays in-memory until the SQLite phase is built.
+
 ## Room identity & joining
 
 - **One identifier: a 6-char join code** (e.g. `A1B2C3`). It is the registry key

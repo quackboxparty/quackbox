@@ -20,7 +20,7 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn apply(&mut self, cmd: Command) {
+    pub fn apply(&mut self, token: Token, cmd: Command) {
         match cmd {
             _ => {
                 todo!()

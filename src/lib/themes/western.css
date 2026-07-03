@@ -7,8 +7,8 @@
 	--color-text: #e8d5b0;
 	--color-text-muted: #b8a080;
 	--color-text-inverse: #1a1008;
-	--color-correct: #6daa6d;
-	--color-wrong: #c04040;
+	--color-success: #6daa6d;
+	--color-danger: #c04040;
 	--color-warning: #d4a843;
 
 	/* ── Surfaces ── */

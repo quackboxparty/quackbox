@@ -6,7 +6,7 @@
 //! `protocol` ← `game` ← `http`.
 //!
 //! - `Command`   — client → server, tagged enum (Join, Buzz, Answer, Next,
-//!                 StartGame, Grant, ExtendTimer, …). `#[serde(tag = "type")]`.
+//!                 StartGame, Grant, ExtendTimer, …). `#[serde(tag = "kind")]`.
 //! - `ServerMsg` — server → client envelope (Snapshot(ClientView), Joined,
 //!                 Error, …).
 //! - `ClientView`— the per-role projection result: one type with OPTIONAL
@@ -29,7 +29,11 @@ use crate::game::state::Token;
 pub enum RoomMessage {
     Join {
         name: String,
-        reply: oneshot::Sender<Result<Token, JoinError>>,
+        reply: oneshot::Sender<Result<Token, ConnectionError>>,
+    },
+    Reconnect {
+        token: Token,
+        reply: oneshot::Sender<Result<Token, ConnectionError>>,
     },
     Client {
         token: Token,
@@ -41,23 +45,25 @@ pub enum RoomMessage {
 }
 
 #[derive(Debug)]
-pub enum JoinError {
+pub enum ConnectionError {
     NameTaken,
+    SlotGone,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-#[serde(tag = "type")]
+#[serde(tag = "kind")]
 #[cfg_attr(test, derive(ts_rs::TS))]
-#[cfg_attr(test, ts(export, export_to = "ClientMessage.ts"))]
+#[cfg_attr(test, ts(export, export_to = "Protocol.ts"))]
 pub enum ClientMessage {
     Join { name: String },
+    Reconnect { token: String },
     Authed { token: String, cmd: Command },
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-#[serde(tag = "type")]
+#[serde(tag = "kind")]
 #[cfg_attr(test, derive(ts_rs::TS))]
-#[cfg_attr(test, ts(export, export_to = "Command.ts"))]
+#[cfg_attr(test, ts(export, export_to = "Protocol.ts"))]
 pub enum Command {
     Buzz,
     Answer { text: String },
@@ -65,19 +71,18 @@ pub enum Command {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-#[serde(tag = "type")]
+#[serde(tag = "kind")]
 #[cfg_attr(test, derive(ts_rs::TS))]
-#[cfg_attr(test, ts(export, export_to = "ServerMessage.ts"))]
+#[cfg_attr(test, ts(export, export_to = "Protocol.ts"))]
 pub enum ServerMessage {
     Joined { token: String },
     Snapshot(ClientView),
-    Notify(Notification),
     Error { message: String },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(test, derive(ts_rs::TS))]
-#[cfg_attr(test, ts(export, export_to = "ClientView.ts"))]
+#[cfg_attr(test, ts(export, export_to = "Protocol.ts"))]
 pub struct ClientView {
     pub(crate) players: Vec<String>,
     // pub(crate) scoreboard: Option<Scoreboard>,
@@ -85,15 +90,6 @@ pub struct ClientView {
     // pub(crate) timer: Option<Deadline>,
     // pub(crate) controls: Option<Controls>,
     // pub(crate) stage: GamemodeView,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-#[serde(tag = "type")]
-#[cfg_attr(test, derive(ts_rs::TS))]
-#[cfg_attr(test, ts(export, export_to = "Notification.ts"))]
-pub enum Notification {
-    Joined,
-    Left,
 }
 
 #[cfg(test)]
@@ -105,6 +101,6 @@ mod tests {
     #[test]
     fn answer_uses_internally_tagged_shape() {
         let json = serde_json::to_string(&Command::Answer { text: "42".into() }).unwrap();
-        assert_eq!(json, r#"{"type":"Answer","text":"42"}"#);
+        assert_eq!(json, r#"{"kind":"Answer","text":"42"}"#);
     }
 }
