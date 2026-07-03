@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="src/lib/assets/logo.svg" alt="Quackbox logo" width="200" />
+  <img src="src/lib/assets/logo.png" alt="Quackbox logo" width="200" />
 </p>
 
 # Quackbox
