@@ -13,7 +13,6 @@ export type ThemeId =
 
 export interface ThemeMeta {
 	id: ThemeId;
-	label: string;
 	/** Emojis floating in the background */
 	emojis: string[];
 }
@@ -21,47 +20,38 @@ export interface ThemeMeta {
 export const themes: Record<ThemeId, ThemeMeta> = {
 	modern: {
 		id: 'modern',
-		label: 'Modern',
 		emojis: ['🦆', '❓', '💡', '🧠', '🎯', '✨', '📚', '🏆']
 	},
 	'modern-dark': {
 		id: 'modern-dark',
-		label: 'Modern Dark',
 		emojis: ['🌙', '🦆', '❓', '💡', '🧠', '🎯', '✨', '🔭']
 	},
 	retro: {
 		id: 'retro',
-		label: 'Retro',
 		emojis: ['👾', '🕹️', '👾', '⬛', '🟦', '🍄', '⭐', '🟡']
 	},
 	medieval: {
 		id: 'medieval',
-		label: 'Medieval',
 		emojis: ['⚔️', '🛡️', '🏰', '🐉', '👑', '📜', '🏹', '🔮']
 	},
 	neon: {
 		id: 'neon',
-		label: 'Neon',
 		emojis: ['🌆', '⚡', '💊', '🔫', '🤖', '🧬', '💿', '🔮']
 	},
 	chalkboard: {
 		id: 'chalkboard',
-		label: 'Chalkboard',
 		emojis: ['✏️', '📐', '📖', '🧪', '🌍', '🗑️', '🎒', '🔬']
 	},
 	kawaii: {
 		id: 'kawaii',
-		label: 'Kawaii',
 		emojis: ['🌸', '🦋', '🌈', '🐱', '🧁', '🎀', '☁️', '💕']
 	},
 	western: {
 		id: 'western',
-		label: 'Western',
 		emojis: ['🤠', '🐎', '🌵', '🔫', '💰', '🏜️', '🐄', '🎻']
 	},
 	wizard: {
 		id: 'wizard',
-		label: 'Wizard',
 		emojis: ['🧙', '🔮', '✨', '📖', '⚡', '🦉', '⚗️', '🪄']
 	}
 };

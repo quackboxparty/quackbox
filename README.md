@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="src/lib/assets/logo.svg" alt="Quackbox logo" width="200" />
+</p>
+
 # Quackbox
 
 Self-hostable, multi-gamemode, open quiz platform — think Kahoot/ClassQuiz, but

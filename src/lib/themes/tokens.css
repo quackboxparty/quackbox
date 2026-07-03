@@ -28,7 +28,7 @@
 	--bg-image: none;
 
 	/* ── Typography ── */
-	--font-heading: 'Inter', system-ui, sans-serif;
+	--font-heading: 'Poppins', system-ui, sans-serif;
 	--font-body: 'Inter', system-ui, sans-serif;
 	--font-mono: 'JetBrains Mono', ui-monospace, monospace;
 	--font-scale: 1;

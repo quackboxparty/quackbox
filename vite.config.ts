@@ -13,7 +13,11 @@ export default defineConfig({
 	},
 	plugins: [
 		sveltekit(),
-		paraglideVitePlugin({ outdir: './src/lib/paraglide', project: './project.inlang' })
+		paraglideVitePlugin({
+			outdir: './src/lib/paraglide',
+			project: './project.inlang',
+			strategy: ['cookie', 'preferredLanguage', 'baseLocale']
+		})
 	],
 	test: {
 		expect: { requireAssertions: true },

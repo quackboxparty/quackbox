@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 
 import { getTextDirection, getLocale } from '$lib/paraglide/runtime';
+	import { initReactiveLocale } from '$lib/i18n.svelte';
 
 	import favicon from '$lib/assets/favicon.svg';
 	import { initTheme } from '$lib/themes';
@@ -21,6 +22,7 @@ import { getTextDirection, getLocale } from '$lib/paraglide/runtime';
 
 	let { children }: { children: Snippet } = $props();
 
+	initReactiveLocale();
 	initTheme();
 
 	$effect(() => {
@@ -29,7 +31,11 @@ import { getTextDirection, getLocale } from '$lib/paraglide/runtime';
 	});
 </script>
 
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
+<svelte:head>
+	<link rel="icon" href={favicon} type="image/svg+xml" />
+	<link rel="icon" href="/favicon-32.png" sizes="32x32" />
+	<link rel="apple-touch-icon" href="/favicon-180.png" />
+</svelte:head>
 
 <FloatingBackground />
 {@render children()}
