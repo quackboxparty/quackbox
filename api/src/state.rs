@@ -14,12 +14,12 @@ use dashmap::DashMap;
 
 use crate::{
     config::AppConfig,
-    data::LoadedDataset,
+    data::Dataset,
     game::room::{JoinCode, RoomHandle},
 };
 
 pub struct AppState {
     pub config: AppConfig,
-    pub data: LoadedDataset,
+    pub data: Dataset,
     pub rooms: DashMap<JoinCode, RoomHandle>,
 }

@@ -4,11 +4,11 @@ use std::fs;
 use tempfile::TempDir;
 
 use super::loader::load_dataset;
-use super::types::LoadedDataset;
+use super::types::Dataset;
 use super::validate::run_cross_file_checks;
 
 /// Create a temp data dir, write files, load + cross-validate, return dataset.
-pub fn load(files: &[(&str, &str)]) -> LoadedDataset {
+pub fn load(files: &[(&str, &str)]) -> Dataset {
     let tmp = fixture(files);
     let mut ds = load_dataset(tmp.path()).expect("load_dataset failed");
     let cross = run_cross_file_checks(&ds);

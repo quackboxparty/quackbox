@@ -3,8 +3,10 @@
 //! Entry point: `data::load("data")` at server startup.
 
 mod error;
+#[cfg(feature = "game-runtime")]
 mod grid_quiz;
 mod loader;
+#[cfg(feature = "game-runtime")]
 mod query;
 mod types;
 mod validate;
@@ -19,9 +21,7 @@ pub use validate::run_cross_file_checks;
 
 use std::path::Path;
 
-/// Load all YAML data from `data_dir` and validate cross-file refs.
-/// Returns the ready-to-query dataset; non-fatal problems are in `issues`.
-pub fn load(data_dir: &str) -> Result<LoadedDataset, LoadError> {
+pub fn load(data_dir: &str) -> Result<Dataset, LoadError> {
     let mut dataset = load_dataset(Path::new(data_dir))?;
     dataset.issues.extend(run_cross_file_checks(&dataset));
     Ok(dataset)

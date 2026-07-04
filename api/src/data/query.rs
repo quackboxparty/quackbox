@@ -12,7 +12,7 @@ pub type PackCache = HashMap<String, Vec<String>>;
 /// Resolve a pack to its full list of question IDs: included packs first
 /// (recursively), then explicit `questions`, then `filter` matches.
 /// Order-preserving dedup. Unknown packs resolve to empty.
-pub fn resolve_pack(ds: &LoadedDataset, cache: &mut PackCache, pack_id: &str) -> Vec<String> {
+pub fn resolve_pack(ds: &Dataset, cache: &mut PackCache, pack_id: &str) -> Vec<String> {
     if let Some(cached) = cache.get(pack_id) {
         return cached.clone();
     }
@@ -40,18 +40,16 @@ pub fn resolve_pack(ds: &LoadedDataset, cache: &mut PackCache, pack_id: &str) ->
 }
 
 /// Returns question IDs matching all filter criteria.
-pub fn query_pool(ds: &LoadedDataset, filter: &PackFilter) -> Vec<String> {
-    let matched: Vec<&Entry<Question>> = ds
+pub fn query_pool(ds: &Dataset, filter: &PackFilter) -> Vec<String> {
+    let ids = ds
         .questions
         .values()
         .filter(|entry| matches_filter(&entry.item, filter))
-        .collect();
-
-    let ids: Vec<String> = matched.iter().map(|e| e.item.id().to_owned()).collect();
+        .map(|entry| entry.item.id().to_owned());
 
     match filter.limit {
-        Some(limit) => ids.into_iter().take(limit).collect(),
-        None => ids,
+        Some(limit) => ids.take(limit).collect(),
+        None => ids.collect(),
     }
 }
 

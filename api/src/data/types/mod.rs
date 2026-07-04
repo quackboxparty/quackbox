@@ -41,7 +41,7 @@ pub type Overlays = HashMap<String, LocaleOverlays>;
 
 /// The full loaded dataset, ready for cross-file checks and querying.
 #[derive(Debug, Clone)]
-pub struct LoadedDataset {
+pub struct Dataset {
     pub data_dir: String,
     pub questions: Registry<Question>,
     pub packs: Registry<Pack>,

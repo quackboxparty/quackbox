@@ -5,34 +5,15 @@
 
 use std::collections::{HashMap, HashSet};
 
-use super::query::{PackCache, query_pool, resolve_pack};
+use super::query::{query_pool, resolve_pack, PackCache};
 use super::types::*;
 
 /// Resolved board: `grid[category_idx][point_idx] = Some(question_id) | None`.
 pub type BoardGrid = Vec<Vec<Option<String>>>;
 
-pub struct BuildBoardOpts {
-    pub locale: String,
-    pub seed: u32,
-}
-
-impl Default for BuildBoardOpts {
-    fn default() -> Self {
-        Self {
-            locale: "en".into(),
-            seed: 42,
-        }
-    }
-}
-
 /// Build a resolved NxM board grid. Unresolvable slots are `None`.
-pub fn build_board(
-    ds: &LoadedDataset,
-    board: &BoardFile,
-    opts: &BuildBoardOpts,
-) -> (BoardGrid, Vec<LoadIssue>) {
-    let issues = Vec::new();
-    let mut rng = Mulberry32::new(opts.seed);
+pub fn build_board(ds: &Dataset, board: &Board, seed: u32) -> BoardGrid {
+    let mut rng = Mulberry32::new(seed);
     let mut used = HashSet::new();
     let mut pack_cache: PackCache = PackCache::new();
 
@@ -73,13 +54,13 @@ pub fn build_board(
         grid.push(row);
     }
 
-    (grid, issues)
+    grid
 }
 
 fn build_candidates(
     cat: &BoardCategory,
     point: &u32,
-    ds: &LoadedDataset,
+    ds: &Dataset,
     pack_cache: &mut PackCache,
     diff_map: &HashMap<&u32, &[String]>,
 ) -> Vec<String> {
@@ -104,9 +85,10 @@ fn build_candidates(
                 ds.questions
                     .get(qid)
                     .map(|e| {
-                        diff_tags
+                        e.item
+                            .tags()
                             .iter()
-                            .any(|tag| e.item.tags().contains(&tag.as_str().to_owned()))
+                            .any(|qtag| diff_tags.iter().any(|dtag| dtag == qtag))
                     })
                     .unwrap_or(false)
             });
@@ -120,12 +102,8 @@ fn pick_random(pool: &[&String], rng: &mut Mulberry32) -> Option<String> {
     if pool.is_empty() {
         return None;
     }
-    let mut shuffled: Vec<&String> = pool.to_vec();
-    for i in (1..shuffled.len()).rev() {
-        let j = (rng.next() * (i + 1) as f64) as usize;
-        shuffled.swap(i, j);
-    }
-    shuffled.first().map(|s| (*s).clone())
+    let idx = (rng.next() * pool.len() as f64) as usize;
+    Some((*pool[idx]).clone())
 }
 
 // ─── Mulberry32 PRNG ────────────────────────────────────────────────────────

@@ -33,17 +33,19 @@ async fn main() {
     let data = data::load("../data").expect("failed to load data");
     if data.issues.is_empty() {
         tracing::info!(
-            "dataset loaded: {} questions, {} packs, {} tags",
-            data.questions.len(),
-            data.packs.len(),
-            data.tags.len()
-        );
-    } else {
-        tracing::info!(
-            "dataset loaded: {} questions, {} packs, {} tags ({} issues)",
+            "dataset loaded: {} questions, {} packs, {} tags, {} games",
             data.questions.len(),
             data.packs.len(),
             data.tags.len(),
+            data.games.len()
+        );
+    } else {
+        tracing::info!(
+            "dataset loaded: {} questions, {} packs, {} tags, {} games ({} issues)",
+            data.questions.len(),
+            data.packs.len(),
+            data.tags.len(),
+            data.games.len(),
             data.issues.len()
         );
         for issue in &data.issues {
