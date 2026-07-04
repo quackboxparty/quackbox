@@ -192,7 +192,7 @@ pub enum Judge {
 impl GameEntry {
     /// Validate rules for this entry. Returns error if invalid combo found.
     // ponytail: inline validation, not a trait. One struct, skip abstraction.
-    pub fn validate(&self) -> Result<(), String> {
+    pub fn validate(&self) -> garde::Result {
         let rules = match self {
             GameEntry::GridQuiz(g) => &g.rules,
             GameEntry::Linear(g) => &g.rules,
@@ -209,56 +209,72 @@ impl GameEntry {
 
 fn valid_game_entries(entries: &[GameEntry], _ctx: &()) -> garde::Result {
     for (idx, entry) in entries.iter().enumerate() {
-        if let Err(msg) = entry.validate() {
-            return Err(garde::Error::new(format!("game[{idx}]: {msg}")));
+        if let Err(e) = entry.validate() {
+            return Err(garde::Error::new(format!("game[{idx}]: {}", e.message())));
         }
     }
     Ok(())
 }
 
-fn validate_rules(rules: &Rules) -> Result<(), String> {
+fn validate_rules(rules: &Rules) -> garde::Result {
+    let broadcast = rules.buzz_policy == BuzzPolicy::Broadcast;
     // Broadcast + FirstCorrect = nonsense (everyone answers, no "first")
-    if rules.buzz_policy == BuzzPolicy::Broadcast && rules.scoring_mode == ScoringMode::FirstCorrect
-    {
-        return Err("buzz_policy:broadcast incompatible with scoring_mode:first_correct".into());
+    if broadcast && rules.scoring_mode == ScoringMode::FirstCorrect {
+        return Err(garde::Error::new(
+            "buzz_policy:broadcast incompatible with scoring_mode:first_correct",
+        ));
     }
     // Broadcast + Steal != None = nonsense (everyone already answered, can't steal)
-    if rules.buzz_policy == BuzzPolicy::Broadcast && rules.steal_policy != StealPolicy::None {
-        return Err("buzz_policy:broadcast requires steal_policy:none".into());
+    if broadcast && rules.steal_policy != StealPolicy::None {
+        return Err(garde::Error::new(
+            "buzz_policy:broadcast requires steal_policy:none",
+        ));
     }
     // Lockout on broadcast = pointless (everyone answers, no one is locked from answering)
-    if rules.buzz_policy == BuzzPolicy::Broadcast && rules.lockout_policy != LockoutPolicy::None {
-        return Err("buzz_policy:broadcast requires lockout_policy:none".into());
+    if broadcast && rules.lockout_policy != LockoutPolicy::None {
+        return Err(garde::Error::new(
+            "buzz_policy:broadcast requires lockout_policy:none",
+        ));
     }
 
     if rules.question_timer_secs == 0 {
-        return Err("question_timer_secs must be greater than 0".into());
+        return Err(garde::Error::new(
+            "question_timer_secs must be greater than 0",
+        ));
     }
     if rules.answer_timer_secs == 0 {
-        return Err("answer_timer_secs must be greater than 0".into());
+        return Err(garde::Error::new(
+            "answer_timer_secs must be greater than 0",
+        ));
     }
 
     Ok(())
 }
 
-fn validate_grid_quiz(g: &GridQuizGame) -> Result<(), String> {
+fn validate_grid_quiz(g: &GridQuizGame) -> garde::Result {
     if g.board.points.len() < 2 {
-        return Err("grid_quiz board must define at least 2 point values".into());
+        return Err(garde::Error::new(
+            "grid_quiz board must define at least 2 point values",
+        ));
     }
     if g.board.categories.len() < 2 {
-        return Err("grid_quiz board must define at least 2 categories".into());
+        return Err(garde::Error::new(
+            "grid_quiz board must define at least 2 categories",
+        ));
     }
     if g.board.points.windows(2).any(|w| w[0] >= w[1]) {
-        return Err("grid_quiz board points must be strictly increasing and unique".into());
+        return Err(garde::Error::new(
+            "grid_quiz board points must be strictly increasing and unique",
+        ));
     }
 
     let point_set: HashSet<u32> = g.board.points.iter().copied().collect();
     if let Some(diff_map) = &g.board.difficulty_map {
         for point in diff_map.keys() {
             if !point_set.contains(point) {
-                return Err(format!(
+                return Err(garde::Error::new(format!(
                     "grid_quiz difficulty_map key {point} must be present in board.points"
-                ));
+                )));
             }
         }
     }
@@ -266,24 +282,24 @@ fn validate_grid_quiz(g: &GridQuizGame) -> Result<(), String> {
     let mut explicit_qids = HashSet::new();
     for (idx, cat) in g.board.categories.iter().enumerate() {
         if cat.question_ids.is_none() && cat.pack_ref.is_none() && cat.filter.is_none() {
-            return Err(format!(
+            return Err(garde::Error::new(format!(
                 "grid_quiz category[{idx}] must define at least one of: question_ids, pack_ref, filter"
-            ));
+            )));
         }
 
         if let Some(question_ids) = &cat.question_ids {
             for point in question_ids.keys() {
                 if !point_set.contains(point) {
-                    return Err(format!(
+                    return Err(garde::Error::new(format!(
                         "grid_quiz category[{idx}] question_ids key {point} must be present in board.points"
-                    ));
+                    )));
                 }
             }
             for qid in question_ids.values() {
                 if !explicit_qids.insert(qid.as_str()) {
-                    return Err(format!(
+                    return Err(garde::Error::new(format!(
                         "grid_quiz explicit question id '{qid}' is duplicated across board"
-                    ));
+                    )));
                 }
             }
         }
@@ -292,20 +308,20 @@ fn validate_grid_quiz(g: &GridQuizGame) -> Result<(), String> {
     Ok(())
 }
 
-fn validate_linear(g: &LinearGame) -> Result<(), String> {
+fn validate_linear(g: &LinearGame) -> garde::Result {
     if let LinearSource::Questions { question_ids } = &g.questions {
         if question_ids.is_empty() {
-            return Err(
-                "linear questions.source=questions requires at least one question_id".into(),
-            );
+            return Err(garde::Error::new(
+                "linear questions.source=questions requires at least one question_id",
+            ));
         }
 
         let mut seen = HashSet::new();
         for qid in question_ids {
             if !seen.insert(qid.as_str()) {
-                return Err(format!(
+                return Err(garde::Error::new(format!(
                     "linear questions.source=questions has duplicate question id '{qid}'"
-                ));
+                )));
             }
         }
     }

@@ -1,7 +1,7 @@
 //! Cross-file validation that can't be expressed inside a single YAML schema.
 //!
-//! Mirrors `validate.ts`: tag refs, pack refs, overlay refs, pack cycles,
-//! and media file checks. Returns issues without failing — we accumulate.
+//! Tag refs, pack refs, overlay refs, pack cycles, and media file checks.
+//! Returns issues without failing — we accumulate.
 
 use super::types::*;
 

@@ -1,6 +1,6 @@
 //! Pool query engine — filter the question pool using a `PackFilter`.
 //!
-//! All filter operators are ANDed together. Mirrors `query.ts`.
+//! All filter operators are ANDed together.
 
 use std::collections::{HashMap, HashSet};
 
