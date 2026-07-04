@@ -2,6 +2,7 @@
 //!
 
 use std::collections::HashMap;
+use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -13,8 +14,14 @@ use super::types::*;
 // ─── Per-file parse result ──────────────────────────────────────────────────
 
 enum Parsed<T> {
-    Ok { file: String, items: Vec<T>, issues: Vec<LoadIssue> },
-    Err { issues: Vec<LoadIssue> },
+    Ok {
+        file: String,
+        items: Vec<T>,
+        issues: Vec<LoadIssue>,
+    },
+    Err {
+        issues: Vec<LoadIssue>,
+    },
 }
 
 /// Parse a YAML file, deserialize via `decode`, optionally run `validate` on each item.
@@ -26,18 +33,30 @@ fn parse_file<T, Raw: serde::de::DeserializeOwned>(
 ) -> Parsed<T> {
     let raw = match parse_yaml_file::<Raw>(path) {
         Ok(v) => v,
-        Err(e) => return Parsed::Err { issues: vec![yaml_issue(rel_path, e)] },
+        Err(e) => {
+            return Parsed::Err {
+                issues: vec![yaml_issue(rel_path, e)],
+            };
+        }
     };
     let items = decode(raw);
     let issues = match validate {
         Some(f) => items.iter().flat_map(|item| f(item, rel_path)).collect(),
         None => Vec::new(),
     };
-    Parsed::Ok { file: rel_path.to_owned(), items, issues }
+    Parsed::Ok {
+        file: rel_path.to_owned(),
+        items,
+        issues,
+    }
 }
 
-fn parse_many<T: serde::de::DeserializeOwned>(raw: Vec<T>) -> Vec<T> { raw }
-fn parse_one<T>(raw: T) -> Vec<T> { vec![raw] }
+fn parse_many<T: serde::de::DeserializeOwned>(raw: Vec<T>) -> Vec<T> {
+    raw
+}
+fn parse_one<T>(raw: T) -> Vec<T> {
+    vec![raw]
+}
 
 // ─── Collect into registry ──────────────────────────────────────────────────
 
@@ -53,18 +72,28 @@ fn collect_registry<T>(
     for result in results {
         match result {
             Parsed::Err { issues: errs } => issues.extend(errs),
-            Parsed::Ok { file, items, issues: validation_issues } => {
+            Parsed::Ok {
+                file,
+                items,
+                issues: validation_issues,
+            } => {
                 issues.extend(validation_issues);
                 for item in items {
                     let id = get_id(&item).to_owned();
-                    if registry.contains_key(&id) {
-                        issues.push(LoadIssue {
-                            file: file.clone(),
-                            message: format!("duplicate {kind_label} id '{id}'"),
-                            path: None,
-                        });
-                    } else {
-                        registry.insert(id, Entry { file: file.clone(), item });
+                    match registry.entry(id.clone()) {
+                        Occupied(_) => {
+                            issues.push(LoadIssue {
+                                file: file.clone(),
+                                message: format!("duplicate {kind_label} id '{id}'"),
+                                path: None,
+                            });
+                        }
+                        Vacant(entry) => {
+                            entry.insert(Entry {
+                                file: file.clone(),
+                                item,
+                            });
+                        }
                     }
                 }
             }
@@ -90,8 +119,9 @@ pub fn load_dataset(data_dir: &Path) -> Result<LoadedDataset, LoadError> {
     let (packs, p_issues) = load_packs(data_dir, &rel)?;
     let (tags, t_issues) = load_tags(data_dir, &rel)?;
     let (overlays, o_issues) = load_overlays(data_dir, &rel)?;
+    let (games, g_issues) = load_games(data_dir, &rel)?;
 
-    let issues = [q_issues, p_issues, t_issues, o_issues].concat();
+    let issues = [q_issues, p_issues, t_issues, o_issues, g_issues].concat();
 
     Ok(LoadedDataset {
         data_dir: data_dir.to_string_lossy().into_owned(),
@@ -99,6 +129,7 @@ pub fn load_dataset(data_dir: &Path) -> Result<LoadedDataset, LoadError> {
         packs,
         tags,
         overlays,
+        games,
         issues,
     })
 }
@@ -147,7 +178,8 @@ fn load_tags(
         .iter()
         .filter_map(|cat| {
             let path = dir.join(format!("{cat}.yaml"));
-            path.exists().then(|| parse_file(&path, &rel(&path), parse_many, None))
+            path.exists()
+                .then(|| parse_file(&path, &rel(&path), parse_many, None))
         })
         .collect();
 
@@ -174,6 +206,9 @@ fn load_overlays(
         }
         let locale = filename(&locale_entry);
         let locale_overlays = overlays.entry(locale).or_default();
+        let (g_ovl, g_iss) = load_game_overlays(&locale_entry, rel)?;
+        locale_overlays.games.extend(g_ovl);
+        issues.extend(g_iss);
 
         let (q_ovl, q_iss) = load_question_overlays(&locale_entry, rel)?;
         let (p_ovl, p_iss) = load_pack_overlays(&locale_entry, rel)?;
@@ -237,11 +272,46 @@ fn load_tag_overlays(
         .iter()
         .filter_map(|cat| {
             let path = dir.join(format!("{cat}.yaml"));
-            path.exists().then(|| parse_file(&path, &rel(&path), parse_many, None))
+            path.exists()
+                .then(|| parse_file(&path, &rel(&path), parse_many, None))
         })
         .collect();
 
     Ok(collect_registry(results, |t| &t.id, "tag overlay"))
+}
+
+// ─── Games ──────────────────────────────────────────────────────────────
+
+fn load_games(
+    data_dir: &Path,
+    rel: &dyn Fn(&Path) -> String,
+) -> Result<(Registry<GameConfig>, Vec<LoadIssue>), LoadError> {
+    let files = walk_yaml(&data_dir.join("games"))?;
+    let results: Vec<_> = files
+        .iter()
+        .map(|path| parse_file(path, &rel(path), parse_one, Some(game_config_issues)))
+        .collect();
+    Ok(collect_registry(
+        results,
+        |g: &GameConfig| &g.id,
+        "game config",
+    ))
+}
+
+fn load_game_overlays(
+    locale_dir: &Path,
+    rel: &dyn Fn(&Path) -> String,
+) -> Result<(Registry<GameOverlay>, Vec<LoadIssue>), LoadError> {
+    let dir = locale_dir.join("games");
+    if !dir.exists() {
+        return Ok((HashMap::new(), Vec::new()));
+    }
+    let files = walk_yaml(&dir)?;
+    let results: Vec<_> = files
+        .iter()
+        .map(|path| parse_file(path, &rel(path), parse_one, None))
+        .collect();
+    Ok(collect_registry(results, |g| &g.id, "game overlay"))
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -282,9 +352,8 @@ fn read_dir_sorted(dir: &Path) -> Result<Vec<PathBuf>, LoadError> {
 }
 
 fn parse_yaml_file<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T, serde_yaml::Error> {
-    let text = fs::read_to_string(path).map_err(|e| {
-        <serde_yaml::Error as serde::de::Error>::custom(format!("IO: {e}"))
-    })?;
+    let text = fs::read_to_string(path)
+        .map_err(|e| <serde_yaml::Error as serde::de::Error>::custom(format!("IO: {e}")))?;
     serde_yaml::from_str(&text)
 }
 
@@ -292,7 +361,9 @@ fn yaml_issue(file: &str, e: serde_yaml::Error) -> LoadIssue {
     LoadIssue {
         file: file.to_owned(),
         message: e.to_string(),
-        path: e.location().map(|loc| format!("line {}, col {}", loc.line(), loc.column())),
+        path: e
+            .location()
+            .map(|loc| format!("line {}, col {}", loc.line(), loc.column())),
     }
 }
 
@@ -315,6 +386,40 @@ fn filename(path: &Path) -> String {
         .unwrap_or_default()
         .to_string_lossy()
         .into_owned()
+}
+
+// ponytail: custom validator for GameConfig — garde is overkill, just entry validation
+fn game_config_issues(gc: &GameConfig, file: &str) -> Vec<LoadIssue> {
+    let mut issues = Vec::new();
+
+    if let Err(err) = valid_game_id(&gc.id, &()) {
+        issues.push(LoadIssue {
+            file: file.to_owned(),
+            message: err.to_string(),
+            path: None,
+        });
+    }
+
+    if gc.games.is_empty() {
+        issues.push(LoadIssue {
+            file: file.to_owned(),
+            message: "game config must define at least one game entry".to_owned(),
+            path: None,
+        });
+    }
+
+    issues.extend(gc.games.iter().enumerate().filter_map(|(i, entry)| {
+        entry
+            .validate()
+            .map_err(|msg| LoadIssue {
+                file: file.to_owned(),
+                message: format!("game[{}]: {}", i, msg),
+                path: None,
+            })
+            .err()
+    }));
+
+    issues
 }
 
 // ─── Tests ──────────────────────────────────────────────────────────────────
@@ -350,7 +455,11 @@ mod tests {
             ("questions/a.yaml", VALID_QUESTION),
             ("questions/b.yaml", VALID_QUESTION),
         ]));
-        assert!(ds.issues.iter().any(|i| i.message.contains("duplicate question id")));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("duplicate question id"))
+        );
     }
 
     #[test]
@@ -369,7 +478,11 @@ mod tests {
 "#,
         )]));
         assert!(!ds.issues.is_empty());
-        assert!(ds.issues.iter().any(|i| i.message.to_lowercase().contains("variant")));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.to_lowercase().contains("variant"))
+        );
     }
 
     #[test]
@@ -432,7 +545,11 @@ mod tests {
           - { id: same, text: B }
 "#,
         )]));
-        assert!(ds.issues.iter().any(|i| i.message.contains("duplicate choice id")));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("duplicate choice id"))
+        );
     }
 
     #[test]
@@ -451,7 +568,11 @@ mod tests {
       - { id: same, text: B, position: 2 }
 "#,
         )]));
-        assert!(ds.issues.iter().any(|i| i.message.contains("duplicate order item id")));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("duplicate order item id"))
+        );
     }
 
     #[test]
@@ -470,7 +591,11 @@ mod tests {
       range: { min: 100, max: 50 }
 "#,
         )]));
-        assert!(ds.issues.iter().any(|i| i.message.contains("max must be greater")));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("max must be greater"))
+        );
     }
 
     #[test]
@@ -479,7 +604,11 @@ mod tests {
             "packs/empty.yaml",
             "id: pack_empty\ntitle: Empty\n",
         )]));
-        assert!(ds.issues.iter().any(|i| i.message.contains("at least one of")));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("at least one of"))
+        );
     }
 
     #[test]
@@ -517,7 +646,11 @@ mod tests {
     variants: { open: { accepted: ["Hi"] } }
 "#,
         )]));
-        assert!(ds.issues.iter().any(|i| i.message.contains("invalid question id")));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("invalid question id"))
+        );
     }
 
     #[test]
@@ -535,7 +668,11 @@ mod tests {
     variants: { open: { accepted: ["Hi"] } }
 "#,
         )]));
-        assert!(ds.issues.iter().any(|i| i.message.contains("invalid tag ref")));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("invalid tag ref"))
+        );
     }
 
     #[test]
@@ -594,7 +731,11 @@ mod tests {
     variants: { open: { accepted: ["Hi"] } }
 "#,
         )]));
-        assert!(ds.issues.iter().any(|i| i.message.contains("invalid locale")));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("invalid locale"))
+        );
     }
 
     #[test]
@@ -603,7 +744,11 @@ mod tests {
             "packs/bad.yaml",
             "id: notapackid\ntitle: Bad\nquestions: [q_alpha_one]\n",
         )]));
-        assert!(ds.issues.iter().any(|i| i.message.contains("invalid pack id")));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("invalid pack id"))
+        );
     }
 
     #[test]
@@ -612,7 +757,11 @@ mod tests {
             "packs/bad.yaml",
             "id: pack_bad\ntitle: Bad\nquestions: [NOT-VALID]\n",
         )]));
-        assert!(ds.issues.iter().any(|i| i.message.contains("invalid question id")));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("invalid question id"))
+        );
     }
 
     #[test]
@@ -621,7 +770,11 @@ mod tests {
             "packs/bad.yaml",
             "id: pack_bad\ntitle: Bad\nincludes: [not_a_pack_id]\n",
         )]));
-        assert!(ds.issues.iter().any(|i| i.message.contains("invalid pack id")));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("invalid pack id"))
+        );
     }
 
     #[test]
@@ -630,7 +783,11 @@ mod tests {
             "packs/bad.yaml",
             "id: pack_bad\ntitle: Bad\nfilter:\n  tags_any: [INVALID]\n",
         )]));
-        assert!(ds.issues.iter().any(|i| i.message.contains("invalid tag ref")));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("invalid tag ref"))
+        );
     }
 
     #[test]
@@ -651,7 +808,11 @@ mod tests {
     variants: { open: { accepted: ["Hi"] } }
 "#,
         )]));
-        assert!(ds.issues.iter().any(|i| i.message.contains("media ref must start with")));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("media ref must start with"))
+        );
     }
 
     #[test]
@@ -816,7 +977,623 @@ mod tests {
         assert!(!ds.issues.is_empty());
     }
 
-    // ─── Integration ────────────────────────────────────────────────────
+    // ─── Game loader tests ────────────────────────────────────────────
+
+    const VALID_GRID_GAME: &str = r#"
+id: game_test_grid
+title: Test Grid
+description: A test grid game
+games:
+  - mode: grid_quiz
+    title: Round 1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: this_question
+      steal_policy: round_limited
+      judge: auto
+      question_timer_secs: 30
+      answer_timer_secs: 15
+    board:
+      points: [100, 200, 300, 500]
+      categories:
+        - name: Capitals
+          filter:
+            tags_any: [subject:geo]
+        - name: Flags
+          question_ids: { 100: q_alpha_one, 200: q_alpha_two }
+"#;
+
+    const VALID_LINEAR_GAME: &str = r#"
+id: game_test_linear
+title: Test Linear
+description: A test linear game
+games:
+  - mode: linear
+    title: Round 1
+    rules:
+      buzz_policy: broadcast
+      scoring_mode: all_grade
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+      question_timer_secs: 20
+      answer_timer_secs: 10
+    questions:
+      source: questions
+      question_ids: [q_alpha_one]
+"#;
+
+    const VALID_QUESTION_TWO: &str = r#"
+- id: q_alpha_two
+  kind: text
+  tags: [subject:history, difficulty:general]
+  content:
+    default_lang: en
+    prompt: { text: "What is two plus two?" }
+    answer: Four
+    variants:
+      open:
+        accepted: ["Four", "4"]
+"#;
+
+    #[test]
+    fn loads_valid_grid_game_config() {
+        let ds = load(&with_registries(&[
+            ("questions/test.yaml", VALID_QUESTION),
+            ("questions/two.yaml", VALID_QUESTION_TWO),
+            ("games/test.yaml", VALID_GRID_GAME),
+        ]));
+        assert!(ds.issues.is_empty(), "unexpected issues: {:?}", ds.issues);
+        assert_eq!(ds.games.len(), 1);
+        let gc = ds.games.get("game_test_grid").unwrap();
+        assert_eq!(gc.item.games.len(), 1);
+        assert_eq!(gc.item.title, "Test Grid");
+        match &gc.item.games[0] {
+            GameEntry::GridQuiz(g) => {
+                assert_eq!(g.title, "Round 1");
+                assert!(matches!(g.rules.buzz_policy, BuzzPolicy::OpenFloor));
+                assert!(matches!(g.rules.steal_policy, StealPolicy::RoundLimited));
+                assert_eq!(g.board.points.len(), 4);
+                assert_eq!(g.board.categories.len(), 2);
+                assert_eq!(g.board.categories[1].name, "Flags");
+            }
+            _ => panic!("expected GridQuiz"),
+        }
+    }
+
+    #[test]
+    fn loads_valid_linear_game_config() {
+        let ds = load(&with_registries(&[
+            ("questions/test.yaml", VALID_QUESTION),
+            ("games/test.yaml", VALID_LINEAR_GAME),
+        ]));
+        assert!(ds.issues.is_empty(), "unexpected issues: {:?}", ds.issues);
+        assert_eq!(ds.games.len(), 1);
+        let gc = ds.games.get("game_test_linear").unwrap();
+        match &gc.item.games[0] {
+            GameEntry::Linear(g) => {
+                assert!(matches!(g.rules.buzz_policy, BuzzPolicy::Broadcast));
+                assert!(matches!(g.rules.scoring_mode, ScoringMode::AllGrade));
+                assert!(matches!(g.rules.steal_policy, StealPolicy::None));
+                match &g.questions {
+                    LinearSource::Questions { question_ids } => {
+                        assert_eq!(question_ids.as_slice(), &["q_alpha_one"]);
+                    }
+                    _ => panic!("expected Questions source"),
+                }
+            }
+            _ => panic!("expected Linear"),
+        }
+    }
+
+    #[test]
+    fn loads_game_with_default_timers() {
+        let ds = load(&with_registries(&[(
+            "games/test.yaml",
+            r#"
+id: game_short
+title: Short
+description: Uses default timers
+games:
+  - mode: grid_quiz
+    title: R1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+    board:
+      points: [100, 200]
+      categories:
+        - name: Geo
+          filter: { tags_any: [subject:geo] }
+        - name: History
+          filter: { tags_any: [subject:history] }
+"#,
+        )]));
+        assert!(ds.issues.is_empty(), "unexpected issues: {:?}", ds.issues);
+        let gc = ds.games.get("game_short").unwrap();
+        match &gc.item.games[0] {
+            GameEntry::GridQuiz(g) => {
+                assert_eq!(g.rules.question_timer_secs, 30); // default
+                assert_eq!(g.rules.answer_timer_secs, 15); // default
+            }
+            _ => panic!("expected GridQuiz"),
+        }
+    }
+
+    #[test]
+    fn catches_duplicate_game_ids() {
+        let ds = load(&[
+            (
+                "games/a.yaml",
+                r#"
+id: game_dup
+title: A
+description: A
+games:
+  - mode: grid_quiz
+    title: R1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+    board:
+      points: [100, 200]
+      categories:
+        - name: Math
+          filter: { tags_any: [subject:math] }
+        - name: Geo
+          filter: { tags_any: [subject:geo] }
+"#,
+            ),
+            (
+                "games/b.yaml",
+                r#"
+id: game_dup
+title: B
+description: B
+games:
+  - mode: grid_quiz
+    title: R1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+    board:
+      points: [100, 200]
+      categories:
+        - name: Math
+          filter: { tags_any: [subject:math] }
+        - name: Geo
+          filter: { tags_any: [subject:geo] }
+"#,
+            ),
+        ]);
+        assert!(ds.issues.iter().any(|i| i.message.contains("duplicate")));
+    }
+
+    #[test]
+    fn game_entry_validates_broadcast_first_correct() {
+        let ds = load(&[(
+            "games/bad.yaml",
+            r#"
+id: game_bad_combo
+title: Bad
+description: Bad combo
+games:
+  - mode: linear
+    title: R1
+    rules:
+      buzz_policy: broadcast
+      scoring_mode: first_correct
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+    questions:
+      source: questions
+      question_ids: [q_alpha_one]
+"#,
+        )]);
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("broadcast")
+                    && i.message.to_lowercase().contains("first"))
+        );
+    }
+
+    #[test]
+    fn game_entry_validates_broadcast_steal() {
+        let ds = load(&[(
+            "games/bad.yaml",
+            r#"
+id: game_bad_steal
+title: Bad
+description: Bad
+games:
+  - mode: linear
+    title: R1
+    rules:
+      buzz_policy: broadcast
+      scoring_mode: all_grade
+      lockout_policy: none
+      steal_policy: open_floor
+      judge: auto
+    questions:
+      source: questions
+      question_ids: [q_alpha_one]
+"#,
+        )]);
+        assert!(ds.issues.iter().any(|i| i.message.contains("steal_policy")));
+    }
+
+    #[test]
+    fn loads_board_with_explicit_question_ids() {
+        let ds = load(&[("games/test.yaml", VALID_GRID_GAME)]);
+        let gc = ds.games.get("game_test_grid").unwrap();
+        match &gc.item.games[0] {
+            GameEntry::GridQuiz(g) => {
+                let flags = &g.board.categories[1];
+                let ids = flags.question_ids.as_ref().unwrap();
+                assert_eq!(ids.get(&100), Some(&"q_alpha_one".to_string()));
+                assert_eq!(ids.get(&200), Some(&"q_alpha_two".to_string()));
+            }
+            _ => panic!("expected GridQuiz"),
+        }
+    }
+
+    #[test]
+    fn catches_game_with_single_category() {
+        let ds = load(&[(
+            "games/bad.yaml",
+            r#"
+id: game_onetop
+title: Bad
+description: Bad
+games:
+  - mode: grid_quiz
+    title: R1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+    board:
+      points: [100, 200]
+      categories:
+        - name: Only One
+          filter: { tags_any: [subject:math] }
+"#,
+        )]);
+        assert!(!ds.issues.is_empty());
+    }
+
+    #[test]
+    fn catches_invalid_game_id() {
+        let ds = load(&[(
+            "games/bad.yaml",
+            r#"
+id: not_a_game_id
+title: Bad
+description: Bad
+games:
+  - mode: grid_quiz
+    title: R1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+    board:
+      points: [100, 200]
+      categories:
+        - name: Math
+          filter: { tags_any: [subject:math] }
+        - name: Geo
+          filter: { tags_any: [subject:geo] }
+"#,
+        )]);
+        assert!(ds.issues.iter().any(|i| i.message.contains("invalid game id")));
+    }
+
+    #[test]
+    fn rejects_unknown_game_field() {
+        let ds = load(&[(
+            "games/bad.yaml",
+            r#"
+id: game_unknown_field
+title: Bad
+description: Bad
+oops: true
+games:
+  - mode: linear
+    title: R1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+    questions:
+      source: questions
+      question_ids: [q_alpha_one]
+"#,
+        )]);
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("unknown field") && i.message.contains("oops"))
+        );
+    }
+
+    #[test]
+    fn catches_zero_timers_on_game_rules() {
+        let ds = load(&with_registries(&[(
+            "games/bad.yaml",
+            r#"
+id: game_zero_timer
+title: Bad
+description: Bad
+games:
+  - mode: linear
+    title: R1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+      question_timer_secs: 0
+      answer_timer_secs: 0
+    questions:
+      source: questions
+      question_ids: [q_alpha_one]
+"#,
+        )]));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("question_timer_secs must be greater than 0"))
+        );
+    }
+
+    #[test]
+    fn catches_grid_points_not_strictly_increasing() {
+        let ds = load(&with_registries(&[(
+            "games/bad.yaml",
+            r#"
+id: game_bad_points
+title: Bad
+description: Bad
+games:
+  - mode: grid_quiz
+    title: R1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+    board:
+      points: [200, 100]
+      categories:
+        - name: Geo
+          filter: { tags_any: [subject:geo] }
+        - name: History
+          filter: { tags_any: [subject:history] }
+"#,
+        )]));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("board points must be strictly increasing"))
+        );
+    }
+
+    #[test]
+    fn catches_grid_question_ids_key_not_in_points() {
+        let ds = load(&with_registries(&[
+            ("questions/test.yaml", VALID_QUESTION),
+            (
+                "games/bad.yaml",
+                r#"
+id: game_bad_keys
+title: Bad
+description: Bad
+games:
+  - mode: grid_quiz
+    title: R1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+    board:
+      points: [100, 200]
+      categories:
+        - name: Geo
+          question_ids: { 300: q_alpha_one }
+        - name: History
+          filter: { tags_any: [subject:history] }
+"#,
+            ),
+        ]));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("question_ids key 300 must be present in board.points"))
+        );
+    }
+
+    #[test]
+    fn catches_grid_duplicate_explicit_question_ids() {
+        let ds = load(&with_registries(&[
+            ("questions/test.yaml", VALID_QUESTION),
+            (
+                "games/bad.yaml",
+                r#"
+id: game_dup_qids
+title: Bad
+description: Bad
+games:
+  - mode: grid_quiz
+    title: R1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+    board:
+      points: [100, 200]
+      categories:
+        - name: Geo
+          question_ids: { 100: q_alpha_one }
+        - name: History
+          question_ids: { 200: q_alpha_one }
+"#,
+            ),
+        ]));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("explicit question id 'q_alpha_one' is duplicated"))
+        );
+    }
+
+    #[test]
+    fn catches_linear_duplicate_question_ids() {
+        let ds = load(&with_registries(&[(
+            "games/bad.yaml",
+            r#"
+id: game_dup_linear
+title: Bad
+description: Bad
+games:
+  - mode: linear
+    title: R1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+    questions:
+      source: questions
+      question_ids: [q_alpha_one, q_alpha_one]
+"#,
+        )]));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("has duplicate question id 'q_alpha_one'"))
+        );
+    }
+
+    #[test]
+    fn catches_difficulty_map_key_not_in_points() {
+        let ds = load(&with_registries(&[(
+            "games/bad.yaml",
+            r#"
+id: game_bad_diff_key
+title: Bad
+description: Bad
+games:
+  - mode: grid_quiz
+    title: R1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+    board:
+      points: [100, 200]
+      difficulty_map:
+        300: [subject:geo]
+      categories:
+        - name: Geo
+          filter: { tags_any: [subject:geo] }
+        - name: History
+          filter: { tags_any: [subject:history] }
+"#,
+        )]));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("difficulty_map key 300 must be present in board.points"))
+        );
+    }
+
+    #[test]
+    fn rejects_unknown_question_overlay_field() {
+        let ds = load(&[(
+            "i18n/de/questions/bad.yaml",
+            r#"
+- id: q_alpha_one
+  content:
+    prompt: { text: "Hallo" }
+    correct: true
+"#,
+        )]);
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("unknown field") && i.message.contains("correct"))
+        );
+    }
+
+    #[test]
+    fn rejects_unknown_game_overlay_field() {
+        let ds = load(&[(
+            "i18n/de/games/bad.yaml",
+            r#"
+id: game_test_grid
+title: Test
+rules:
+  judge: auto
+"#,
+        )]);
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("unknown field") && i.message.contains("rules"))
+        );
+    }
+
+    #[test]
+    fn game_overlay_loads_without_issues() {
+        let ds = load(&with_registries(&[
+            ("questions/test.yaml", VALID_QUESTION),
+            ("questions/two.yaml", VALID_QUESTION_TWO),
+            ("games/test.yaml", VALID_GRID_GAME),
+            (
+                "i18n/de/games/test.yaml",
+                r#"
+id: game_test_grid
+title: Test Gitter
+"#,
+            ),
+        ]));
+        let ovl = ds
+            .overlays
+            .get("de")
+            .and_then(|o| o.games.get("game_test_grid"));
+        assert!(ovl.is_some());
+        assert_eq!(ovl.unwrap().item.title.as_deref(), Some("Test Gitter"));
+    }
+
+    // ─── Integration───────
 
     #[test]
     fn loads_real_dataset_without_issues() {

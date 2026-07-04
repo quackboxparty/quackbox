@@ -67,6 +67,7 @@ fn pack_has_content(pack: &Pack, _ctx: &()) -> garde::Result {
 
 #[derive(Debug, Clone, Deserialize, Validate)]
 #[garde(allow_unvalidated)]
+#[serde(deny_unknown_fields)]
 pub struct PackOverlay {
     #[garde(custom(valid_pack_id))]
     pub id: String,

@@ -10,6 +10,7 @@ pub struct Tag {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct TagOverlay {
     pub id: String,
     #[serde(default)]

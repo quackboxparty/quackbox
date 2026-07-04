@@ -29,6 +29,7 @@ pub fn run_cross_file_checks(ds: &LoadedDataset) -> Vec<LoadIssue> {
     let mut issues = Vec::new();
     check_tag_refs(ds, &mut issues);
     check_refs(ds, &mut issues);
+    check_game_refs(ds, &mut issues);
     check_overlay_refs(ds, &mut issues);
     check_pack_cycles(ds, &mut issues);
     check_media_files(ds, &mut issues);
@@ -111,6 +112,123 @@ fn check_refs(ds: &LoadedDataset, issues: &mut Vec<LoadIssue>) {
     }
 }
 
+// ─── Game references ───────────────────────────────────────────────────────
+
+fn check_game_refs(ds: &LoadedDataset, issues: &mut Vec<LoadIssue>) {
+    for entry in ds.games.values() {
+        let gc = &entry.item;
+        for (game_idx, game_entry) in gc.games.iter().enumerate() {
+            match game_entry {
+                GameEntry::GridQuiz(g) => {
+                    for (cat_idx, cat) in g.board.categories.iter().enumerate() {
+                        let ctx = format!("game '{}' entry[{game_idx}] category[{cat_idx}]", gc.id);
+
+                        if let Some(pack_id) = &cat.pack_ref
+                            && !ds.packs.contains_key(pack_id)
+                        {
+                            issues.push(LoadIssue {
+                                file: entry.file.clone(),
+                                message: format!("{ctx} references unknown pack '{pack_id}'"),
+                                path: None,
+                            });
+                        }
+
+                        for qid in cat.question_ids.iter().flat_map(|map| map.values()) {
+                            if !ds.questions.contains_key(qid) {
+                                issues.push(LoadIssue {
+                                    file: entry.file.clone(),
+                                    message: format!(
+                                        "{ctx} references unknown question '{qid}'"
+                                    ),
+                                    path: None,
+                                });
+                            }
+                        }
+
+                        if let Some(filter) = &cat.filter {
+                            check_filter_tags(ds, filter, &entry.file, &ctx, issues);
+                        }
+                    }
+
+                    if let Some(diff_map) = &g.board.difficulty_map {
+                        for (point, tags) in diff_map {
+                            for tag in tags {
+                                if !ds.tags.contains_key(tag) {
+                                    issues.push(LoadIssue {
+                                        file: entry.file.clone(),
+                                        message: format!(
+                                            "unknown tag '{tag}' on game '{}' entry[{game_idx}] difficulty_map[{point}]",
+                                            gc.id
+                                        ),
+                                        path: None,
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+                GameEntry::Linear(g) => match &g.questions {
+                    LinearSource::Questions { question_ids } => {
+                        for qid in question_ids {
+                            if !ds.questions.contains_key(qid) {
+                                issues.push(LoadIssue {
+                                    file: entry.file.clone(),
+                                    message: format!(
+                                        "game '{}' entry[{game_idx}] references unknown question '{qid}'",
+                                        gc.id
+                                    ),
+                                    path: None,
+                                });
+                            }
+                        }
+                    }
+                    LinearSource::Pack { pack_id } => {
+                        if !ds.packs.contains_key(pack_id) {
+                            issues.push(LoadIssue {
+                                file: entry.file.clone(),
+                                message: format!(
+                                    "game '{}' entry[{game_idx}] references unknown pack '{pack_id}'",
+                                    gc.id
+                                ),
+                                path: None,
+                            });
+                        }
+                    }
+                    LinearSource::Filter { filter } => {
+                        let ctx = format!("game '{}' entry[{game_idx}] linear filter", gc.id);
+                        check_filter_tags(ds, filter, &entry.file, &ctx, issues);
+                    }
+                },
+            }
+        }
+    }
+}
+
+fn check_filter_tags(
+    ds: &LoadedDataset,
+    filter: &PackFilter,
+    file: &str,
+    context: &str,
+    issues: &mut Vec<LoadIssue>,
+) {
+    let all_tags = filter
+        .tags_all
+        .iter()
+        .flatten()
+        .chain(filter.tags_any.iter().flatten())
+        .chain(filter.tags_none.iter().flatten());
+
+    for tag in all_tags {
+        if !ds.tags.contains_key(tag) {
+            issues.push(LoadIssue {
+                file: file.to_owned(),
+                message: format!("unknown tag '{tag}' on {context}"),
+                path: None,
+            });
+        }
+    }
+}
+
 // ─── Overlay references ─────────────────────────────────────────────────────
 
 fn check_overlay_refs(ds: &LoadedDataset, issues: &mut Vec<LoadIssue>) {
@@ -135,6 +253,72 @@ fn check_overlay_refs(ds: &LoadedDataset, issues: &mut Vec<LoadIssue>) {
                     ),
                     path: None,
                 });
+            }
+        }
+        for (tid, entry) in &locale_overlays.tags {
+            if !ds.tags.contains_key(tid) {
+                issues.push(LoadIssue {
+                    file: entry.file.clone(),
+                    message: format!("overlay of locale '{locale}' references unknown tag '{tid}'"),
+                    path: None,
+                });
+            }
+        }
+        for (gid, entry) in &locale_overlays.games {
+            let Some(base_game) = ds.games.get(gid) else {
+                issues.push(LoadIssue {
+                    file: entry.file.clone(),
+                    message: format!(
+                        "overlay of locale '{locale}' references unknown game '{gid}'"
+                    ),
+                    path: None,
+                });
+                continue;
+            };
+
+            if entry.item.games.len() > base_game.item.games.len() {
+                issues.push(LoadIssue {
+                    file: entry.file.clone(),
+                    message: format!(
+                        "overlay of locale '{locale}' game '{gid}' has {} game entries but base has {}",
+                        entry.item.games.len(),
+                        base_game.item.games.len()
+                    ),
+                    path: None,
+                });
+            }
+
+            for (idx, ovl_game) in entry.item.games.iter().enumerate() {
+                let Some(base_entry) = base_game.item.games.get(idx) else {
+                    continue;
+                };
+
+                if let Some(board_ovl) = &ovl_game.board {
+                    match base_entry {
+                        GameEntry::GridQuiz(base_grid) => {
+                            if board_ovl.categories.len() > base_grid.board.categories.len() {
+                                issues.push(LoadIssue {
+                                    file: entry.file.clone(),
+                                    message: format!(
+                                        "overlay of locale '{locale}' game '{gid}' entry[{idx}] has {} categories but base has {}",
+                                        board_ovl.categories.len(),
+                                        base_grid.board.categories.len()
+                                    ),
+                                    path: None,
+                                });
+                            }
+                        }
+                        GameEntry::Linear(_) => {
+                            issues.push(LoadIssue {
+                                file: entry.file.clone(),
+                                message: format!(
+                                    "overlay of locale '{locale}' game '{gid}' entry[{idx}] cannot define board for non-grid mode"
+                                ),
+                                path: None,
+                            });
+                        }
+                    }
+                }
             }
         }
     }
@@ -342,6 +526,242 @@ mod tests {
             "- id: q_not_real\n  content:\n    prompt: { text: \"Kein Problem?\" }\n",
         )]));
         assert!(ds.issues.iter().any(|i| i.message.contains("references unknown question")));
+    }
+
+    #[test]
+    fn catches_grid_game_referencing_unknown_pack_or_question() {
+        let ds = load(&with_registries(&[(
+            "games/bad.yaml",
+            r#"
+id: game_bad_refs
+title: Bad
+description: Bad refs
+games:
+  - mode: grid_quiz
+    title: R1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+    board:
+      points: [100, 200]
+      categories:
+        - name: Missing pack
+          pack_ref: pack_missing
+        - name: Missing question
+          question_ids: { 100: q_missing_1, 200: q_missing_2 }
+"#,
+        )]));
+        assert!(ds.issues.iter().any(|i| i.message.contains("unknown pack")));
+        assert!(ds.issues.iter().any(|i| i.message.contains("unknown question")));
+    }
+
+    #[test]
+    fn catches_linear_game_referencing_unknown_pack() {
+        let ds = load(&with_registries(&[(
+            "games/bad.yaml",
+            r#"
+id: game_bad_linear
+title: Bad
+description: Bad refs
+games:
+  - mode: linear
+    title: R1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+    questions:
+      source: pack
+      pack_id: pack_missing
+"#,
+        )]));
+        assert!(ds.issues.iter().any(|i| i.message.contains("unknown pack")));
+    }
+
+    #[test]
+    fn catches_overlay_referencing_unknown_game() {
+        let ds = load(&with_registries(&[(
+            "i18n/de/games/ghost.yaml",
+            "id: game_not_real\ntitle: Phantom\n",
+        )]));
+        assert!(ds.issues.iter().any(|i| i.message.contains("references unknown game")));
+    }
+
+    #[test]
+    fn catches_overlay_referencing_unknown_tag() {
+        let ds = load(&with_registries(&[(
+            "i18n/de/tags/subject.yaml",
+            "- id: subject:not_real\n  label: Nicht da\n",
+        )]));
+        assert!(ds.issues.iter().any(|i| i.message.contains("references unknown tag")));
+    }
+
+    #[test]
+    fn catches_game_difficulty_map_unknown_tag() {
+        let ds = load(&with_registries(&[(
+            "games/bad.yaml",
+            r#"
+id: game_bad_diff
+title: Bad
+description: Bad diff
+games:
+  - mode: grid_quiz
+    title: R1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+    board:
+      points: [100, 200]
+      difficulty_map:
+        100: [subject:not_real]
+      categories:
+        - name: Geo
+          filter: { tags_any: [subject:geo] }
+        - name: History
+          filter: { tags_any: [subject:history] }
+"#,
+        )]));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("difficulty_map") && i.message.contains("unknown tag"))
+        );
+    }
+
+    #[test]
+    fn catches_game_overlay_with_too_many_entries() {
+        let ds = load(&with_registries(&[
+            (
+                "games/base.yaml",
+                r#"
+id: game_base
+title: Base
+description: Base
+games:
+  - mode: linear
+    title: R1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+    questions:
+      source: questions
+      question_ids: [q_alpha_one]
+"#,
+            ),
+            (
+                "i18n/de/games/base.yaml",
+                r#"
+id: game_base
+games:
+  - title: Runde 1
+  - title: Runde 2
+"#,
+            ),
+        ]));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("has 2 game entries but base has 1"))
+        );
+    }
+
+    #[test]
+    fn catches_game_overlay_board_on_linear_entry() {
+        let ds = load(&with_registries(&[
+            (
+                "games/base.yaml",
+                r#"
+id: game_base
+title: Base
+description: Base
+games:
+  - mode: linear
+    title: R1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+    questions:
+      source: questions
+      question_ids: [q_alpha_one]
+"#,
+            ),
+            (
+                "i18n/de/games/base.yaml",
+                r#"
+id: game_base
+games:
+  - board:
+      categories:
+        - name: Nicht erlaubt
+"#,
+            ),
+        ]));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("cannot define board for non-grid mode"))
+        );
+    }
+
+    #[test]
+    fn catches_game_overlay_with_too_many_categories() {
+        let ds = load(&with_registries(&[
+            (
+                "games/base.yaml",
+                r#"
+id: game_base
+title: Base
+description: Base
+games:
+  - mode: grid_quiz
+    title: R1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: none
+      steal_policy: none
+      judge: auto
+    board:
+      points: [100, 200]
+      categories:
+        - name: Geo
+          filter: { tags_any: [subject:geo] }
+        - name: History
+          filter: { tags_any: [subject:history] }
+"#,
+            ),
+            (
+                "i18n/de/games/base.yaml",
+                r#"
+id: game_base
+games:
+  - board:
+      categories:
+        - name: Eins
+        - name: Zwei
+        - name: Drei
+"#,
+            ),
+        ]));
+        assert!(
+            ds.issues
+                .iter()
+                .any(|i| i.message.contains("has 3 categories but base has 2"))
+        );
     }
 
     #[test]

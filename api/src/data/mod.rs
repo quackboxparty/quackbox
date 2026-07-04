@@ -2,8 +2,8 @@
 //!
 //! Entry point: `data::load("data")` at server startup.
 
-mod board;
 mod error;
+mod grid_quiz;
 mod loader;
 mod query;
 mod types;
@@ -12,10 +12,8 @@ mod validate;
 #[cfg(test)]
 mod test_helpers;
 
-pub use board::{build_board, BoardGrid, BuildBoardOpts};
 pub use error::LoadError;
 pub use loader::load_dataset;
-pub use query::query_pool;
 pub use types::*;
 pub use validate::run_cross_file_checks;
 

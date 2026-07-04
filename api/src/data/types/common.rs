@@ -1,5 +1,6 @@
+use serde::{Deserialize, Serialize};
 use garde::Validate;
-use serde::Deserialize;
+/// Question kinds.
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq, Hash)]
 #[allow(non_camel_case_types)]
@@ -37,7 +38,7 @@ pub struct Deprecation {
     pub replaced_by: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum QuestionKind {
     Text,
@@ -91,6 +92,9 @@ static PACK_ID_RE: LazyLock<Regex> = LazyLock::new(|| {
 });
 static BOARD_ID_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^board_[a-z0-9][a-z0-9_]*$").unwrap()
+});
+static GAME_ID_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^game_[a-z0-9][a-z0-9_]*$").unwrap()
 });
 static LOCALE_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^[a-z]{2}(-[A-Z]{2})?$").unwrap()
@@ -152,9 +156,24 @@ pub fn valid_pack_ids(value: &Option<Vec<String>>, _ctx: &()) -> garde::Result {
     Ok(())
 }
 
+/// Validator for a single optional pack ID (used by board category pack_ref).
+pub fn valid_opt_pack_ref(value: &Option<String>, _ctx: &()) -> garde::Result {
+    if let Some(v) = value {
+        if PACK_ID_RE.is_match(v) { Ok(()) }
+        else { Err(garde::Error::new(format!("invalid pack ref: '{v}'"))) }
+    } else {
+        Ok(())
+    }
+}
+
 pub fn valid_board_id(value: &str, _ctx: &()) -> garde::Result {
     if BOARD_ID_RE.is_match(value) { Ok(()) }
     else { Err(garde::Error::new(format!("invalid board id: '{value}'")))}
+}
+
+pub fn valid_game_id(value: &str, _ctx: &()) -> garde::Result {
+    if GAME_ID_RE.is_match(value) { Ok(()) }
+    else { Err(garde::Error::new(format!("invalid game id: '{value}'")))}
 }
 
 pub fn valid_locale(value: &str, _ctx: &()) -> garde::Result {

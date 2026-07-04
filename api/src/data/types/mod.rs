@@ -1,15 +1,15 @@
 //! Domain types for the data layer.
 
-mod board;
 mod common;
+mod game;
 mod media;
 mod overlay;
 mod pack;
 mod question;
 mod tag;
 
-pub use board::*;
 pub use common::*;
+pub use game::*;
 pub use media::*;
 pub use overlay::*;
 pub use pack::*;
@@ -34,6 +34,7 @@ pub struct LocaleOverlays {
     pub questions: Registry<QuestionOverlay>,
     pub packs: Registry<PackOverlay>,
     pub tags: Registry<TagOverlay>,
+    pub games: Registry<GameOverlay>,
 }
 
 pub type Overlays = HashMap<String, LocaleOverlays>;
@@ -46,6 +47,7 @@ pub struct LoadedDataset {
     pub packs: Registry<Pack>,
     pub tags: Registry<Tag>,
     pub overlays: Overlays,
+    pub games: Registry<GameConfig>,
     pub issues: Vec<LoadIssue>,
 }
 

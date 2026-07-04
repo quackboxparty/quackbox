@@ -5,7 +5,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use super::query::{query_pool, resolve_pack, PackCache};
+use super::query::{PackCache, query_pool, resolve_pack};
 use super::types::*;
 
 /// Resolved board: `grid[category_idx][point_idx] = Some(question_id) | None`.
@@ -36,14 +36,10 @@ pub fn build_board(
     let mut used = HashSet::new();
     let mut pack_cache: PackCache = PackCache::new();
 
-    let diff_map: HashMap<&str, &[String]> = board
+    let diff_map: HashMap<&u32, &[String]> = board
         .difficulty_map
         .as_ref()
-        .map(|dm| {
-            dm.iter()
-                .map(|(k, v)| (k.as_str(), v.as_slice()))
-                .collect()
-        })
+        .map(|dm| dm.iter().map(|(k, v)| (k, v.as_slice())).collect())
         .unwrap_or_default();
 
     let mut grid = Vec::new();
@@ -51,17 +47,15 @@ pub fn build_board(
     for cat in &board.categories {
         let mut row = Vec::new();
         for point in &board.points {
-            let point_key = point.to_string();
-
             // 1. Explicit question_ids override
-            if let Some(qid) = cat.question_ids.as_ref().and_then(|m| m.get(&point_key)) {
+            if let Some(qid) = cat.question_ids.as_ref().and_then(|m| m.get(point)) {
                 used.insert(qid.clone());
                 row.push(Some(qid.clone()));
                 continue;
             }
 
             // 2. Build candidates from pack_ref + filter + difficulty_map
-            let candidates = build_candidates(cat, &point_key, ds, &mut pack_cache, &diff_map);
+            let candidates = build_candidates(cat, point, ds, &mut pack_cache, &diff_map);
             let unused: Vec<&String> = candidates.iter().filter(|id| !used.contains(*id)).collect();
             let pool: Vec<&String> = if unused.is_empty() {
                 candidates.iter().collect()
@@ -84,10 +78,10 @@ pub fn build_board(
 
 fn build_candidates(
     cat: &BoardCategory,
-    point_key: &str,
+    point: &u32,
     ds: &LoadedDataset,
     pack_cache: &mut PackCache,
-    diff_map: &HashMap<&str, &[String]>,
+    diff_map: &HashMap<&u32, &[String]>,
 ) -> Vec<String> {
     let mut candidates = Vec::new();
 
@@ -104,12 +98,16 @@ fn build_candidates(
         }
     }
 
-    if let Some(diff_tags) = diff_map.get(point_key) {
+    if let Some(diff_tags) = diff_map.get(point) {
         if !diff_tags.is_empty() {
             candidates.retain(|qid| {
                 ds.questions
                     .get(qid)
-                    .map(|e| diff_tags.iter().any(|tag| e.item.tags().contains(&tag.as_str().to_owned())))
+                    .map(|e| {
+                        diff_tags
+                            .iter()
+                            .any(|tag| e.item.tags().contains(&tag.as_str().to_owned()))
+                    })
                     .unwrap_or(false)
             });
         }

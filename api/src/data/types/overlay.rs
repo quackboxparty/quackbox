@@ -5,12 +5,14 @@ use super::media::Media;
 /// Translatable subset of a question — no `correct`, `position`, numeric
 /// `answer`, variant config, or metadata fields.
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct QuestionOverlay {
     pub id: String,
     pub content: ContentOverlay,
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ContentOverlay {
     #[serde(default)]
     pub answer: Option<String>,
@@ -27,6 +29,7 @@ pub struct ContentOverlay {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PromptOverlay {
     #[serde(default)]
     pub text: Option<String>,
@@ -35,6 +38,7 @@ pub struct PromptOverlay {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct VariantsOverlay {
     #[serde(default)]
     pub multiple_choice: Option<MultipleChoiceOverlay>,
@@ -43,11 +47,13 @@ pub struct VariantsOverlay {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct MultipleChoiceOverlay {
     pub choices: Vec<ChoiceOverlay>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ChoiceOverlay {
     pub id: String,
     #[serde(default)]
@@ -57,12 +63,14 @@ pub struct ChoiceOverlay {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct OpenVariantOverlay {
     #[serde(default)]
     pub accepted: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct OrderItemOverlay {
     pub id: String,
     #[serde(default)]
