@@ -167,10 +167,11 @@ games:
       question_ids: [q_alpha_one]
 "#,
     )]);
-    assert!(ds
-        .issues
-        .iter()
-        .any(|i| i.message.contains("broadcast") && i.message.to_lowercase().contains("first")));
+    assert!(
+        ds.issues
+            .iter()
+            .any(|i| i.message.contains("broadcast") && i.message.to_lowercase().contains("first"))
+    );
 }
 
 #[test]
@@ -266,10 +267,11 @@ games:
           filter: { tags_any: [subject:geo] }
 "#,
     )]);
-    assert!(ds
-        .issues
-        .iter()
-        .any(|i| i.message.contains("invalid game id")));
+    assert!(
+        ds.issues
+            .iter()
+            .any(|i| i.message.contains("invalid game id"))
+    );
 }
 
 #[test]
@@ -295,10 +297,11 @@ games:
       question_ids: [q_alpha_one]
 "#,
     )]);
-    assert!(ds
-        .issues
-        .iter()
-        .any(|i| i.message.contains("unknown field") && i.message.contains("oops")));
+    assert!(
+        ds.issues
+            .iter()
+            .any(|i| i.message.contains("unknown field") && i.message.contains("oops"))
+    );
 }
 
 #[test]

@@ -48,7 +48,9 @@ fn valid_media_ref(value: &str, _ctx: &()) -> garde::Result {
     if let Some(rest) = value.strip_prefix("youtube:") {
         let id_part = rest.split('?').next().unwrap_or("");
         if (8..=24).contains(&id_part.len())
-            && id_part.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+            && id_part
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
         {
             return Ok(());
         }

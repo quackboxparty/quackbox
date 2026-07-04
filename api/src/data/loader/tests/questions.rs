@@ -24,10 +24,11 @@ fn catches_duplicate_question_ids() {
         ("questions/a.yaml", VALID_QUESTION),
         ("questions/b.yaml", VALID_QUESTION),
     ]));
-    assert!(ds
-        .issues
-        .iter()
-        .any(|i| i.message.contains("duplicate question id")));
+    assert!(
+        ds.issues
+            .iter()
+            .any(|i| i.message.contains("duplicate question id"))
+    );
 }
 
 #[test]
@@ -46,10 +47,11 @@ fn catches_missing_variants_on_text_question() {
 "#,
     )]));
     assert!(!ds.issues.is_empty());
-    assert!(ds
-        .issues
-        .iter()
-        .any(|i| i.message.to_lowercase().contains("variant")));
+    assert!(
+        ds.issues
+            .iter()
+            .any(|i| i.message.to_lowercase().contains("variant"))
+    );
 }
 
 #[test]
@@ -112,10 +114,11 @@ fn catches_duplicate_choice_ids() {
           - { id: same, text: B }
 "#,
     )]));
-    assert!(ds
-        .issues
-        .iter()
-        .any(|i| i.message.contains("duplicate choice id")));
+    assert!(
+        ds.issues
+            .iter()
+            .any(|i| i.message.contains("duplicate choice id"))
+    );
 }
 
 #[test]
@@ -134,10 +137,11 @@ fn catches_duplicate_order_item_ids() {
       - { id: same, text: B, position: 2 }
 "#,
     )]));
-    assert!(ds
-        .issues
-        .iter()
-        .any(|i| i.message.contains("duplicate order item id")));
+    assert!(
+        ds.issues
+            .iter()
+            .any(|i| i.message.contains("duplicate order item id"))
+    );
 }
 
 #[test]
@@ -156,10 +160,11 @@ fn catches_range_max_not_gt_min() {
       range: { min: 100, max: 50 }
 "#,
     )]));
-    assert!(ds
-        .issues
-        .iter()
-        .any(|i| i.message.contains("max must be greater")));
+    assert!(
+        ds.issues
+            .iter()
+            .any(|i| i.message.contains("max must be greater"))
+    );
 }
 
 #[test]
@@ -197,10 +202,11 @@ fn catches_invalid_question_id() {
     variants: { open: { accepted: ["Hi"] } }
 "#,
     )]));
-    assert!(ds
-        .issues
-        .iter()
-        .any(|i| i.message.contains("invalid question id")));
+    assert!(
+        ds.issues
+            .iter()
+            .any(|i| i.message.contains("invalid question id"))
+    );
 }
 
 #[test]
@@ -218,10 +224,11 @@ fn catches_invalid_tag_ref_on_question() {
     variants: { open: { accepted: ["Hi"] } }
 "#,
     )]));
-    assert!(ds
-        .issues
-        .iter()
-        .any(|i| i.message.contains("invalid tag ref")));
+    assert!(
+        ds.issues
+            .iter()
+            .any(|i| i.message.contains("invalid tag ref"))
+    );
 }
 
 #[test]
@@ -280,10 +287,11 @@ fn catches_invalid_default_lang() {
     variants: { open: { accepted: ["Hi"] } }
 "#,
     )]));
-    assert!(ds
-        .issues
-        .iter()
-        .any(|i| i.message.contains("invalid locale")));
+    assert!(
+        ds.issues
+            .iter()
+            .any(|i| i.message.contains("invalid locale"))
+    );
 }
 
 #[test]
@@ -304,10 +312,11 @@ fn catches_invalid_media_ref_prefix() {
     variants: { open: { accepted: ["Hi"] } }
 "#,
     )]));
-    assert!(ds
-        .issues
-        .iter()
-        .any(|i| i.message.contains("media ref must start with")));
+    assert!(
+        ds.issues
+            .iter()
+            .any(|i| i.message.contains("media ref must start with"))
+    );
 }
 
 #[test]

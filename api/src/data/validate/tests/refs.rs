@@ -6,10 +6,11 @@ fn catches_pack_referencing_unknown_question() {
         "packs/ghost.yaml",
         "id: pack_ghost\ntitle: Ghost\nquestions: [q_does_not_exist]\n",
     )]));
-    assert!(ds
-        .issues
-        .iter()
-        .any(|i| i.message.contains("unknown question")));
+    assert!(
+        ds.issues
+            .iter()
+            .any(|i| i.message.contains("unknown question"))
+    );
 }
 
 #[test]

@@ -27,10 +27,11 @@ games:
 "#,
     )]));
     assert!(ds.issues.iter().any(|i| i.message.contains("unknown pack")));
-    assert!(ds
-        .issues
-        .iter()
-        .any(|i| i.message.contains("unknown question")));
+    assert!(
+        ds.issues
+            .iter()
+            .any(|i| i.message.contains("unknown question"))
+    );
 }
 
 #[test]
@@ -86,8 +87,9 @@ games:
           filter: { tags_any: [subject:history] }
 "#,
     )]));
-    assert!(ds
-        .issues
-        .iter()
-        .any(|i| i.message.contains("difficulty_map") && i.message.contains("unknown tag")));
+    assert!(
+        ds.issues
+            .iter()
+            .any(|i| i.message.contains("difficulty_map") && i.message.contains("unknown tag"))
+    );
 }

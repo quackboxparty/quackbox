@@ -13,10 +13,11 @@ fn rejects_unknown_question_overlay_field() {
     correct: true
 "#,
     )]);
-    assert!(ds
-        .issues
-        .iter()
-        .any(|i| i.message.contains("unknown field") && i.message.contains("correct")));
+    assert!(
+        ds.issues
+            .iter()
+            .any(|i| i.message.contains("unknown field") && i.message.contains("correct"))
+    );
 }
 
 #[test]
@@ -30,10 +31,11 @@ rules:
   judge: auto
 "#,
     )]);
-    assert!(ds
-        .issues
-        .iter()
-        .any(|i| i.message.contains("unknown field") && i.message.contains("rules")));
+    assert!(
+        ds.issues
+            .iter()
+            .any(|i| i.message.contains("unknown field") && i.message.contains("rules"))
+    );
 }
 
 #[test]

@@ -18,10 +18,11 @@ fn catches_missing_media_file() {
     variants: { open: { accepted: ["Red"] } }
 "#,
     )]));
-    assert!(ds
-        .issues
-        .iter()
-        .any(|i| i.message.contains("media file missing")));
+    assert!(
+        ds.issues
+            .iter()
+            .any(|i| i.message.contains("media file missing"))
+    );
 }
 
 #[test]
@@ -45,10 +46,11 @@ fn catches_media_extension_kind_mismatch() {
 "#,
         ),
     ]));
-    assert!(ds
-        .issues
-        .iter()
-        .any(|i| i.message.contains("kind mismatch")));
+    assert!(
+        ds.issues
+            .iter()
+            .any(|i| i.message.contains("kind mismatch"))
+    );
 }
 
 #[test]

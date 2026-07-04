@@ -28,7 +28,12 @@ pub struct Choice {
 
 #[derive(Debug, Clone, Deserialize, Validate)]
 pub struct MultipleChoiceVariant {
-    #[garde(length(min = 2), custom(choices_have_correct), custom(choices_unique_ids), dive)]
+    #[garde(
+        length(min = 2),
+        custom(choices_have_correct),
+        custom(choices_unique_ids),
+        dive
+    )]
     pub choices: Vec<Choice>,
 }
 
@@ -87,7 +92,9 @@ fn range_max_gt_min(value: &RangeVariant, _ctx: &()) -> garde::Result {
     if value.max > value.min {
         Ok(())
     } else {
-        Err(garde::Error::new("range.max must be greater than range.min"))
+        Err(garde::Error::new(
+            "range.max must be greater than range.min",
+        ))
     }
 }
 
@@ -281,9 +288,7 @@ impl Question {
 
     pub fn base(&self) -> &QuestionBase {
         match self {
-            Self::Text { base, .. }
-            | Self::Numeric { base, .. }
-            | Self::Order { base, .. } => base,
+            Self::Text { base, .. } | Self::Numeric { base, .. } | Self::Order { base, .. } => base,
         }
     }
 
