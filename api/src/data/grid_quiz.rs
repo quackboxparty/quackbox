@@ -1,19 +1,23 @@
 //! Board builder — resolve a board definition into a 2D grid of question IDs.
 //!
-//! Mirrors `board.ts`: explicit IDs win, then pack refs, then filters.
-//! Deterministic shuffle via mulberry32 PRNG.
+//! Explicit IDs win, then pack refs, then filters. Deterministic shuffle via
+//! seeded RNG.
 
 use std::collections::{HashMap, HashSet};
 
-use super::query::{query_pool, resolve_pack, PackCache};
+use rand::SeedableRng;
+use rand::rngs::StdRng;
+use rand::seq::IndexedRandom;
+
+use super::query::{PackCache, query_pool, resolve_pack};
 use super::types::*;
 
 /// Resolved board: `grid[category_idx][point_idx] = Some(question_id) | None`.
 pub type BoardGrid = Vec<Vec<Option<String>>>;
 
 /// Build a resolved NxM board grid. Unresolvable slots are `None`.
-pub fn build_board(ds: &Dataset, board: &Board, seed: u32) -> BoardGrid {
-    let mut rng = Mulberry32::new(seed);
+pub fn build_board(ds: &Dataset, board: &Board, seed: u64) -> BoardGrid {
+    let mut rng = StdRng::seed_from_u64(seed);
     let mut used = HashSet::new();
     let mut pack_cache: PackCache = PackCache::new();
 
@@ -44,9 +48,9 @@ pub fn build_board(ds: &Dataset, board: &Board, seed: u32) -> BoardGrid {
                 unused
             };
 
-            if let Some(picked) = pick_random(&pool, &mut rng) {
+            if let Some(&picked) = pool.choose(&mut rng) {
                 used.insert(picked.clone());
-                row.push(Some(picked));
+                row.push(Some(picked.clone()));
             } else {
                 row.push(None);
             }
@@ -96,32 +100,4 @@ fn build_candidates(
     }
 
     candidates
-}
-
-fn pick_random(pool: &[&String], rng: &mut Mulberry32) -> Option<String> {
-    if pool.is_empty() {
-        return None;
-    }
-    let idx = (rng.next() * pool.len() as f64) as usize;
-    Some((*pool[idx]).clone())
-}
-
-// ─── Mulberry32 PRNG ────────────────────────────────────────────────────────
-
-struct Mulberry32 {
-    state: u32,
-}
-
-impl Mulberry32 {
-    fn new(seed: u32) -> Self {
-        Self { state: seed }
-    }
-
-    fn next(&mut self) -> f64 {
-        self.state = self.state.wrapping_add(0x6D2B_79F5);
-        let mut t = self.state;
-        t = (t ^ (t >> 15)).wrapping_mul(1 | t);
-        t = (t.wrapping_add((t ^ (t >> 7)).wrapping_mul(61 | t))) ^ t;
-        ((t ^ (t >> 14)) as f64) / 4_294_967_296.0
-    }
 }

@@ -1,8 +1,8 @@
 //! Walk data directories, parse YAML files, build registries.
 //!
 
-use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::HashMap;
+use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -80,11 +80,10 @@ fn collect_registry<T>(
                     let id = get_id(&item).to_owned();
                     match registry.entry(id.clone()) {
                         Occupied(_) => {
-                            issues.push(LoadIssue {
-                                file: file.clone(),
-                                message: format!("duplicate {kind_label} id '{id}'"),
-                                path: None,
-                            });
+                            issues.push(LoadIssue::msg(
+                                &file,
+                                format!("duplicate {kind_label} id '{id}'"),
+                            ));
                         }
                         Vacant(entry) => {
                             entry.insert(Entry {
@@ -99,6 +98,24 @@ fn collect_registry<T>(
     }
 
     (registry, issues)
+}
+
+/// Walk `dir`, parse every YAML file, fold into a registry.
+/// `walk_yaml` already returns empty for a missing dir, so callers need no guard.
+fn load_yaml_dir<T, Raw: serde::de::DeserializeOwned>(
+    dir: &Path,
+    rel: &dyn Fn(&Path) -> String,
+    decode: fn(Raw) -> Vec<T>,
+    validate: Option<fn(&T, &str) -> Vec<LoadIssue>>,
+    get_id: impl Fn(&T) -> &str,
+    kind_label: &str,
+) -> Result<(Registry<T>, Vec<LoadIssue>), LoadError> {
+    let files = walk_yaml(dir)?;
+    let results: Vec<_> = files
+        .iter()
+        .map(|path| parse_file(path, &rel(path), decode, validate))
+        .collect();
+    Ok(collect_registry(results, get_id, kind_label))
 }
 
 /// Load the full dataset from `data_dir`.
@@ -201,4 +218,3 @@ fn filename(path: &Path) -> String {
         .to_string_lossy()
         .into_owned()
 }
-

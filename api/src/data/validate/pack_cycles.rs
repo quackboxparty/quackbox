@@ -54,11 +54,10 @@ fn dfs_cycle<'a>(
         let mut cycle: Vec<&str> = stack[cycle_start..].to_vec();
         cycle.push(node);
         let cycle_str = cycle.join(" -> ");
-        issues.push(LoadIssue {
-            file: file_by_id.get(node).unwrap_or(&"(unknown)").to_string(),
-            message: format!("pack includes cycle: {cycle_str}"),
-            path: None,
-        });
+        issues.push(LoadIssue::msg(
+            file_by_id.get(node).copied().unwrap_or("(unknown)"),
+            format!("pack includes cycle: {cycle_str}"),
+        ));
         return;
     }
 

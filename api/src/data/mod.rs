@@ -3,10 +3,8 @@
 //! Entry point: `data::load("data")` at server startup.
 
 mod error;
-#[cfg(feature = "game-runtime")]
 mod grid_quiz;
 mod loader;
-#[cfg(feature = "game-runtime")]
 mod query;
 mod types;
 mod validate;

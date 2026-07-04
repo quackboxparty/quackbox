@@ -59,6 +59,16 @@ pub struct LoadIssue {
     pub path: Option<String>,
 }
 
+impl LoadIssue {
+    pub fn msg(file: &str, message: String) -> Self {
+        Self {
+            file: file.to_owned(),
+            message,
+            path: None,
+        }
+    }
+}
+
 impl std::fmt::Display for LoadIssue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.path {

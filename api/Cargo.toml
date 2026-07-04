@@ -5,7 +5,6 @@ edition = "2024"
 
 [features]
 default = []
-game-runtime = []
 
 [dependencies]
 axum = { version = "0.8.9", features = ["ws", "tracing", "macros"] }

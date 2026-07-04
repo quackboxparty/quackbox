@@ -4,57 +4,46 @@ pub(super) fn check_overlay_refs(ds: &Dataset, issues: &mut Vec<LoadIssue>) {
     for (locale, locale_overlays) in &ds.overlays {
         for (qid, entry) in &locale_overlays.questions {
             if !ds.questions.contains_key(qid) {
-                issues.push(LoadIssue {
-                    file: entry.file.clone(),
-                    message: format!(
-                        "overlay of locale '{locale}' references unknown question '{qid}'"
-                    ),
-                    path: None,
-                });
+                issues.push(LoadIssue::msg(
+                    &entry.file,
+                    format!("overlay of locale '{locale}' references unknown question '{qid}'"),
+                ));
             }
         }
         for (pid, entry) in &locale_overlays.packs {
             if !ds.packs.contains_key(pid) {
-                issues.push(LoadIssue {
-                    file: entry.file.clone(),
-                    message: format!(
-                        "overlay of locale '{locale}' references unknown pack '{pid}'"
-                    ),
-                    path: None,
-                });
+                issues.push(LoadIssue::msg(
+                    &entry.file,
+                    format!("overlay of locale '{locale}' references unknown pack '{pid}'"),
+                ));
             }
         }
         for (tid, entry) in &locale_overlays.tags {
             if !ds.tags.contains_key(tid) {
-                issues.push(LoadIssue {
-                    file: entry.file.clone(),
-                    message: format!("overlay of locale '{locale}' references unknown tag '{tid}'"),
-                    path: None,
-                });
+                issues.push(LoadIssue::msg(
+                    &entry.file,
+                    format!("overlay of locale '{locale}' references unknown tag '{tid}'"),
+                ));
             }
         }
         for (gid, entry) in &locale_overlays.games {
             let Some(base_game) = ds.games.get(gid) else {
-                issues.push(LoadIssue {
-                    file: entry.file.clone(),
-                    message: format!(
-                        "overlay of locale '{locale}' references unknown game '{gid}'"
-                    ),
-                    path: None,
-                });
+                issues.push(LoadIssue::msg(
+                    &entry.file,
+                    format!("overlay of locale '{locale}' references unknown game '{gid}'"),
+                ));
                 continue;
             };
 
             if entry.item.games.len() > base_game.item.games.len() {
-                issues.push(LoadIssue {
-                    file: entry.file.clone(),
-                    message: format!(
+                issues.push(LoadIssue::msg(
+                    &entry.file,
+                    format!(
                         "overlay of locale '{locale}' game '{gid}' has {} game entries but base has {}",
                         entry.item.games.len(),
                         base_game.item.games.len()
                     ),
-                    path: None,
-                });
+                ));
             }
 
             for (idx, ovl_game) in entry.item.games.iter().enumerate() {
@@ -66,25 +55,23 @@ pub(super) fn check_overlay_refs(ds: &Dataset, issues: &mut Vec<LoadIssue>) {
                     match base_entry {
                         GameEntry::GridQuiz(base_grid) => {
                             if board_ovl.categories.len() > base_grid.board.categories.len() {
-                                issues.push(LoadIssue {
-                                    file: entry.file.clone(),
-                                    message: format!(
+                                issues.push(LoadIssue::msg(
+                                    &entry.file,
+                                    format!(
                                         "overlay of locale '{locale}' game '{gid}' entry[{idx}] has {} categories but base has {}",
                                         board_ovl.categories.len(),
                                         base_grid.board.categories.len()
                                     ),
-                                    path: None,
-                                });
+                                ));
                             }
                         }
                         GameEntry::Linear(_) => {
-                            issues.push(LoadIssue {
-                                file: entry.file.clone(),
-                                message: format!(
+                            issues.push(LoadIssue::msg(
+                                &entry.file,
+                                format!(
                                     "overlay of locale '{locale}' game '{gid}' entry[{idx}] cannot define board for non-grid mode"
                                 ),
-                                path: None,
-                            });
+                            ));
                         }
                     }
                 }

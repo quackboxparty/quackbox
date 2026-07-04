@@ -12,20 +12,18 @@ pub(super) fn check_game_refs(ds: &Dataset, issues: &mut Vec<LoadIssue>) {
                         if let Some(pack_id) = &cat.pack_ref
                             && !ds.packs.contains_key(pack_id)
                         {
-                            issues.push(LoadIssue {
-                                file: entry.file.clone(),
-                                message: format!("{ctx} references unknown pack '{pack_id}'"),
-                                path: None,
-                            });
+                            issues.push(LoadIssue::msg(
+                                &entry.file,
+                                format!("{ctx} references unknown pack '{pack_id}'"),
+                            ));
                         }
 
                         for qid in cat.question_ids.iter().flat_map(|map| map.values()) {
                             if !ds.questions.contains_key(qid) {
-                                issues.push(LoadIssue {
-                                    file: entry.file.clone(),
-                                    message: format!("{ctx} references unknown question '{qid}'"),
-                                    path: None,
-                                });
+                                issues.push(LoadIssue::msg(
+                                    &entry.file,
+                                    format!("{ctx} references unknown question '{qid}'"),
+                                ));
                             }
                         }
 
@@ -38,14 +36,13 @@ pub(super) fn check_game_refs(ds: &Dataset, issues: &mut Vec<LoadIssue>) {
                         for (point, tags) in diff_map {
                             for tag in tags {
                                 if !ds.tags.contains_key(tag) {
-                                    issues.push(LoadIssue {
-                                        file: entry.file.clone(),
-                                        message: format!(
+                                    issues.push(LoadIssue::msg(
+                                        &entry.file,
+                                        format!(
                                             "unknown tag '{tag}' on game '{}' entry[{game_idx}] difficulty_map[{point}]",
                                             gc.id
                                         ),
-                                        path: None,
-                                    });
+                                    ));
                                 }
                             }
                         }
@@ -55,27 +52,25 @@ pub(super) fn check_game_refs(ds: &Dataset, issues: &mut Vec<LoadIssue>) {
                     LinearSource::Questions { question_ids } => {
                         for qid in question_ids {
                             if !ds.questions.contains_key(qid) {
-                                issues.push(LoadIssue {
-                                    file: entry.file.clone(),
-                                    message: format!(
+                                issues.push(LoadIssue::msg(
+                                    &entry.file,
+                                    format!(
                                         "game '{}' entry[{game_idx}] references unknown question '{qid}'",
                                         gc.id
                                     ),
-                                    path: None,
-                                });
+                                ));
                             }
                         }
                     }
                     LinearSource::Pack { pack_id } => {
                         if !ds.packs.contains_key(pack_id) {
-                            issues.push(LoadIssue {
-                                file: entry.file.clone(),
-                                message: format!(
+                            issues.push(LoadIssue::msg(
+                                &entry.file,
+                                format!(
                                     "game '{}' entry[{game_idx}] references unknown pack '{pack_id}'",
                                     gc.id
                                 ),
-                                path: None,
-                            });
+                            ));
                         }
                     }
                     LinearSource::Filter { filter } => {

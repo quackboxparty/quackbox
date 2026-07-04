@@ -43,11 +43,10 @@ fn check_filter_tags(
 
     for tag in all_tags {
         if !ds.tags.contains_key(tag) {
-            issues.push(LoadIssue {
-                file: file.to_owned(),
-                message: format!("unknown tag '{tag}' on {context}"),
-                path: None,
-            });
+            issues.push(LoadIssue::msg(
+                file,
+                format!("unknown tag '{tag}' on {context}"),
+            ));
         }
     }
 }

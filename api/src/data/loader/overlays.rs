@@ -42,36 +42,28 @@ fn load_question_overlays(
     locale_dir: &Path,
     rel: &dyn Fn(&Path) -> String,
 ) -> Result<(Registry<QuestionOverlay>, Vec<LoadIssue>), LoadError> {
-    let dir = locale_dir.join("questions");
-    if !dir.exists() {
-        return Ok((HashMap::new(), Vec::new()));
-    }
-    let files = walk_yaml(&dir)?;
-
-    let results: Vec<_> = files
-        .iter()
-        .map(|path| parse_file(path, &rel(path), |raw: Vec<QuestionOverlay>| raw, None))
-        .collect();
-
-    Ok(collect_registry(results, |q| &q.id, "question overlay"))
+    load_yaml_dir(
+        &locale_dir.join("questions"),
+        rel,
+        |raw: Vec<QuestionOverlay>| raw,
+        None,
+        |q| q.id.as_str(),
+        "question overlay",
+    )
 }
 
 fn load_pack_overlays(
     locale_dir: &Path,
     rel: &dyn Fn(&Path) -> String,
 ) -> Result<(Registry<PackOverlay>, Vec<LoadIssue>), LoadError> {
-    let dir = locale_dir.join("packs");
-    if !dir.exists() {
-        return Ok((HashMap::new(), Vec::new()));
-    }
-    let files = walk_yaml(&dir)?;
-
-    let results: Vec<_> = files
-        .iter()
-        .map(|path| parse_file(path, &rel(path), |raw: PackOverlay| vec![raw], None))
-        .collect();
-
-    Ok(collect_registry(results, |p| &p.id, "pack overlay"))
+    load_yaml_dir(
+        &locale_dir.join("packs"),
+        rel,
+        |raw: PackOverlay| vec![raw],
+        None,
+        |p| p.id.as_str(),
+        "pack overlay",
+    )
 }
 
 fn load_tag_overlays(
@@ -79,9 +71,6 @@ fn load_tag_overlays(
     rel: &dyn Fn(&Path) -> String,
 ) -> Result<(Registry<TagOverlay>, Vec<LoadIssue>), LoadError> {
     let dir = locale_dir.join("tags");
-    if !dir.exists() {
-        return Ok((HashMap::new(), Vec::new()));
-    }
 
     let results: Vec<_> = TAG_CATEGORIES
         .iter()

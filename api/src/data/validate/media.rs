@@ -43,11 +43,10 @@ fn check_one_media(
     let meta = match fs::metadata(&full) {
         Ok(m) => m,
         Err(_) => {
-            issues.push(LoadIssue {
-                file: context_file.to_owned(),
-                message: format!("media file missing: {media_ref}"),
-                path: None,
-            });
+            issues.push(LoadIssue::msg(
+                context_file,
+                format!("media file missing: {media_ref}"),
+            ));
             return;
         }
     };
@@ -57,20 +56,18 @@ fn check_one_media(
         if let Some(actual) = ext_kind(&ext_lower) {
             let ok = actual == kind || (actual == MediaKind::Video && kind == MediaKind::Audio);
             if !ok {
-                issues.push(LoadIssue {
-                    file: context_file.to_owned(),
-                    message: format!(
+                issues.push(LoadIssue::msg(
+                    context_file,
+                    format!(
                         "media kind mismatch: declared {kind:?} but extension .{ext_lower} is {actual:?} ({media_ref})"
                     ),
-                    path: None,
-                });
+                ));
             }
         } else {
-            issues.push(LoadIssue {
-                file: context_file.to_owned(),
-                message: format!("unknown media extension: .{ext_lower} ({media_ref})"),
-                path: None,
-            });
+            issues.push(LoadIssue::msg(
+                context_file,
+                format!("unknown media extension: .{ext_lower} ({media_ref})"),
+            ));
         }
     }
 
@@ -80,13 +77,12 @@ fn check_one_media(
         MEDIA_CAP
     };
     if meta.len() > cap {
-        issues.push(LoadIssue {
-            file: context_file.to_owned(),
-            message: format!(
+        issues.push(LoadIssue::msg(
+            context_file,
+            format!(
                 "media file exceeds size cap ({}B > {cap}B): {media_ref}",
                 meta.len()
             ),
-            path: None,
-        });
+        ));
     }
 }

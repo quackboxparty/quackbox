@@ -4,11 +4,10 @@ pub(super) fn check_tag_refs(ds: &Dataset, issues: &mut Vec<LoadIssue>) {
     for entry in ds.questions.values() {
         for tag in entry.item.tags() {
             if !ds.tags.contains_key(tag) {
-                issues.push(LoadIssue {
-                    file: entry.file.clone(),
-                    message: format!("unknown tag '{tag}' on question '{}'", entry.item.id()),
-                    path: None,
-                });
+                issues.push(LoadIssue::msg(
+                    &entry.file,
+                    format!("unknown tag '{tag}' on question '{}'", entry.item.id()),
+                ));
             }
         }
     }
