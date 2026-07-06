@@ -4,10 +4,16 @@
 	"join_game": "Spiel beitreten",
 	"enter_join_code": "Beitrittscode eingeben",
 	"join": "Beitreten",
+	"rejoin": "Wieder beitreten",
 	"room_not_found": "Raum existiert nicht!",
 	"error_generic": "Etwas ist schiefgelaufen!",
 	"host": "Hosten",
+	"create": "Erstellen",
+	"create_room": "Raum erstellen",
+	"games": "Spiele",
+	"no_game_selected": "Kein Spiel ausgewählt!",
 	"menu": "Menü",
+	"players": "Spieler",
 	"settings": "Einstellungen",
 	"close": "Schließen",
 	"theme": "Design",
@@ -22,5 +28,7 @@
 	"theme_chalkboard": "Tafel",
 	"theme_kawaii": "Kawaii",
 	"theme_western": "Western",
-	"theme_wizard": "Zauberer"
+	"theme_wizard": "Zauberer",
+	"you": "Du",
+	"kick_player": "{name} kicken"
 }

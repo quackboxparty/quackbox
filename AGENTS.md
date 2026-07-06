@@ -135,6 +135,12 @@ export for editor YAML LSP.
 - Rust code uses `Result` / `thiserror` idiomatically for fallible paths.
 - No comments restating what code does; comment only non-obvious _why_.
 - Don't edit `src/lib/paraglide/**` — generated.
+- Read the task list at session start from the `quackbox` notebook in `nb`:
+  `nb todos quackbox:`. Priorities are tags (`p1`/`p2`/`p3`), projects are tags
+  (`runtime`, `frontend`, `tooling`, `gamemodes`). Each todo body holds
+  context + file refs; large items carry `--task` subtasks (see them with
+  `nb todos quackbox:tasks <id>`). Complete with `nb todo do quackbox:<id>`
+  (or `nb todo do quackbox:<id> <task#>` for one subtask).
 
 ## Implementation order (from data-model.md §Implementation order)
 

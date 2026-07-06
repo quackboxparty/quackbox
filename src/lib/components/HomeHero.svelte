@@ -2,16 +2,16 @@
 	import Logo from '$lib/components/Logo.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import CodeInput from '$lib/components/CodeInput.svelte';
-	import TextInput from '$lib/components/TextInput.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/api';
 	import { toast } from '$lib/toast.svelte';
+	import { readSession } from '$lib/session';
+	import Button from './Button.svelte';
 
 	let joinOpen = $state(false);
-	let hostOpen = $state(false);
 	let joinCode = $state('');
-	let secret = $state('');
+	let recentSession = $state(readSession());
 
 	async function join() {
 		if (joinCode.length !== 6) return;
@@ -30,15 +30,12 @@
 		await goto(`/room/${joinCode}`);
 	}
 
-	async function create() {
-		const result = await api.room.create(secret);
+	async function room() {
+		await goto('/room');
+	}
 
-		if (!result.ok) {
-			toast.error(m.error_generic());
-			return;
-		}
-
-		await goto(`/room/${result.value.join_code}`);
+	async function rejoin() {
+		if (recentSession) await goto(`/room/${recentSession.room}`);
 	}
 </script>
 
@@ -47,30 +44,31 @@
 	<p class="tagline">{m.tagline()}</p>
 
 	<div class="actions">
-		<button class="btn btn-primary" onclick={() => (joinOpen = true)}>{m.join_game()}</button>
-		<button class="btn btn-secondary" onclick={() => (hostOpen = true)}>{m.host()}</button>
+		<Button size="xl" onclick={() => (joinOpen = true)}>{m.join_game()}</Button>
+		<Button variant="secondary" size="xl" onclick={room}>{m.host()}</Button>
 	</div>
 </section>
 
 <Dialog bind:open={joinOpen} title={m.join_game()} description={m.enter_join_code()}>
 	<CodeInput bind:value={joinCode} onComplete={join} />
-	<button class="btn btn-primary" disabled={joinCode.length !== 6} onclick={join}>
+	<Button disabled={joinCode.length !== 6} onclick={join}>
 		{m.join()}
-	</button>
-</Dialog>
-<Dialog bind:open={hostOpen} title={m.host()}>
-	<form onsubmit={create}>
-		<TextInput bind:value={secret} placeholder="Secret" />
-	</form>
+	</Button>
+	{#if recentSession}
+		<Button variant="secondary" onclick={rejoin}>{m.rejoin()} {recentSession.room}</Button>
+	{/if}
 </Dialog>
 
 <style>
 	.hero {
+		min-height: 100%;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
+		justify-content: center;
 		gap: var(--space-6);
 		text-align: center;
+		padding: var(--space-12) var(--space-6);
 	}
 	.tagline {
 		margin: 0;
@@ -82,30 +80,5 @@
 		gap: var(--space-4);
 		flex-wrap: wrap;
 		justify-content: center;
-	}
-	.btn {
-		font-family: var(--font-heading);
-		font-size: calc(1.125rem * var(--font-scale));
-		padding: var(--space-4) var(--space-8);
-		border-radius: var(--radius-lg);
-		border: var(--border-width) var(--border-style) transparent;
-		cursor: pointer;
-		transition: transform var(--duration-fast) var(--easing);
-	}
-	.btn:active {
-		transform: scale(0.97);
-	}
-	.btn:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-	.btn-primary {
-		background: var(--color-primary);
-		color: var(--color-text-inverse);
-	}
-	.btn-secondary {
-		background: var(--bg-surface-elevated);
-		color: var(--color-text);
-		border-color: var(--border-color);
 	}
 </style>

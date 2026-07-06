@@ -10,19 +10,20 @@
 //!
 //! TODO: project() + the {Play}-excludes-correct_answer test.
 
+use std::collections::BTreeMap;
+
 use crate::{
     game::{grants::GrantSet, state::GameState},
     protocol::ClientView,
 };
 
 pub fn project(gamestate: &GameState, grants: &GrantSet) -> ClientView {
-    let mut players: Vec<String> = gamestate
+    let players: BTreeMap<String, GrantSet> = gamestate
         .player_slots
         .values()
         .filter(|slot| slot.connected)
-        .map(|slot| slot.name.clone())
+        .map(|slot| (slot.name.clone(), slot.grants.clone()))
         .collect();
-    players.sort();
 
     ClientView { players }
 }

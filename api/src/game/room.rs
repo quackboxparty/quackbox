@@ -17,8 +17,9 @@ use rand::RngExt;
 use tokio::sync::{broadcast, mpsc};
 
 use crate::{
+    data::GameConfig,
     game::{
-        grants::Grant::Play,
+        grants::Grant::{self, Play},
         state::{GameState, PlayerSlot, Token},
     },
     protocol::{ConnectionError, RoomMessage},
@@ -50,47 +51,54 @@ pub struct RoomHandle {
     pub state_tx: broadcast::Sender<GameState>,
 }
 
-pub fn spawn_room(code: JoinCode) -> RoomHandle {
+pub fn spawn_room(code: JoinCode, game: GameConfig) -> RoomHandle {
     let (room_msg_tx, mut room_msg_rx) = mpsc::channel::<RoomMessage>(64);
     let (state_tx, _) = broadcast::channel::<GameState>(16);
 
     let state_tx_loop = state_tx.clone();
     tokio::spawn(async move {
         let mut state = GameState {
+            game,
             player_slots: HashMap::new(),
         };
         while let Some(room_msg) = room_msg_rx.recv().await {
             tracing::info!("room msg {:?}", &room_msg);
             match room_msg {
                 RoomMessage::Join { name, reply } => {
-                    tracing::info!("player {} wants to join", &name);
                     let taken = state.player_slots.values().any(|slot| slot.name == name);
                     if taken {
                         let _ = reply.send(Err(ConnectionError::NameTaken));
-                    } else {
-                        let token = Token::generate();
-                        state.player_slots.insert(
-                            token.clone(),
-                            PlayerSlot {
-                                name,
-                                connected: true,
-                                grants: HashSet::new(),
-                            },
-                        );
-
-                        let _ = reply.send(Ok(token));
-                        let _ = state_tx_loop.send(state.clone());
+                        continue;
                     }
+
+                    let mut grants = HashSet::from([Grant::Play]);
+                    if state.player_slots.is_empty() {
+                        grants.insert(Grant::Moderate);
+                    }
+
+                    let token = Token::generate();
+                    state.player_slots.insert(
+                        token.clone(),
+                        PlayerSlot {
+                            name,
+                            connected: true,
+                            grants,
+                        },
+                    );
+
+                    let _ = reply.send(Ok(token));
+                    let _ = state_tx_loop.send(state.clone());
                 }
                 RoomMessage::Reconnect { token, reply } => {
-                    if let Some(slot) = state.player_slots.get_mut(&token) {
-                        slot.connected = true;
-
-                        let _ = reply.send(Ok(token));
-                        let _ = state_tx_loop.send(state.clone());
-                    } else {
+                    let Some(slot) = state.player_slots.get_mut(&token) else {
                         let _ = reply.send(Err(ConnectionError::SlotGone));
-                    }
+                        continue;
+                    };
+
+                    slot.connected = true;
+
+                    let _ = reply.send(Ok(token));
+                    let _ = state_tx_loop.send(state.clone());
                 }
                 RoomMessage::Disconnect { token } => {
                     if let Some(slot) = state.player_slots.get_mut(&token) {
@@ -102,9 +110,6 @@ pub fn spawn_room(code: JoinCode) -> RoomHandle {
 
                     state.apply(token, cmd);
                     let _ = state_tx_loop.send(state.clone());
-                }
-                _ => {
-                    todo!("rest of room msg")
                 }
             }
         }

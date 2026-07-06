@@ -12,16 +12,35 @@ use std::collections::HashMap;
 
 use uuid::Uuid;
 
-use crate::{game::grants::GrantSet, protocol::Command};
+use crate::{
+    data::GameConfig,
+    game::grants::{Grant, GrantSet},
+    protocol::Command,
+};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct GameState {
+    pub game: GameConfig,
     pub player_slots: HashMap<Token, PlayerSlot>,
 }
 
 impl GameState {
     pub fn apply(&mut self, token: Token, cmd: Command) {
         match cmd {
+            Command::Kick { player } => {
+                if self
+                    .grants_for(&token)
+                    .is_none_or(|grants| !grants.contains(&Grant::Moderate))
+                {
+                    tracing::info!(
+                        "Token '{}' tried to kick without right permissions",
+                        token.0
+                    );
+                    return;
+                }
+
+                self.player_slots.retain(|_, v| v.name != player);
+            }
             _ => {
                 todo!()
             }

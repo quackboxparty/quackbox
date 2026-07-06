@@ -4,15 +4,17 @@
 	import { page } from '$app/state';
 	import { api } from '$lib/api';
 	import type { ClientMessage, ClientView, ServerMessage } from '$lib/bindings/Protocol';
+	import Button from '$lib/components/Button.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import TextInput from '$lib/components/TextInput.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { clearSession, readSession, saveSession } from '$lib/session';
+	import { room, clearRoom } from '$lib/room.svelte';
 	import { toast } from '$lib/toast.svelte';
 	import { onMount } from 'svelte';
 
 	let nameOpen = $state(false);
-	let name = $state('');
+	let name = $state(readSession()?.player ?? '');
 	let snapshot = $state<ClientView>();
 
 	const code = $derived(page.params['code']);
@@ -37,9 +39,14 @@
 		}
 
 		ws = new WebSocket(`/ws/${code}`);
+		room.send = (cmd) => {
+			const s = readSession();
+			if (s) send({ kind: 'Authed', token: s.token, cmd });
+		};
 		ws.onopen = () => {
 			const stored = readSession();
 			if (stored?.room === code) {
+				room.player = stored.player ?? null;
 				send({ kind: 'Reconnect', token: stored.token });
 			} else {
 				nameOpen = true;
@@ -51,22 +58,25 @@
 			switch (serverMsg.kind) {
 				case 'Joined':
 					nameOpen = false;
-					saveSession({ room: code, token: serverMsg.token });
+					room.player = name;
+					saveSession({ room: code, token: serverMsg.token, player: name });
 					break;
 				case 'Snapshot': {
 					console.log(serverMsg);
 
-					const prevPlayers = snapshot?.players ?? [];
-					const newPlayers = serverMsg.players;
-					const joined = newPlayers.filter((p) => !prevPlayers.includes(p));
+					const prevPlayers = new Set(Object.keys(snapshot?.players ?? {}));
+					const joined = Object.keys(serverMsg.players).filter((p) => !prevPlayers.has(p));
 					joined.forEach((p) => toast.success(`${p} joined`));
 
+					room.code = code;
+					room.gamestate = serverMsg;
 					snapshot = serverMsg;
 					break;
 				}
 				case 'Error':
 					toast.error(serverMsg.message);
 					clearSession();
+					clearRoom();
 					nameOpen = true;
 					break;
 				default: {
@@ -81,7 +91,10 @@
 
 	onMount(() => {
 		void handleWebsocket();
-		return () => ws?.close();
+		return () => {
+			ws?.close();
+			clearRoom();
+		};
 	});
 
 	function send(msg: ClientMessage) {
@@ -95,7 +108,7 @@
 
 {#if snapshot}
 	<h2>Players:</h2>
-	{#each snapshot.players as player (player)}
+	{#each Object.keys(snapshot.players) as player (player)}
 		<div class="card">
 			<h3>{player}</h3>
 		</div>
@@ -103,7 +116,13 @@
 {/if}
 
 <Dialog bind:open={nameOpen} title="Username">
-	<form onsubmit={join}>
+	<form
+		onsubmit={(e) => {
+			e.preventDefault();
+			join();
+		}}
+	>
 		<TextInput bind:value={name} placeholder="Karl" />
+		<Button disabled={!name}>{m.join()}</Button>
 	</form>
 </Dialog>

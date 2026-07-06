@@ -5,3 +5,9 @@
 
 [keybindings]
 l = "job:run-long"
+b = "job:bindings"
+
+# ts-rs only writes, never deletes — renamed/dropped types leave orphan .ts files.
+# Wipe the export dir and let cargo test regenerate the current set.
+[jobs.bindings]
+command = ["sh", "-c", "rm -rf ../src/lib/bindings && cargo test export_bindings"]

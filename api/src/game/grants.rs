@@ -12,9 +12,11 @@
 
 use std::collections::HashSet;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, Serialize)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, Serialize, Deserialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[cfg_attr(test, ts(export, export_to = "Grants.ts"))]
 pub enum Grant {
     Play,
     Present,

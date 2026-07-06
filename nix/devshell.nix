@@ -12,6 +12,8 @@ pkgs.mkShell {
     rust-analyzer
     bacon
 
+    tuxedo
+
     pkg-config
   ];
 

@@ -1,4 +1,5 @@
-import type { Room } from "./bindings/Rooms";
+import type { CreateRoom, Room } from "./bindings/Rooms";
+import type { Game } from "./bindings/Games.ts";
 
 const API = '/api';
 
@@ -30,6 +31,15 @@ async function req<T>(path: string, init?: RequestInit): Promise<Result<T>> {
   return { ok: true, value: (await res.value.json()) as T };
 }
 
+async function post<R, T>(path: string, body: R, init?: RequestInit): Promise<Result<T>> {
+  return await req<T>(path, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+    ...init
+  })
+}
+
 async function roomExists(code: string): Promise<Result<boolean>> {
   const res = await send(`/rooms/${code}`);
   if (res.ok) return { ok: true, value: true };
@@ -42,10 +52,9 @@ async function roomExists(code: string): Promise<Result<boolean>> {
 export const api = {
   room: {
     exists: roomExists,
-    create: (secret: string) => req<Room>("/rooms", {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ secret }),
-    })
+    create: (secret: string, gameId: string) => post<CreateRoom, Room>("/rooms", { secret, game_id: gameId })
+  },
+  games: {
+    list: () => req<Game[]>("/games")
   }
 }

@@ -7,6 +7,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use garde::Validate;
+use serde::de::DeserializeOwned;
 
 use super::error::LoadError;
 use super::types::*;
@@ -31,8 +32,77 @@ enum Parsed<T> {
     },
 }
 
-/// Parse a YAML file, deserialize via `decode`, optionally run `validate` on each item.
-fn parse_file<T, Raw: serde::de::DeserializeOwned>(
+pub fn load_dataset(data_dir: &Path) -> Result<Dataset, LoadError> {
+    let base = data_dir.parent().unwrap_or(data_dir);
+    let rel = |p: &Path| -> String {
+        p.strip_prefix(base)
+            .unwrap_or(p)
+            .to_string_lossy()
+            .into_owned()
+    };
+
+    let (questions, q_issues) = questions::load_questions(data_dir, &rel)?;
+    let (packs, p_issues) = packs::load_packs(data_dir, &rel)?;
+    let (tags, t_issues) = tags::load_tags(data_dir, &rel)?;
+    let (games, g_issues) = games::load_games(data_dir, &rel)?;
+    let (overlays, o_issues) = overlays::load_overlays(data_dir, &rel)?;
+
+    let issues = [q_issues, p_issues, t_issues, g_issues, o_issues].concat();
+
+    Ok(Dataset {
+        data_dir: data_dir.to_string_lossy().into_owned(),
+        questions,
+        packs,
+        tags,
+        games,
+        overlays,
+        issues,
+    })
+}
+
+fn load_yaml_dir<T, Raw: DeserializeOwned>(
+    dir: &Path,
+    rel: &dyn Fn(&Path) -> String,
+    decode: fn(Raw) -> Vec<T>,
+    validate: Option<fn(&T, &str) -> Vec<LoadIssue>>,
+    get_id: impl Fn(&T) -> &str,
+    kind_label: &str,
+) -> Result<(Registry<T>, Vec<LoadIssue>), LoadError> {
+    let files = walk_yaml(dir)?;
+    let results: Vec<_> = files
+        .iter()
+        .map(|path| parse_file(path, &rel(path), decode, validate))
+        .collect();
+    Ok(collect_registry(results, get_id, kind_label))
+}
+
+fn walk_yaml(dir: &Path) -> Result<Vec<PathBuf>, LoadError> {
+    let mut files = Vec::new();
+    if !dir.exists() {
+        return Ok(files);
+    }
+    walk_yaml_inner(dir, &mut files)?;
+    files.sort();
+    Ok(files)
+}
+
+fn walk_yaml_inner(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), LoadError> {
+    for entry in fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            walk_yaml_inner(&path, out)?;
+        } else if let Some(ext) = path.extension() {
+            let ext = ext.to_string_lossy();
+            if ext == "yaml" || ext == "yml" {
+                out.push(path);
+            }
+        }
+    }
+    Ok(())
+}
+
+fn parse_file<T, Raw: DeserializeOwned>(
     path: &Path,
     rel_path: &str,
     decode: fn(Raw) -> Vec<T>,
@@ -58,7 +128,6 @@ fn parse_file<T, Raw: serde::de::DeserializeOwned>(
     }
 }
 
-/// Fold a batch of `Parsed<T>` results into a registry, deduplicating by ID.
 fn collect_registry<T>(
     results: Vec<Parsed<T>>,
     get_id: impl Fn(&T) -> &str,
@@ -100,89 +169,7 @@ fn collect_registry<T>(
     (registry, issues)
 }
 
-/// Walk `dir`, parse every YAML file, fold into a registry.
-/// `walk_yaml` already returns empty for a missing dir, so callers need no guard.
-fn load_yaml_dir<T, Raw: serde::de::DeserializeOwned>(
-    dir: &Path,
-    rel: &dyn Fn(&Path) -> String,
-    decode: fn(Raw) -> Vec<T>,
-    validate: Option<fn(&T, &str) -> Vec<LoadIssue>>,
-    get_id: impl Fn(&T) -> &str,
-    kind_label: &str,
-) -> Result<(Registry<T>, Vec<LoadIssue>), LoadError> {
-    let files = walk_yaml(dir)?;
-    let results: Vec<_> = files
-        .iter()
-        .map(|path| parse_file(path, &rel(path), decode, validate))
-        .collect();
-    Ok(collect_registry(results, get_id, kind_label))
-}
-
-/// Load the full dataset from `data_dir`.
-pub fn load_dataset(data_dir: &Path) -> Result<Dataset, LoadError> {
-    let base = data_dir.parent().unwrap_or(data_dir);
-    let rel = |p: &Path| -> String {
-        p.strip_prefix(base)
-            .unwrap_or(p)
-            .to_string_lossy()
-            .into_owned()
-    };
-
-    let (questions, q_issues) = questions::load_questions(data_dir, &rel)?;
-    let (packs, p_issues) = packs::load_packs(data_dir, &rel)?;
-    let (tags, t_issues) = tags::load_tags(data_dir, &rel)?;
-    let (overlays, o_issues) = overlays::load_overlays(data_dir, &rel)?;
-    let (games, g_issues) = games::load_games(data_dir, &rel)?;
-
-    let issues = [q_issues, p_issues, t_issues, o_issues, g_issues].concat();
-
-    Ok(Dataset {
-        data_dir: data_dir.to_string_lossy().into_owned(),
-        questions,
-        packs,
-        tags,
-        overlays,
-        games,
-        issues,
-    })
-}
-
-/// Recursively collect all `.yaml` / `.yml` files under `dir`.
-fn walk_yaml(dir: &Path) -> Result<Vec<PathBuf>, LoadError> {
-    let mut files = Vec::new();
-    if !dir.exists() {
-        return Ok(files);
-    }
-    walk_yaml_inner(dir, &mut files)?;
-    files.sort();
-    Ok(files)
-}
-
-fn walk_yaml_inner(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), LoadError> {
-    for entry in fs::read_dir(dir)? {
-        let entry = entry?;
-        let path = entry.path();
-        if path.is_dir() {
-            walk_yaml_inner(&path, out)?;
-        } else if let Some(ext) = path.extension() {
-            let ext = ext.to_string_lossy();
-            if ext == "yaml" || ext == "yml" {
-                out.push(path);
-            }
-        }
-    }
-    Ok(())
-}
-
-fn read_dir_sorted(dir: &Path) -> Result<Vec<PathBuf>, LoadError> {
-    let mut entries: Vec<PathBuf> = fs::read_dir(dir)?
-        .filter_map(|e| e.ok().map(|e| e.path()))
-        .collect();
-    entries.sort();
-    Ok(entries)
-}
-
-fn parse_yaml_file<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T, serde_yaml::Error> {
+fn parse_yaml_file<T: DeserializeOwned>(path: &Path) -> Result<T, serde_yaml::Error> {
     let text = fs::read_to_string(path)
         .map_err(|e| <serde_yaml::Error as serde::de::Error>::custom(format!("IO: {e}")))?;
     serde_yaml::from_str(&text)
@@ -210,11 +197,4 @@ fn garde_issues<T: Validate<Context = ()>>(value: &T, file: &str) -> Vec<LoadIss
             })
             .collect(),
     }
-}
-
-fn filename(path: &Path) -> String {
-    path.file_name()
-        .unwrap_or_default()
-        .to_string_lossy()
-        .into_owned()
 }

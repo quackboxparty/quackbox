@@ -18,6 +18,7 @@ use crate::{
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[cfg_attr(test, ts(export, export_to = "Rooms.ts"))]
 struct CreateRoom {
+    game_id: String,
     secret: Option<String>,
 }
 
@@ -53,7 +54,11 @@ async fn create_room(
         return (StatusCode::INTERNAL_SERVER_ERROR, "no free join code").into_response();
     };
 
-    let handle = spawn_room(code.clone());
+    let Some(game) = state.data.games.get(&body.game_id) else {
+        return (StatusCode::BAD_REQUEST, "game does not exist").into_response();
+    };
+
+    let handle = spawn_room(code.clone(), game.item.clone());
     state.rooms.insert(code.clone(), handle);
 
     Json(Room { join_code: code.0 }).into_response()

@@ -4,10 +4,16 @@
 	"join_game": "Join game",
 	"enter_join_code": "Enter join code",
 	"join": "Join",
+	"rejoin": "Rejoin",
 	"room_not_found": "Room does not exist!",
 	"error_generic": "Something went wrong!",
 	"host": "Host",
+	"create": "Create",
+	"create_room": "Create Room",
+	"games": "Games",
+	"no_game_selected": "No game selected!",
 	"menu": "Menu",
+	"players": "Players",
 	"settings": "Settings",
 	"close": "Close",
 	"theme": "Theme",
@@ -22,5 +28,7 @@
 	"theme_chalkboard": "Chalkboard",
 	"theme_kawaii": "Kawaii",
 	"theme_western": "Western",
-	"theme_wizard": "Wizard"
+	"theme_wizard": "Wizard",
+	"you": "You",
+	"kick_player": "Kick {name}"
 }

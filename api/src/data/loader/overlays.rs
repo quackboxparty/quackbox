@@ -21,21 +21,35 @@ pub(super) fn load_overlays(
         }
         let locale = filename(&locale_entry);
         let locale_overlays = overlays.entry(locale).or_default();
-        let (g_ovl, g_iss) = super::games::load_game_overlays(&locale_entry, rel)?;
-        locale_overlays.games.extend(g_ovl);
-        issues.extend(g_iss);
 
         let (q_ovl, q_iss) = load_question_overlays(&locale_entry, rel)?;
         let (p_ovl, p_iss) = load_pack_overlays(&locale_entry, rel)?;
         let (t_ovl, t_iss) = load_tag_overlays(&locale_entry, rel)?;
+        let (g_ovl, g_iss) = load_game_overlays(&locale_entry, rel)?;
 
         locale_overlays.questions.extend(q_ovl);
         locale_overlays.packs.extend(p_ovl);
         locale_overlays.tags.extend(t_ovl);
-        issues.extend([q_iss, p_iss, t_iss].concat());
+        locale_overlays.games.extend(g_ovl);
+        issues.extend([q_iss, p_iss, t_iss, g_iss].concat());
     }
 
     Ok((overlays, issues))
+}
+
+fn read_dir_sorted(dir: &Path) -> Result<Vec<PathBuf>, LoadError> {
+    let mut entries: Vec<PathBuf> = fs::read_dir(dir)?
+        .filter_map(|e| e.ok().map(|e| e.path()))
+        .collect();
+    entries.sort();
+    Ok(entries)
+}
+
+fn filename(path: &Path) -> String {
+    path.file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .into_owned()
 }
 
 fn load_question_overlays(
@@ -82,4 +96,18 @@ fn load_tag_overlays(
         .collect();
 
     Ok(collect_registry(results, |t| &t.id, "tag overlay"))
+}
+
+fn load_game_overlays(
+    locale_dir: &Path,
+    rel: &dyn Fn(&Path) -> String,
+) -> Result<(Registry<GameOverlay>, Vec<LoadIssue>), LoadError> {
+    load_yaml_dir(
+        &locale_dir.join("games"),
+        rel,
+        |raw: GameOverlay| vec![raw],
+        None,
+        |g| g.id.as_str(),
+        "game overlay",
+    )
 }

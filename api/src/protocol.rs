@@ -20,10 +20,12 @@
 //!
 //! TODO: define ServerMsg, ClientView; flesh out Command's full variant set.
 
+use std::collections::{BTreeMap, HashMap};
+
 use serde::{Deserialize, Serialize};
 use tokio::sync::oneshot;
 
-use crate::game::state::Token;
+use crate::game::{grants::GrantSet, state::Token};
 
 #[derive(Debug)]
 pub enum RoomMessage {
@@ -65,6 +67,7 @@ pub enum ClientMessage {
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[cfg_attr(test, ts(export, export_to = "Protocol.ts"))]
 pub enum Command {
+    Kick { player: String },
     Buzz,
     Answer { text: String },
     ExtendTimer { delta_secs: u32 },
@@ -84,7 +87,7 @@ pub enum ServerMessage {
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[cfg_attr(test, ts(export, export_to = "Protocol.ts"))]
 pub struct ClientView {
-    pub(crate) players: Vec<String>,
+    pub(crate) players: BTreeMap<String, GrantSet>,
     // pub(crate) scoreboard: Option<Scoreboard>,
     // pub(crate) phase: Phase,
     // pub(crate) timer: Option<Deadline>,

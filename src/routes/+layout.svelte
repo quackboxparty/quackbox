@@ -8,6 +8,7 @@ import { getTextDirection, getLocale } from '$lib/paraglide/runtime';
 	import { initTheme } from '$lib/themes';
 	import FloatingBackground from '$lib/components/FloatingBackground.svelte';
 	import Toaster from '$lib/components/Toaster.svelte';
+	import AppShell from '$lib/components/AppShell.svelte';
 
 	import '$lib/themes/reset.css';
 	import '$lib/themes/fonts.css';
@@ -39,5 +40,7 @@ import { getTextDirection, getLocale } from '$lib/paraglide/runtime';
 </svelte:head>
 
 <FloatingBackground />
-{@render children()}
+<AppShell>
+	{@render children()}
+</AppShell>
 <Toaster />

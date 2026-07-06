@@ -70,6 +70,15 @@ pub enum GameEntry {
     Linear(LinearGame),
 }
 
+impl GameEntry {
+    pub fn mode_name(&self) -> &'static str {
+        match self {
+            GameEntry::GridQuiz(_) => "grid_quiz",
+            GameEntry::Linear(_) => "linear",
+        }
+    }
+}
+
 // ── Game-specific payloads ──────────────────────────────────────────────────
 
 /// Grid quiz: inline board definition.

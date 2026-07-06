@@ -15,17 +15,3 @@ pub(super) fn load_games(
         "game config",
     )
 }
-
-pub(super) fn load_game_overlays(
-    locale_dir: &Path,
-    rel: &dyn Fn(&Path) -> String,
-) -> Result<(Registry<GameOverlay>, Vec<LoadIssue>), LoadError> {
-    load_yaml_dir(
-        &locale_dir.join("games"),
-        rel,
-        |raw: GameOverlay| vec![raw],
-        None,
-        |g| g.id.as_str(),
-        "game overlay",
-    )
-}

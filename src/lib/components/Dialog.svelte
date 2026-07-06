@@ -59,6 +59,13 @@
 		border-radius: var(--radius-lg);
 		box-shadow: var(--shadow-lg);
 	}
+	/* form mirrors the dialog's column layout so its inputs/buttons keep the
+	   same spacing instead of collapsing when a submit button lives inside it */
+	:global(.dialog-content form) {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
 	:global(.dialog-title) {
 		margin: 0;
 		font-family: var(--font-heading);
