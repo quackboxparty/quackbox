@@ -14,7 +14,7 @@
 	import { onMount } from 'svelte';
 
 	let nameOpen = $state(false);
-	let name = $state(readSession()?.player ?? '');
+	let name = $state('');
 	let snapshot = $state<ClientView>();
 
 	const code = $derived(page.params['code']);
@@ -90,6 +90,7 @@
 	}
 
 	onMount(() => {
+		name = readSession()?.player ?? '';
 		void handleWebsocket();
 		return () => {
 			ws?.close();

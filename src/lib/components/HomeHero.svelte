@@ -6,12 +6,13 @@
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/api';
 	import { toast } from '$lib/toast.svelte';
-	import { readSession } from '$lib/session';
+	import { readSession, type RoomSession } from '$lib/session';
 	import Button from './Button.svelte';
+	import { onMount } from 'svelte';
 
 	let joinOpen = $state(false);
 	let joinCode = $state('');
-	let recentSession = $state(readSession());
+	let recentSession: RoomSession | null = $state(null);
 
 	async function join() {
 		if (joinCode.length !== 6) return;
@@ -37,6 +38,10 @@
 	async function rejoin() {
 		if (recentSession) await goto(`/room/${recentSession.room}`);
 	}
+
+	onMount(() => {
+		recentSession = readSession();
+	});
 </script>
 
 <section class="hero">
