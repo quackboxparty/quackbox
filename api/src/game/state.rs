@@ -53,28 +53,7 @@ impl GameState {
 
                 self.player_slots.retain(|_, v| v.name != player);
             }
-            Command::StartGame => {
-                match &mut self.mode {
-                    ModeState::GridQuiz(state) => {
-                        // TODO: maybe shuffle this
-                        let rotation: VecDeque<Token> = self
-                            .player_slots
-                            .iter()
-                            .filter(|(_, player)| player.connected)
-                            .map(|(token, _)| token.clone())
-                            .collect();
-                        state.picker_rotation = rotation;
-
-                        state.active_picker = state.picker_rotation.front().cloned();
-
-                        state.phase = GridQuizPhase::BoardSelect;
-                    }
-                    ModeState::Linear(_) => todo!("Linear not yet implemented"),
-                };
-            }
-            _ => {
-                todo!()
-            }
+            other => self.mode.apply(&self.player_slots, token, other),
         }
     }
 
@@ -122,6 +101,59 @@ pub enum ModeState {
     Linear(LinearState),
 }
 
+impl ModeState {
+    pub fn apply(&mut self, player_slots: &HashMap<Token, PlayerSlot>, token: Token, cmd: Command) {
+        match self {
+            ModeState::GridQuiz(modestate) => match cmd {
+                Command::StartGame => {
+                    // TODO: maybe shuffle this
+                    let rotation: VecDeque<Token> = player_slots
+                        .iter()
+                        .filter(|(_, player)| player.connected)
+                        .map(|(token, _)| token.clone())
+                        .collect();
+                    modestate.picker_rotation = rotation;
+
+                    modestate.active_picker = modestate.picker_rotation.front().cloned();
+
+                    modestate.phase = GridQuizPhase::BoardSelect;
+                }
+                Command::PickCell { category, point } => {
+                    modestate.current = modestate
+                        .cells
+                        .get(category)
+                        .and_then(|column| column.get(point))
+                        .and_then(|cell| match cell {
+                            Cell::Open(question) => Some(CurrentCell {
+                                category,
+                                point,
+                                question_id: question.clone(),
+                            }),
+                            Cell::Used(_) => {
+                                tracing::warn!(category, point, "pick on used cell");
+                                None
+                            }
+                            Cell::Empty => {
+                                tracing::warn!(category, point, "pick on empty cell");
+                                None
+                            }
+                        });
+
+                    // TODO: this should respect different flooring strategies like OpenBuzz or
+                    // TurnBased etc.
+                    modestate.floored_player = modestate.active_picker.clone();
+                    modestate.active_picker = None;
+                    if let Some(token) = modestate.picker_rotation.pop_front() {
+                        modestate.picker_rotation.push_back(token);
+                    }
+                }
+                _ => todo!("other gridquiz cmds not implemented yet"),
+            },
+            ModeState::Linear(_) => todo!("Linear not implemented yet"),
+        };
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct GridQuizState {
     pub phase: GridQuizPhase,
@@ -130,6 +162,7 @@ pub struct GridQuizState {
     /// Who may answer right now. `None` = buzz open; `Some` = that player has
     /// the floor. How it relates to `active_picker` depends on the answer
     /// policy (turn-order: floored == picker on pick; open-floor: first buzz).
+    // TODO: this will probably something every mode has, so maybe refactor this
     pub floored_player: Option<Token>,
     /// Answered wrong this question — barred from re-buzzing until it resets.
     pub locked_out: HashSet<Token>,
