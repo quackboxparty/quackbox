@@ -10,6 +10,8 @@
 //!
 //! TODO: move `AppState` here out of `main.rs`; add the `rooms` registry.
 
+use std::sync::Arc;
+
 use dashmap::DashMap;
 
 use crate::{
@@ -20,6 +22,6 @@ use crate::{
 
 pub struct AppState {
     pub config: AppConfig,
-    pub data: Dataset,
+    pub data: Arc<Dataset>,
     pub rooms: DashMap<JoinCode, RoomHandle>,
 }

@@ -5,8 +5,10 @@
 //!
 //! RULE: no file in `game/` may `use axum`. If it needs to, the seam is wrong.
 //!
-//! v1: grid_quiz logic is HARDCODED in `room.rs`. Extract a `Gamemode` trait
-//! only when gamemode #2 lands (see docs/architecture.md). One impl ≠ a trait.
+//! `GameState.mode: ModeState` carries each mode's play data (`grid_quiz` +
+//! `linear` both exist). Behavior (buzz/lockout/timer/scoring) stays hardcoded
+//! in the room loop per mode; extract a `Gamemode` trait only when two modes
+//! have runtime behavior and the seams are felt (see docs/architecture.md).
 
 pub mod grants;
 pub mod judge;

@@ -101,11 +101,11 @@ fn load_tag_overlays(
 fn load_game_overlays(
     locale_dir: &Path,
     rel: &dyn Fn(&Path) -> String,
-) -> Result<(Registry<GameOverlay>, Vec<LoadIssue>), LoadError> {
+) -> Result<(Registry<GameConfigOverlay>, Vec<LoadIssue>), LoadError> {
     load_yaml_dir(
         &locale_dir.join("games"),
         rel,
-        |raw: GameOverlay| vec![raw],
+        |raw: GameConfigOverlay| vec![raw],
         None,
         |g| g.id.as_str(),
         "game overlay",

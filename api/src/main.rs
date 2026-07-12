@@ -55,7 +55,7 @@ async fn main() {
 
     let state = Arc::new(AppState {
         config,
-        data,
+        data: Arc::new(data),
         rooms: DashMap::new(),
     });
     let addr = format!("{}:{}", state.config.host, state.config.port);

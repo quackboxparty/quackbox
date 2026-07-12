@@ -2,8 +2,7 @@ id: game_school_quiz
 title: School Quiz
 description: A grid quiz round covering capitals, flags, chemistry, math, and physics.
 games:
-  - mode: grid_quiz
-    title: Round 1 - Board Quiz
+  - title: Round 1 - Board Quiz
     rules:
       buzz_policy: open_floor
       scoring_mode: first_correct
@@ -12,22 +11,27 @@ games:
       judge: auto
       question_timer_secs: 30
       answer_timer_secs: 15
-    board:
-      points: [100, 200, 300, 500]
-      categories:
-        - name: Capitals
-          filter:
-            tags_any: [subject:capitals]
-        - name: Flags
-          filter:
-            tags_any: [subject:flags]
-        - name: Chemistry
-          question_ids:
-            100: q_atom_nucleus
-            200: q_acid_base
-            300: q_chemical_oxygen_ozone
-            500: q_periodic_helium
-        - name: Math & Physics
-          pack_ref: pack_school_trivia
-          filter:
-            tags_any: [subject:math, subject:physics]
+    mode:
+      kind: grid_quiz
+      grid_rules:
+        picker_mode: winner_picks
+        # reveal_auto_advance_secs omitted → manual (mod advances via Next)
+      board:
+        points: [100, 200, 300, 500]
+        categories:
+          - name: Capitals
+            filter:
+              tags_any: [subject:capitals]
+          - name: Flags
+            filter:
+              tags_any: [subject:flags]
+          - name: Chemistry
+            question_ids:
+              100: q_atom_nucleus
+              200: q_acid_base
+              300: q_chemical_oxygen_ozone
+              500: q_periodic_helium
+          - name: Math & Physics
+            pack_ref: pack_school_trivia
+            filter:
+              tags_any: [subject:math, subject:physics]

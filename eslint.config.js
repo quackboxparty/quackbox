@@ -17,6 +17,7 @@ export default defineConfig(
 			'node_modules/**',
 			'api/target/**',
 			'src/lib/paraglide/**',
+			'src/lib/bindings/**',
 			'coverage/**',
 			'playwright-report/**',
 			'test-results/**'

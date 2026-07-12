@@ -6,7 +6,7 @@
 		placeholder = '',
 		label = '',
 		type = 'text',
-		required = false,
+		required = false
 	}: {
 		value?: string;
 		placeholder?: string;
@@ -14,7 +14,6 @@
 		type?: string;
 		required?: boolean;
 	} = $props();
-
 </script>
 
 <div class="text-input-group">

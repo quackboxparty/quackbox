@@ -11,4 +11,20 @@
 //!
 //! Deferred (same trait): Quorum, Llm.
 //!
-//! TODO: Judge trait, Verdict, Auto, Moderator.
+//! TODO: Judge trait, Auto, Moderator (Verdict defined below).
+
+use serde::{Deserialize, Serialize};
+
+/// Adjudication outcome. `Pending` is transient (awaits a moderator ruling or a
+/// timer-driven auto-verdict); the rest are final. Stored in the judgment log;
+/// `score = fold(log)`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[cfg_attr(test, ts(export, export_to = "Verdict.ts"))]
+pub enum Verdict {
+    Correct,
+    Incorrect,
+    Void,
+    Pending,
+}

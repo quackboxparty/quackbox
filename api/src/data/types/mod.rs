@@ -34,7 +34,7 @@ pub struct LocaleOverlays {
     pub questions: Registry<QuestionOverlay>,
     pub packs: Registry<PackOverlay>,
     pub tags: Registry<TagOverlay>,
-    pub games: Registry<GameOverlay>,
+    pub games: Registry<GameConfigOverlay>,
 }
 
 pub type Overlays = HashMap<String, LocaleOverlays>;

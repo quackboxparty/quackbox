@@ -111,6 +111,7 @@ async fn handle_socket(socket: WebSocket, join_code: String, state: Arc<AppState
     });
 
     let (token_tx, token_rx) = oneshot::channel::<Token>();
+    let data = Arc::clone(&state.data);
 
     let mut write_task = tokio::spawn(async move {
         let token = match reply_rx.await {
@@ -142,7 +143,7 @@ async fn handle_socket(socket: WebSocket, join_code: String, state: Arc<AppState
         while let Ok(gamestate) = state_rx.recv().await {
             let grants = gamestate.grants_for(&token);
             let view = match grants {
-                Some(grants) => project(&gamestate, grants),
+                Some(grants) => project(&data, &gamestate, grants),
                 None => {
                     tracing::debug!("slot gone for live token; closing stream");
                     let json = serde_json::to_string(&ServerMessage::Error {

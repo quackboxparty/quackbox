@@ -30,5 +30,11 @@
 	"theme_western": "Western",
 	"theme_wizard": "Zauberer",
 	"you": "Du",
-	"kick_player": "{name} kicken"
+	"kick_player": "{name} kicken",
+	"scoreboard": "Punktestand",
+	"players_and_scoreboard": "Spieler & Punktestand",
+	"game_not_started": "Spiel hat noch nicht begonnen",
+	"mod_actions": "Moderation",
+	"end_game": "Spiel beenden",
+	"end_game_sent": "Spiel wird beendet..."
 }

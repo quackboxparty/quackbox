@@ -216,19 +216,22 @@ surface.
 
 ## Gamemode model
 
-The **data layer** is already gamemode-agnostic (pool query + board builder).
-The **runtime** is not yet — and deliberately so.
+The **data layer** is gamemode-agnostic (pool query + board builder) and
+already holds **two** modes: `grid_quiz` (Jeopardy-style board) and `linear`
+(Kahoot-style list) — `GameEntry` in `data/types/game.rs`.
 
-- **v1: grid_quiz is hardcoded** inside the room task. Buzz/lockout/timer/scoring
-  policy lives directly in the loop.
-- **Later: extract a `Gamemode` trait** when gamemode #2 lands and reveals the
-  real seams (AGENTS.md uses the second gamemode to validate the
-  gamemode-agnostic claim). Designing the trait now would guess seams before
-  feeling them.
+The **runtime** mirrors that from the start: `GameState.mode` is a `ModeState`
+enum (`GridQuiz(GridQuizState) | Linear(LinearState) | …`). Each mode's play
+state lives in its own variant; common state (players, scores, timers, grants)
+stays on `GameState`.
 
-`ponytail:` grid_quiz hardcoded in the room task; extract the `Gamemode` trait
-when #2 lands and shows the real seams. The doc records the **intent**
-(runtime becomes gamemode-pluggable); the **code** stays concrete for v1.
+What stays **hardcoded per mode** is **behavior** — buzz/lockout/timer/scoring
+policy in the room task. Extract a `Gamemode` **trait** only once two modes have
+actual runtime behavior and the seams are felt: data shape ≠ behavior shape, and
+no mode runs yet. Designing the trait first would guess seams.
+
+`ponytail:` `ModeState` data enum now (two modes exist); behavior `Gamemode`
+trait deferred until two modes have runtime behavior.
 
 ### Buzz / order policy
 
@@ -245,7 +248,7 @@ player out and reopens the floor to the rest, until correct / timeout / all
 locked out. Same lockout mechanism under both policies.
 
 `ponytail:` open-floor first-buzz + lockout-on-wrong hardcoded for grid_quiz;
-buzz/order/timer policy moves into the `Gamemode` trait when #2 lands.
+buzz/order/timer policy moves into the `Gamemode` trait when a second mode gains runtime behavior.
 
 #### Side note — rotating announcer
 
@@ -253,6 +256,72 @@ A future variant: the read-aloud `Present` grant **rotates round-robin per
 question**; only the current announcer reads, and stops on buzz. No new
 machinery — just reassign `Present` per question on the existing capability
 model. `ponytail:` build when a gamemode wants it.
+
+## Grid quiz runtime (state machine)
+
+Concrete play model for `grid_quiz`. `ModeState::GridQuiz(GridQuizState)` holds
+the DYNAMIC per-round state; STATIC rules are read from the data-layer `Rules`
+on the game config (single source of truth — not duplicated here). The
+chain-spanning state — `current_game_idx` and the global `judgment_log`
+(`score = fold(log)`) — lives on `GameState`, not per-mode (see §Adjudication).
+
+```
+GridQuizState {
+    phase: GridQuizPhase,
+    active_picker: Option<Token>,   // whose turn to pick a cell
+    floored_player: Option<Token>,  // None = buzz open; Some = answering
+    locked_out: HashSet<Token>,     // wrong this question, barred from re-buzz
+    current: Option<CurrentCell>,   // cell + question in play; None on the board
+    used_cells: HashSet<(usize, usize)>,
+    picker_rotation: VecDeque<Token>,
+}
+enum GridQuizPhase { Lobby, BoardSelect, QuestionOpen, Reveal, GameOver }
+```
+
+### Phases & transitions
+
+```
+Lobby       --StartGame-->        BoardSelect  (shuffle -> picker_rotation; first = active_picker)
+BoardSelect --PickCell{x,y}-->    QuestionOpen (mark used, resolve question; open buzz,
+                                  or floored = active_picker when buzz policy is turn-order)
+QuestionOpen --Buzz (first)-->    floored set, answer-timer deadline starts
+QuestionOpen --Answer / judge-->
+    correct | all locked | timeout --> Reveal
+    wrong, others remain           --> reopen buzz, +locked_out (stays QuestionOpen)
+Reveal      --Next (mod) / auto--> BoardSelect (next picker) | GameOver (board empty)
+```
+
+- **Two roles, two fields.** `active_picker` = whose turn to choose a cell;
+  `floored_player` = who may answer now. How they relate depends on the answer
+  policy (turn-order: floored == picker on pick; open-floor: floored set by first
+  buzz).
+- **Buzzing and answering are one phase** (`QuestionOpen`), told apart by
+  `floored_player`. The re-buzz-after-wrong loop never leaves it — it toggles
+  `floored_player` and grows `locked_out`.
+- **Reveal is a human-paced beat**, not auto-timed by default: exits on mod
+  `Next`, with an _optional_ auto-advance timer.
+
+### Commands -> transitions
+
+| command                          | grant                       | effect                                                |
+| -------------------------------- | --------------------------- | ----------------------------------------------------- |
+| `StartGame`                      | Moderate                    | Lobby -> BoardSelect; shuffle pickers                 |
+| `PickCell{x,y}`                  | active_picker (or Moderate) | BoardSelect -> QuestionOpen                           |
+| `Buzz`                           | Play                        | claims floor (first wins); starts answer timer        |
+| `Answer`                         | floored Play                | submit -> judge (Auto resolves; Moderator -> Pending) |
+| `Rule{verdict}`                  | Moderate                    | resolves Pending / overrules -> may reach Reveal      |
+| `Next`                           | Moderate                    | Reveal -> BoardSelect / GameOver                      |
+| `EndGame`                        | Moderate                    | -> GameOver                                           |
+| `Grant` / `ExtendTimer` / `Kick` | Moderate                    | controls, no phase change                             |
+
+### Rule axes
+
+Answer-side policy (buzz/steal/lockout/scoring/judge/timers) is read from the
+data-layer `Rules`; the picker-side policy (`picker_mode`) and
+`reveal_auto_advance` live in the data-layer `GridQuizRules` (on `GridQuizGame`).
+Both default from the manifest and the host may override either per session in
+the UI before `StartGame`. No separate runtime `AnswerMode` — the three buzz-in
+modes are UI presets over `(buzz_policy, steal_policy)`.
 
 ## Adjudication — the judge axis
 
@@ -265,8 +334,12 @@ A submission enters a `Pending` state; a **judgment** resolves it to
 `Correct` / `Incorrect` / `Void`. Because a moderator can make a mistake and
 revise an earlier ruling, **score is never an accumulated counter.** Instead:
 
-- An **append-only judgment log**: each entry is
-  `(player, question, submission?, verdict, supersedes?)`.
+- An **append-only judgment log** (global, spans all rounds on `GameState`):
+  each entry is `(game_idx, player, question, submission?, verdict, points, supersedes?)`.
+- **`points`** is the resolved award (cell value, half on steal, penalty…),
+  recorded once at append. The fold just sums it — it can't re-derive
+  steal/half math from a single entry, so the outcome is stored, not replayed
+  (steal logic lives in one place: the append path).
 - **`score = fold(judgment_log)`** — recomputed from the log, never mutated in
   place.
 - **Revising** = append a new verdict that supersedes the old one, refold,
@@ -281,7 +354,7 @@ model's "correctness lives on data, derive don't duplicate."
 
 Two real implementations justify building the trait now (unlike the gamemode
 trait, which has only one v1 case). The two are the genuinely distinct
-*mechanisms*:
+_mechanisms_:
 
 - **`Auto`** — static matcher against the data layer (`correct: true`, numeric
   `answer` + `tolerance`). Returns a resolved verdict synchronously. Covers
@@ -315,15 +388,17 @@ free per-question toggle. The only session knob is the **answer-input axis**:
 - **hybrid** → a moderator may override any `Auto` verdict (the revision path).
 
 **Presence (co-located vs remote) is not a session mode.** It falls out of grants
-+ projection already: if a `Present` screen is connected, players' views can omit
-the question text; if remote, each player's view includes it. A view-population
-choice, not runtime state. So "online" is **not** a mode — only answer-input
-(spoken / typed / hybrid) is.
+
+- projection already: if a `Present` screen is connected, players' views can omit
+  the question text; if remote, each player's view includes it. A view-population
+  choice, not runtime state. So "online" is **not** a mode — only answer-input
+  (spoken / typed / hybrid) is.
 
 This means the same machine plays the full spectrum with different sections
 populated: a fully-vocal game is just **buzzer + moderator** (`Buzz` only, no
 typed answer, `Moderator` judge), a fully-typed game is buzzer + `answer_input`
-+ `Auto`, and hybrids mix per question.
+
+- `Auto`, and hybrids mix per question.
 
 ## Timers
 
@@ -352,24 +427,25 @@ The room task's `select!` races `mpsc recv` against `sleep_until(deadline)`.
 
 ## Decision summary
 
-| Decision | Choice | Deferred / future |
-| --- | --- | --- |
-| Backend owner | Rust + axum owns data + runtime | — |
-| Types | `ts-rs` Rust → TS, Rust is source of truth | — |
-| Transport | REST (cold content) + WS (hot state) | — |
-| Concurrency | actor-per-room: owning task + mpsc in + broadcast out | — |
-| Room registry | `DashMap<JoinCode, RoomHandle>`, self-reaping | — |
-| Persistence | in-memory only | SQLite snapshot/restore for crash recovery |
-| Room identity | single 6-char join code, regen on collision | opaque id only if needed |
-| Auth gates | creation secret (config), optional join password (UI) | entry throttling |
-| Reconnect | opaque token in localStorage, slot persists | — |
-| State delivery | full snapshot, tagged-enum envelopes | deltas only if state outgrows a frame |
-| Authorization | capabilities (`Play`/`Present`/`Moderate`), compose by union | — |
-| Trust boundary | single `project(state, grants)`, server strips secrets | — |
-| Grant assignment | joiner = `{Play}`; others via moderator-only `Grant` | — |
-| Gamemode | grid_quiz hardcoded | extract `Gamemode` trait at #2 |
-| Buzz/order | open-floor first-buzz + lockout (gamemode default, mod override) | turn-order, rotating announcer |
-| Adjudication | `(Gamemode × Judge)`, append-only judgment log, `score = fold(log)` | — |
-| v1 judges | `Auto` + `Moderator` behind a `Judge` trait | Quorum, Llm |
-| Judge selection | `f(answer_input, question_kind)`; spoken/typed/hybrid | — |
-| Timers | two deadline-timestamp clocks; mod extend / overrule via revision | — |
+| Decision            | Choice                                                              | Deferred / future                                             |
+| ------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Backend owner       | Rust + axum owns data + runtime                                     | —                                                             |
+| Types               | `ts-rs` Rust → TS, Rust is source of truth                          | —                                                             |
+| Transport           | REST (cold content) + WS (hot state)                                | —                                                             |
+| Concurrency         | actor-per-room: owning task + mpsc in + broadcast out               | —                                                             |
+| Room registry       | `DashMap<JoinCode, RoomHandle>`, self-reaping                       | —                                                             |
+| Persistence         | in-memory only                                                      | SQLite snapshot/restore for crash recovery                    |
+| Room identity       | single 6-char join code, regen on collision                         | opaque id only if needed                                      |
+| Auth gates          | creation secret (config), optional join password (UI)               | entry throttling                                              |
+| Reconnect           | opaque token in localStorage, slot persists                         | —                                                             |
+| State delivery      | full snapshot, tagged-enum envelopes                                | deltas only if state outgrows a frame                         |
+| Authorization       | capabilities (`Play`/`Present`/`Moderate`), compose by union        | —                                                             |
+| Trust boundary      | single `project(state, grants)`, server strips secrets              | —                                                             |
+| Grant assignment    | joiner = `{Play}`; others via moderator-only `Grant`                | —                                                             |
+| Gamemode (data)     | `ModeState` enum from start (`GridQuiz` + `Linear`)                 | —                                                             |
+| Gamemode (behavior) | buzz/lockout/timer/scoring hardcoded in room task                   | extract `Gamemode` trait when two modes have runtime behavior |
+| Buzz/order          | open-floor first-buzz + lockout (gamemode default, mod override)    | turn-order, rotating announcer                                |
+| Adjudication        | `(Gamemode × Judge)`, append-only judgment log, `score = fold(log)` | —                                                             |
+| v1 judges           | `Auto` + `Moderator` behind a `Judge` trait                         | Quorum, Llm                                                   |
+| Judge selection     | `f(answer_input, question_kind)`; spoken/typed/hybrid               | —                                                             |
+| Timers              | two deadline-timestamp clocks; mod extend / overrule via revision   | —                                                             |

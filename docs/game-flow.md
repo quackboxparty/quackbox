@@ -69,20 +69,23 @@ Gamemode-specific. Each gamemode defines what "content" means.
 
 #### 3b. Game Rules
 
-Settings are **ad-hoc per gamemode** for now (not declared in the manifest
-schema). Each gamemode's rules section is a Svelte component. Common patterns
-may be extracted later.
+Settings **default from the game manifest** (the data-layer `Rules` +
+`GridQuizRules` in `data/games/*.yaml`) and the host may **override any of them
+in the config UI** before creating the room. Each gamemode's rules section is a
+Svelte component; common patterns may be extracted later.
 
 **Grid Quiz rules:**
 
-| Setting                  | Type             | Default            | Notes                                                                                     |
-| ------------------------ | ---------------- | ------------------ | ----------------------------------------------------------------------------------------- |
-| **Time per question**    | number (seconds) | 30                 | Countdown after buzz-in. 0 = no timer.                                                    |
-| **Point values visible** | toggle           | on                 | Show/hide point values on the board.                                                      |
-| **Buzz-in mode**         | select           | `free_for_all`     | See §Buzz-in modes.                                                                       |
-| **Display mode**         | select           | `screen_is_player` | See §Display & admin modes.                                                               |
-| **Default language**     | select           | `en`               | Game-level default for i18n. Players can override per-device (see §Per-player overrides). |
-| **Default theme**        | select           | `modern`           | Game-level default theme. Players can override per-device (see §Per-player overrides).    |
+| Setting                  | Type             | Default (from manifest)      | Notes                                                                                     |
+| ------------------------ | ---------------- | ---------------------------- | ----------------------------------------------------------------------------------------- |
+| **Time per question**    | number (seconds) | `question_timer_secs`        | Countdown after buzz-in. 0 = no timer.                                                    |
+| **Point values visible** | toggle           | on                           | Show/hide point values on the board.                                                      |
+| **Answer mode**          | select           | `buzz_policy`+`steal_policy` | UI preset over the data-layer enums. See §Answer modes.                                   |
+| **Picker mode**          | select           | `picker_mode`                | Who chooses the next cell. See §Picker modes.                                             |
+| **Reveal auto-advance**  | number / off     | `reveal_auto_advance_secs`   | Off (manual) or N seconds before Reveal auto-advances.                                    |
+| **Display mode**         | select           | `screen_is_player`           | See §Display & admin modes.                                                               |
+| **Default language**     | select           | `en`                         | Game-level default for i18n. Players can override per-device (see §Per-player overrides). |
+| **Default theme**        | select           | `modern`                     | Game-level default theme. Players can override per-device (see §Per-player overrides).    |
 
 #### Display & admin modes
 
@@ -106,17 +109,40 @@ directly in `screen_is_admin`):
 In `screen_is_player` mode, no admin controls exist — game follows normal
 player flow with automated scoring.
 
-#### Buzz-in modes
+#### Answer modes
 
-| Mode             | Description                                                                                                                                                                     |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `free_for_all`   | Any player can buzz. First buzz locks out others. If wrong, remaining players can re-buzz for half points.                                                                      |
-| `turn_based`     | Players take turns selecting a tile and answering. No buzz-in.                                                                                                                  |
-| `turn_then_buzz` | Players take turns selecting a tile. After the active player answers wrong, the tile opens to buzz-in for half points. Combines turn-based selection with free-for-all re-buzz. |
+How a **question** gets answered — a UI preset over the data-layer
+`(buzz_policy, steal_policy)`:
 
-Buzz-in semantics are gamemode-specific. Grid Quiz uses the half-points
-re-buzz rule; other gamemodes may have no buzz-in, direct simultaneous
-response, or elimination on wrong answer.
+| Mode             | `buzz_policy` | `steal_policy` | What happens                                                                                                         |
+| ---------------- | ------------- | -------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `free_for_all`   | `open_floor`  | `open_floor`   | Question goes live; anyone buzzes; first wins the floor. Wrong → locked this question, others re-buzz (half points). |
+| `turn_based`     | `turn_order`  | `none`         | The turn contestant answers directly. Wrong → closed, no steal.                                                      |
+| `turn_then_buzz` | `turn_order`  | `open_floor`   | The turn contestant answers; wrong → opens to the buzzer for a steal.                                                |
+
+The data layer is finer-grained (`broadcast` buzz, `round_limited` steal,
+`this_round` lockout, …); the UI offers these three presets, and an advanced
+override can expose more later. Answering is **decoupled from picking the
+cell** — see §Picker modes.
+
+#### Picker modes
+
+Who chooses the **next cell** — a separate axis from answering, stored in
+`GridQuizRules.picker_mode`:
+
+| Mode           | What happens                                                                                    |
+| -------------- | ----------------------------------------------------------------------------------------------- |
+| `rotate`       | Strict rotation through the player order every round.                                           |
+| `winner_picks` | The first player to answer correctly picks next (Jeopardy control). No correct answer → rotate. |
+
+The two axes compose freely (see `docs/architecture.md` §Grid quiz runtime
+for the full matrix). At `StartGame` the pick order is shuffled; the first
+picker is `rotation[0]`.
+
+Who physically taps the cell is a further UI choice: the active picker taps
+on their own device, **or** a moderator taps on the player's behalf (the
+player says the cell aloud). This does not change game state — only who may
+send `PickCell`.
 
 ### 4. Lobby
 

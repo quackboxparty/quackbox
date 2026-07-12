@@ -58,7 +58,7 @@ async fn create_room(
         return (StatusCode::BAD_REQUEST, "game does not exist").into_response();
     };
 
-    let handle = spawn_room(code.clone(), game.item.clone());
+    let handle = spawn_room(code.clone(), game.item.clone(), Arc::clone(&state.data));
     state.rooms.insert(code.clone(), handle);
 
     Json(Room { join_code: code.0 }).into_response()

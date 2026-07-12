@@ -120,8 +120,9 @@ another, without duplicating the fact.
 | `order`   | (none — inherently multi-item)              | Arrange items chronologically/etc. |
 
 Variants are optional. A question with only `open` defined is invisible to a
-gamemode that requires `multiple_choice`. Authors add variants as needed;
-gamemodes pick the first compatible one at pool-build time.
+gamemode that requires `multiple_choice`. Authors add variants as needed; the
+play variant is declared at the game definition and resolved per question-slot
+at materialize time (see [Variant resolution](#variant-resolution)).
 
 ### Canonical (text kind, English example)
 
@@ -423,10 +424,10 @@ with per-kind discriminated unions over variant name.
 | Variant           | Required fields                                                                  |
 | ----------------- | -------------------------------------------------------------------------------- |
 | `multiple_choice` | `choices[]` with `id`, `text`, optional `correct: true`. At least one `correct`. |
-| `true_false`      | None on variant; uses `content.answer` interpreted as boolean.                   |
+| `true_false`      | `correct` (bool).                                                                |
 | `open`            | `accepted[]` (strings), optional `normalize[]`.                                  |
 | `numeric_input`   | `tolerance` (number, default 0).                                                 |
-| `range`           | `min`, `max`, optional `step` (default 1).                                       |
+| `range`           | `min`, `max`, optional `step` (default 1), optional `tolerance` (default 0).     |
 
 `order` is a kind, not a variant — its shape is `content.items[]` with `id`,
 `text`, `position`. No variants.
@@ -555,10 +556,10 @@ categories:
       tags_any: [subject:flags]
   - name: Chemistry
     question_ids:
-      100: q_atom_nucleus
-      200: q_acid_base
-      300: q_chemical_oxygen_ozone
-      500: q_periodic_helium
+      100: { id: q_atom_nucleus, variant: multiple_choice }
+      200: { id: q_acid_base, variant: open }
+      300: { id: q_chemical_oxygen_ozone, variant: multiple_choice }
+      500: { id: q_periodic_helium, variant: true_false }
   - name: Math & Physics
     pack_ref: pack_school_trivia
     filter:
@@ -674,21 +675,66 @@ backend. For v1 `grid_quiz` is hardcoded in the room task; a `Gamemode` trait is
 extracted when the second gamemode lands. Live state reaches clients over
 WebSocket. See `docs/architecture.md` (Gamemode model).
 
-### Filtering questions per gamemode
+### Gamemode compatibility
 
-For each question in the pack's resolved set, the loader picks the first variant
-the gamemode accepts. Compatibility is a function of
-`(kind,
-variant, gamemode.accepts)`:
+A question is playable in a gamemode iff it passes the `accepts` gate:
 
 - `kind` must be in `accepts.kinds`.
 - At least one variant defined on the question must be in `accepts.variants`.
-- For chosen `multiple_choice` variant: `choices.length` within
-  `min_choices..max_choices`.
+- For `multiple_choice`: `choices.length` within `min_choices..max_choices`.
 - `lang_locked` must be empty or equal to the player's locale.
 
-The full pool-building algorithm (including pack filter evaluation, dedup,
-shuffle, and seeding) is defined in the loader section once that exists.
+Questions failing the gate are dropped at pool-build. The gate filters which
+questions are playable — it does **not** choose which variant is played. That is
+[variant resolution](#variant-resolution).
+
+### Variant resolution
+
+The play variant is declared at the **game definition** (board / pack / filter),
+never on the question — the question is a raw fact; how it is played is a
+presentation choice (three-layer rule). Each resolved question-slot carries one
+`VariantName`, stored alongside the question id (board grid, linear question
+list, live `CurrentCell`).
+
+The variant is chosen at **materialize time** (board build, linear resolve,
+room state init) by source:
+
+- **Explicit `question_ids`** — variant is **required** per entry. Hand-picking
+  a question means stating how to play it.
+- **`pack_ref`** — the pack may declare a pack-general `variant`; optional.
+- **`filter`** — the filter may declare a `variant`; optional.
+- **None declared** — uniform random pick among the question's variants that
+  pass the gamemode's `accepts` gate.
+
+The chosen variant must be defined on the question and in `accepts.variants`.
+For explicit slots a missing or incompatible variant is a config error; for
+pack/filter/random sources resolution picks only from accepted variants.
+
+```yaml
+# board category — explicit question_ids carry a required variant per point
+categories:
+  - name: Chemistry
+    question_ids:
+      100: { id: q_atom_nucleus, variant: multiple_choice }
+      200: { id: q_acid_base, variant: open }
+```
+
+```yaml
+# pack — optional pack-general play variant (applies to every resolved question)
+id: pack_school_trivia
+variant: multiple_choice
+questions: […]
+```
+
+```yaml
+# filter — optional play variant for the questions it resolves
+filter:
+  tags_any: [subject:capitals]
+  variant: open
+```
+
+The full pool-building algorithm (pack filter evaluation, dedup, shuffle, and
+seeding) is defined in the loader section once that exists.
 
 Gamemodes that care about difficulty consume it via tags (e.g. Survival could
 request `tags_any: [difficulty:easy, difficulty:general]` for the first round,
@@ -806,11 +852,11 @@ The schema definitions are the single source of truth — Rust types validated b
 
 ### Validation points
 
-| Where                              | What                                                          | Status |
-| ---------------------------------- | ------------------------------------------------------------- | ------ |
-| Editor (developer/contributor)     | YAML LSP via JSON Schema — pending Rust-sourced export         | ○     |
+| Where                              | What                                                               | Status |
+| ---------------------------------- | ------------------------------------------------------------------ | ------ |
+| Editor (developer/contributor)     | YAML LSP via JSON Schema — pending Rust-sourced export             | ○      |
 | CI                                 | Loads every YAML, runs schema + cross-file checks, fails on errors | ✅     |
-| Runtime (server start / pack load) | Same schemas, fail loudly with question ID context            | ✅     |
+| Runtime (server start / pack load) | Same schemas, fail loudly with question ID context                 | ✅     |
 
 ### What CI must catch
 

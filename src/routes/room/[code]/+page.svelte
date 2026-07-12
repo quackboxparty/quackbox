@@ -107,14 +107,16 @@
 	}
 </script>
 
-{#if snapshot}
-	<h2>Players:</h2>
-	{#each Object.keys(snapshot.players) as player (player)}
-		<div class="card">
-			<h3>{player}</h3>
-		</div>
-	{/each}
-{/if}
+<div class="hero">
+	{#if snapshot}
+		<h2>Players:</h2>
+		{#each Object.keys(snapshot.players) as player (player)}
+			<div class="card">
+				<h3>{player}</h3>
+			</div>
+		{/each}
+	{/if}
+</div>
 
 <Dialog bind:open={nameOpen} title="Username">
 	<form
@@ -127,3 +129,16 @@
 		<Button disabled={!name}>{m.join()}</Button>
 	</form>
 </Dialog>
+
+<style>
+	.hero {
+		min-height: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-6);
+		text-align: center;
+		padding: var(--space-12) var(--space-6);
+	}
+</style>

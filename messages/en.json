@@ -30,5 +30,11 @@
 	"theme_western": "Western",
 	"theme_wizard": "Wizard",
 	"you": "You",
-	"kick_player": "Kick {name}"
+	"kick_player": "Kick {name}",
+	"scoreboard": "Scoreboard",
+	"players_and_scoreboard": "Players & Scoreboard",
+	"game_not_started": "Game hasn't started yet",
+	"mod_actions": "Moderator",
+	"end_game": "End game",
+	"end_game_sent": "Ending game..."
 }

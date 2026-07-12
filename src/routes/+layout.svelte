@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
-import { getTextDirection, getLocale } from '$lib/paraglide/runtime';
+	import { getTextDirection, getLocale } from '$lib/paraglide/runtime';
 	import { initReactiveLocale } from '$lib/i18n.svelte';
 
 	import favicon from '$lib/assets/favicon.svg';

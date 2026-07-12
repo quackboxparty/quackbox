@@ -51,8 +51,8 @@ across all of them), so per-pod external addressability is inherently a
 stable-identity (StatefulSet + headless Service) feature. Traefik routes host/
 path → per-pod Service; the app owns the registry lookup and redirect. **No
 edge-native affinity can honor the registry** — session persistence (Gateway API
-GEP-1619 / Traefik sticky cookies) pins *one client* to a pod, not a *room's many
-clients*; consistent-hash LB (Traefik `hrw`, hashes client IP) is stateless and
+GEP-1619 / Traefik sticky cookies) pins _one client_ to a pod, not a _room's many
+clients_; consistent-hash LB (Traefik `hrw`, hashes client IP) is stateless and
 rehashes on scale — both are the deterministic-hash we rejected. The edge is
 stateless; ownership is data; the registry-aware component is the app itself.
 
@@ -77,8 +77,8 @@ possible but reintroduces the proxy hop we rejected, so it is not the path.
   pod (GC pause, partition) can wrongly believe it still owns a room another pod
   reclaimed. Every claim atomically increments `lease_epoch` via a
   compare-and-swap (`UPDATE … SET owner_pod=me, lease_epoch=lease_epoch+1,
-  lease_expires=now+ttl WHERE join_code=$c AND (lease_expires < now OR
-  owner_pod=me)` — one winner). **Every snapshot write is fenced with the same
+lease_expires=now+ttl WHERE join_code=$c AND (lease_expires < now OR
+owner_pod=me)` — one winner). **Every snapshot write is fenced with the same
   `WHERE lease_epoch=$my_epoch`**, so a stale owner's write matches zero rows and
   cannot corrupt state; the first `rows_affected = 0` tells the stale pod it was
   superseded, and it kills its local actor and drops its sockets (which reconnect
@@ -92,13 +92,13 @@ k8s probes and the lease measure the same liveness from two directions and must
 agree. Lease TTL sits **just above** the liveness detection window so k8s
 usually restarts a zombie before reclaim fires, minimizing the fenced window:
 
-| Knob | Value |
-| --- | --- |
-| `livenessProbe` | period 5s, failureThreshold 3 (~15s) — process health |
-| `readinessProbe` | period 5s, failureThreshold 2 (~10s) — **DB reachable + leases renewable** |
-| lease heartbeat | 5s (same tick as probes) |
-| lease TTL | 20s (4 missed beats) |
-| `terminationGracePeriodSeconds` | 45s (> TTL, so drain always finishes before SIGKILL) |
+| Knob                            | Value                                                                      |
+| ------------------------------- | -------------------------------------------------------------------------- |
+| `livenessProbe`                 | period 5s, failureThreshold 3 (~15s) — process health                      |
+| `readinessProbe`                | period 5s, failureThreshold 2 (~10s) — **DB reachable + leases renewable** |
+| lease heartbeat                 | 5s (same tick as probes)                                                   |
+| lease TTL                       | 20s (4 missed beats)                                                       |
+| `terminationGracePeriodSeconds` | 45s (> TTL, so drain always finishes before SIGKILL)                       |
 
 Readiness leads liveness so a pod that loses Postgres is pulled from routing
 before it is restarted. Readiness **must** check "can I own rooms" (ping DB /
@@ -108,7 +108,7 @@ confirm renewals), not a dumb `200`, or the fast gate is lost.
 
 One `Store` trait, narrow surface (`snapshot_room`, `load_room`,
 `list_rooms_for_recovery`, plus Postgres-only lease `claim`/`renew`/`reclaim`).
-The fork falls exactly on the line where the *problem* forks:
+The fork falls exactly on the line where the _problem_ forks:
 
 - **`SqliteStore` (self-host)** — snapshot/load only. One file, offline-perfect,
   keeps `docs/decisions/0003` honest (no Postgres in the offline path). Single
@@ -150,5 +150,5 @@ per-transition (lockless — the room task is the single writer), which is the
 correctness floor for crash recovery and the natural home of the fence.
 
 Supersedes the "Persistence: none in v1 / add SQLite when crash-recovery
-matters" note in `architecture.md` §Persistence for the *design*; v1 code stays
+matters" note in `architecture.md` §Persistence for the _design_; v1 code stays
 in-memory until the SQLite phase is actually built.

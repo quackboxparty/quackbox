@@ -13,25 +13,34 @@
 	import { m } from '$lib/paraglide/messages';
 	import { currentLocale, themeLabel } from '$lib/i18n.svelte';
 	import Logo from '$lib/components/Logo.svelte';
-	import { room } from '$lib/room.svelte';
+	import Drawer from '$lib/components/Drawer.svelte';
+	import Button from '$lib/components/Button.svelte';
+	import { playerColor, playerInitial } from '$lib/playerUi';
+	import { room, has } from '$lib/room.svelte';
+	import { toast } from '$lib/toast.svelte';
 
 	let { children }: { children: Snippet } = $props();
 
 	let open = $state(false);
 	let playersOpen = $state(false);
+	let modOpen = $state(false);
+	let tab = $state<'players' | 'scoreboard'>('players');
 
-	// Stable per-player avatar color: hash name -> one of the themed token colors.
-	const AVATAR_COLORS = ['primary', 'secondary', 'accent', 'success', 'warning', 'danger'] as const;
-	function playerColor(name: string): string {
-		let h = 0;
-		for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-		return `var(--color-${AVATAR_COLORS[h % AVATAR_COLORS.length]})`;
-	}
-	function initial(name: string): string {
-		return name.trim().charAt(0).toUpperCase() || '?';
-	}
+	const phase = $derived.by(() => {
+		const stage = room.gamestate?.stage;
+		return stage && 'GridQuiz' in stage ? stage.GridQuiz.phase : undefined;
+	});
+	const sortedPlayers = $derived(
+		Object.entries(room.gamestate?.players ?? {}).sort(([, a], [, b]) => b.score - a.score)
+	);
+
 	function kick(player: string) {
 		room.send?.({ kind: 'Kick', player });
+	}
+	function endGame() {
+		room.send?.({ kind: 'EndGame' });
+		toast.success(m.end_game_sent());
+		modOpen = false;
 	}
 	let theme = $state<ThemeId>(getTheme());
 	let usingSystem = $state(!hasStoredTheme());
@@ -60,7 +69,7 @@
 			{#if room.code}
 				<button
 					class="icon-btn players-toggle"
-					aria-label={m.players()}
+					aria-label={m.players_and_scoreboard()}
 					aria-expanded={playersOpen}
 					onclick={() => (playersOpen = !playersOpen)}
 				>
@@ -84,6 +93,27 @@
 					{/if}
 				</button>
 			{/if}
+			{#if room.code && has('Moderate')}
+				<button
+					class="icon-btn"
+					aria-label={m.mod_actions()}
+					aria-expanded={modOpen}
+					onclick={() => (modOpen = !modOpen)}
+				>
+					<svg
+						class="icon"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+					</svg>
+				</button>
+			{/if}
 			<button
 				class="icon-btn burger"
 				aria-label={m.menu()}
@@ -102,106 +132,137 @@
 	</main>
 </div>
 
-<svelte:window
-	on:keydown={(e) => {
-		if (e.key === 'Escape') {
-			if (open) open = false;
-			if (playersOpen) playersOpen = false;
-		}
-	}}
-/>
-
-{#if open}
-	<button class="scrim" aria-label="Close menu" onclick={() => (open = false)}></button>
-	<aside class="drawer" aria-label="Settings">
-		<div class="drawer-head">
-			<h2 class="drawer-title">{m.settings()}</h2>
-			<button class="drawer-close" aria-label={m.close()} onclick={() => (open = false)}>✕</button>
-		</div>
-
-		<div class="drawer-section">
-			<h3 class="section-label">🎨 {m.theme()}</h3>
-			<div class="chip-row">
+<Drawer bind:open title={m.settings()}>
+	<div class="drawer-section">
+		<h3 class="section-label">🎨 {m.theme()}</h3>
+		<div class="chip-row">
+			<button
+				class="chip"
+				class:chip-active={usingSystem}
+				onclick={() => {
+					pickSystemTheme();
+				}}
+			>
+				<span class="chip-emoji">🖥️</span>
+				{m.theme_system()}
+			</button>
+			{#each Object.values(themes) as t (t.id)}
 				<button
 					class="chip"
-					class:chip-active={usingSystem}
+					class:chip-active={!usingSystem && theme === t.id}
 					onclick={() => {
-						pickSystemTheme();
+						pickTheme(t.id);
 					}}
 				>
-					<span class="chip-emoji">🖥️</span>
-					{m.theme_system()}
+					<span class="chip-emoji">{t.emojis[0]}</span>
+					{themeLabel(t.id)}
 				</button>
-				{#each Object.values(themes) as t (t.id)}
-					<button
-						class="chip"
-						class:chip-active={!usingSystem && theme === t.id}
-						onclick={() => {
-							pickTheme(t.id);
-						}}
-					>
-						<span class="chip-emoji">{t.emojis[0]}</span>
-						{themeLabel(t.id)}
-					</button>
-				{/each}
-			</div>
+			{/each}
 		</div>
+	</div>
 
-		<div class="drawer-section">
-			<h3 class="section-label">🌐 {m.language()}</h3>
-			<div class="chip-row">
-				{#each locales as loc (loc)}
-					<button
-						class="chip"
-						class:chip-active={currentLocale() === loc}
-						onclick={() => {
-							pickLang(loc);
-						}}
-					>
-						{loc.toUpperCase()}
-					</button>
-				{/each}
-			</div>
+	<div class="drawer-section">
+		<h3 class="section-label">🌐 {m.language()}</h3>
+		<div class="chip-row">
+			{#each locales as loc (loc)}
+				<button
+					class="chip"
+					class:chip-active={currentLocale() === loc}
+					onclick={() => {
+						pickLang(loc);
+					}}
+				>
+					{loc.toUpperCase()}
+				</button>
+			{/each}
 		</div>
-	</aside>
-{/if}
+	</div>
+</Drawer>
 
-{#if playersOpen}
-	<button class="scrim" aria-label="Close menu" onclick={() => (playersOpen = false)}></button>
-	<aside class="drawer" aria-label={m.players()}>
-		<div class="drawer-head">
-			<h2 class="drawer-title">{m.players()}</h2>
-			<button class="drawer-close" aria-label={m.close()} onclick={() => (playersOpen = false)}>
-				✕
-			</button>
+<Drawer bind:open={playersOpen} title={m.players_and_scoreboard()}>
+	{#snippet header()}
+		<div class="tabs" role="tablist">
+			<button
+				class="tab"
+				role="tab"
+				aria-selected={tab === 'players'}
+				class:tab-active={tab === 'players'}
+				onclick={() => (tab = 'players')}>{m.players()}</button
+			>
+			<button
+				class="tab"
+				role="tab"
+				aria-selected={tab === 'scoreboard'}
+				class:tab-active={tab === 'scoreboard'}
+				onclick={() => (tab = 'scoreboard')}>{m.scoreboard()}</button
+			>
 		</div>
+	{/snippet}
+
+	{#if tab === 'players'}
 		<div class="drawer-section">
 			<ul class="player-list">
-				{#each Object.entries(room.gamestate?.players ?? {}) as [player, grants] (player)}
+				{#each Object.entries(room.gamestate?.players ?? {}) as [player, view] (player)}
 					<li class="player-row">
 						<span class="player-avatar" style:background={playerColor(player)}
-							>{initial(player)}</span
+							>{playerInitial(player)}</span
 						>
-						<span class="player-name">{player}{#if room.player === player}
+						<span class="player-name">
+							{player}
+							{#if room.player === player}
 								<span class="player-you">({m.you()})</span>
-							{/if}</span>
-						{#if grants.includes('Moderate')}
+							{/if}
+						</span>
+						{#if view.grants.includes('Moderate')}
 							<span class="mod-badge" title="Moderator">🛡️ Mod</span>
 						{/if}
-						{#if room.player && player !== room.player && room.gamestate?.players[room.player]?.includes('Moderate')}
+						{#if has('Moderate') && player !== room.player}
 							<button
 								class="kick-btn"
 								aria-label={m.kick_player({ name: player })}
 								title={m.kick_player({ name: player })}
-								onclick={() => kick(player)}>✕</button
+								onclick={() => {
+									kick(player);
+								}}>✕</button
 							>
 						{/if}
 					</li>
 				{/each}
 			</ul>
 		</div>
-	</aside>
-{/if}
+	{:else}
+		<div class="drawer-section">
+			{#if phase === 'lobby'}
+				<p class="empty-state">{m.game_not_started()}</p>
+			{:else}
+				<ul class="player-list">
+					{#each sortedPlayers as [player, view], i (player)}
+						<li class="player-row">
+							<span class="rank">{i + 1}</span>
+							<span class="player-avatar" style:background={playerColor(player)}
+								>{playerInitial(player)}</span
+							>
+							<span class="player-name">
+								{player}
+								{#if room.player === player}
+									<span class="player-you">({m.you()})</span>
+								{/if}
+							</span>
+							<span class="score">{view.score}</span>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</div>
+	{/if}
+</Drawer>
+
+<Drawer bind:open={modOpen} title={m.mod_actions()}>
+	<div class="drawer-section">
+		<Button variant="danger" onclick={endGame}>{m.end_game()}</Button>
+	</div>
+	<!-- overrule/revisie judgments + grant management slots land when #15 is wired -->
+</Drawer>
 
 <style>
 	.shell {
@@ -282,55 +343,6 @@
 		overflow-y: auto;
 	}
 
-	.scrim {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.5);
-		border: none;
-		z-index: 40;
-		cursor: default;
-	}
-	.drawer {
-		position: fixed;
-		top: 0;
-		right: 0;
-		bottom: 0;
-		width: min(20rem, 85vw);
-		background: var(--bg-surface-elevated);
-		border-left: var(--border-width) var(--border-style) var(--border-color);
-		box-shadow: var(--shadow-lg);
-		padding: var(--space-6);
-		z-index: 50;
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-6);
-		animation: slide-in 0.2s var(--easing);
-	}
-	@keyframes slide-in {
-		from {
-			transform: translateX(100%);
-		}
-		to {
-			transform: translateX(0);
-		}
-	}
-	.drawer-head {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
-	.drawer-title {
-		font-family: var(--font-heading);
-		font-size: calc(1.25rem * var(--font-scale));
-		margin: 0;
-	}
-	.drawer-close {
-		background: none;
-		border: none;
-		font-size: 1.25rem;
-		color: var(--color-text-muted);
-		cursor: pointer;
-	}
 	.drawer-section {
 		display: flex;
 		flex-direction: column;
@@ -441,6 +453,48 @@
 	.kick-btn:hover {
 		background: var(--color-danger);
 		color: var(--color-text-inverse);
+	}
+	.tabs {
+		display: flex;
+		gap: var(--space-1);
+		flex: 1;
+	}
+	.tab {
+		flex: 1;
+		padding: var(--space-2) var(--space-3);
+		border: none;
+		border-bottom: 2px solid transparent;
+		background: transparent;
+		color: var(--color-text-muted);
+		font-family: var(--font-body);
+		font-size: calc(0.875rem * var(--font-scale));
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.tab-active {
+		color: var(--color-primary);
+		border-bottom-color: var(--color-primary);
+	}
+	.rank {
+		font-family: var(--font-heading);
+		font-weight: 700;
+		color: var(--color-text-muted);
+		min-width: 1.5rem;
+		font-size: calc(0.9rem * var(--font-scale));
+	}
+	.score {
+		margin-left: auto;
+		font-family: var(--font-heading);
+		font-weight: 700;
+		font-size: calc(1rem * var(--font-scale));
+	}
+	.empty-state {
+		margin: 0;
+		padding: var(--space-6) var(--space-3);
+		text-align: center;
+		color: var(--color-text-muted);
+		font-family: var(--font-body);
+		font-size: calc(0.9rem * var(--font-scale));
 	}
 
 	@media (max-width: 480px) {

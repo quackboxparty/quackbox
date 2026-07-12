@@ -8,20 +8,32 @@
 //!
 //! TODO: GameState, apply(Command), on_timeout, snapshot, score = fold(log).
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet, VecDeque};
 
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    data::GameConfig,
-    game::grants::{Grant, GrantSet},
+    data::{
+        BoardGrid, Game, GameConfig,
+        GameMode::{self, Linear},
+    },
+    game::{
+        grants::{Grant, GrantSet},
+        judge::Verdict,
+    },
     protocol::Command,
 };
 
 #[derive(Clone, Debug)]
 pub struct GameState {
-    pub game: GameConfig,
+    pub game_config: GameConfig,
+    /// Which entry in the game chain (`game.games[..]`) is currently live.
+    pub current_game_idx: usize,
     pub player_slots: HashMap<Token, PlayerSlot>,
+    pub mode: ModeState,
+    /// Global, append-only, spans all rounds. `score = fold(judgment_log)`.
+    pub judgment_log: Vec<Judgment>,
 }
 
 impl GameState {
@@ -41,6 +53,25 @@ impl GameState {
 
                 self.player_slots.retain(|_, v| v.name != player);
             }
+            Command::StartGame => {
+                match &mut self.mode {
+                    ModeState::GridQuiz(state) => {
+                        // TODO: maybe shuffle this
+                        let rotation: VecDeque<Token> = self
+                            .player_slots
+                            .iter()
+                            .filter(|(_, player)| player.connected)
+                            .map(|(token, _)| token.clone())
+                            .collect();
+                        state.picker_rotation = rotation;
+
+                        state.active_picker = state.picker_rotation.front().cloned();
+
+                        state.phase = GridQuizPhase::BoardSelect;
+                    }
+                    ModeState::Linear(_) => todo!("Linear not yet implemented"),
+                };
+            }
             _ => {
                 todo!()
             }
@@ -52,6 +83,20 @@ impl GameState {
             Some(slot) => Some(&slot.grants),
             None => None,
         }
+    }
+
+    pub(crate) fn player_name(&self, token: &Token) -> Option<String> {
+        match self.player_slots.get(token) {
+            Some(slot) => Some(slot.name.clone()),
+            None => None,
+        }
+    }
+
+    pub(crate) fn current_game(&self) -> &Game {
+        self.game_config
+            .games
+            .get(self.current_game_idx)
+            .expect("current game idx does not yiled a game")
     }
 }
 
@@ -70,3 +115,110 @@ pub struct PlayerSlot {
     pub connected: bool,
     pub grants: GrantSet,
 }
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ModeState {
+    GridQuiz(GridQuizState),
+    Linear(LinearState),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct GridQuizState {
+    pub phase: GridQuizPhase,
+    /// Whose turn to choose a cell. Meaningful only while `phase == BoardSelect`.
+    pub active_picker: Option<Token>,
+    /// Who may answer right now. `None` = buzz open; `Some` = that player has
+    /// the floor. How it relates to `active_picker` depends on the answer
+    /// policy (turn-order: floored == picker on pick; open-floor: first buzz).
+    pub floored_player: Option<Token>,
+    /// Answered wrong this question — barred from re-buzzing until it resets.
+    pub locked_out: HashSet<Token>,
+    /// Cell + question currently in play; `None` while on the board.
+    pub current: Option<CurrentCell>,
+    /// Picking turn order. Shuffled at `StartGame`; advanced per picker policy.
+    pub picker_rotation: VecDeque<Token>,
+    pub cells: Vec<Vec<Cell>>,
+}
+
+impl GridQuizState {
+    pub fn build(cells: Vec<Vec<Cell>>) -> Self {
+        Self {
+            phase: GridQuizPhase::Lobby,
+            active_picker: None,
+            floored_player: None,
+            locked_out: HashSet::new(),
+            current: None,
+            picker_rotation: VecDeque::new(),
+            cells,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Cell {
+    Open(String),
+    Used(String),
+    Empty,
+}
+
+impl From<Option<String>> for Cell {
+    fn from(opt: Option<String>) -> Self {
+        match opt {
+            Some(id) => Cell::Open(id),
+            None => Cell::Empty,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[cfg_attr(test, ts(export, export_to = "Protocol.ts"))]
+pub enum GridQuizPhase {
+    /// Pre-`StartGame`; players joining.
+    Lobby,
+    /// `active_picker` chooses a cell.
+    BoardSelect,
+    /// Question on screen. `floored_player == None` = buzz open; `Some` =
+    /// answering. The re-buzz-after-wrong loop stays in this phase.
+    QuestionOpen,
+    /// Correct answer + verdict shown. Human-paced beat (discussion); exits on
+    /// mod `Next` or an optional auto-advance — not auto-timed by default.
+    Reveal,
+    /// Terminal: board exhausted or mod ended early.
+    GameOver,
+}
+
+/// The cell in play + its resolved question id. Question content itself lives
+/// in the `Dataset`; projection looks it up by id.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CurrentCell {
+    pub category: usize,
+    pub point: usize,
+    pub question_id: String,
+}
+
+/// One entry in the append-only judgment log. Revising a ruling = append a new
+/// entry that supersedes the old, refold, rebroadcast.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Judgment {
+    /// Index into `game.games` — which chain entry (GameEntry) this belongs to.
+    /// Equals `current_game_idx` at append time.
+    pub game_idx: usize,
+    pub player: Token,
+    pub question_id: String,
+    /// `None` for spoken answers (moderator verdict stands alone).
+    pub submission: Option<String>,
+    pub verdict: Verdict,
+    /// Resolved award (cell value, half on steal, penalty…). The fold sums
+    /// this — steal/half math can't be re-derived from a single entry, so the
+    /// outcome is recorded once at append (steal logic lives in one place).
+    pub points: i32,
+    /// Index of the log entry this supersedes, if revising a prior ruling.
+    pub supersedes: Option<usize>,
+}
+
+/// linear play state — not yet designed. Stub so `ModeState` carries both
+/// variants from the start.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct LinearState;

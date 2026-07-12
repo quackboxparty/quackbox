@@ -30,11 +30,7 @@
 	transition:fly={{ x: 24, duration: 200 }}
 >
 	<span class="msg">{toast.message}</span>
-	<button
-		class="close"
-		aria-label="Dismiss"
-		onclick={() => dismiss(toast.id)}
-	>×</button>
+	<button class="close" aria-label="Dismiss" onclick={() => dismiss(toast.id)}>×</button>
 </div>
 
 <style>

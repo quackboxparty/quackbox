@@ -58,7 +58,7 @@ _Avoid_: role, permission, scope.
 The role-specific projection of game state sent to one connection. Sections
 (buzzer, question, correct answer, controls, scoreboard) appear only if the
 connection's grants permit. The point where server-only secrets are stripped.
-_Avoid_: state, snapshot (a ClientView is the *projected* snapshot), payload.
+_Avoid_: state, snapshot (a ClientView is the _projected_ snapshot), payload.
 
 ### Adjudication
 
@@ -71,7 +71,7 @@ _Avoid_: scorer, validator, checker, referee.
 **Submission**:
 What a Player offers in answer to a question. Nullable: present when typed,
 absent when the answer is spoken and only the Moderator's verdict is recorded.
-_Avoid_: answer (reserve for the *correct* answer on content), response, guess.
+_Avoid_: answer (reserve for the _correct_ answer on content), response, guess.
 
 **Verdict**:
 A Judge's ruling on a submission: Correct, Incorrect, Void, or Pending.
@@ -105,7 +105,7 @@ hybrid — and thereby which Judge runs per question.
 _Avoid_: game mode (that's gamemode), online/offline mode, input type.
 
 **Gamemode**:
-A set of rules and presentation for play (grid_quiz, battle royale, …). Owns the
+A set of rules and presentation for play (grid*quiz, battle royale, …). Owns the
 buzz/order policy and scoring shape. Distinct from the Judge (how answers are
 ruled) and the answer-input mode (how answers are given).
-_Avoid_: mode, game type, ruleset.
+\_Avoid*: mode, game type, ruleset.

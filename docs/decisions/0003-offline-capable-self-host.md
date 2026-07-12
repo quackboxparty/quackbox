@@ -8,6 +8,7 @@ intrinsically need internet are **available when online and gracefully absent
 offline**, never a hard dependency for core play.
 
 Internet-only features that must degrade, not block:
+
 - **`youtube:` / `url:` media** — only `local:` media is guaranteed offline;
   remote refs simply don't render offline (host may mirror them).
 - **Telemetry** (`opentelemetry-otlp`) — strictly opt-in; a no-op when no

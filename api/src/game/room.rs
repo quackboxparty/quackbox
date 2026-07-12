@@ -11,16 +11,19 @@
 //!
 //! TODO: RoomHandle, spawn_room, the select! loop.
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use rand::RngExt;
 use tokio::sync::{broadcast, mpsc};
 
 use crate::{
-    data::GameConfig,
+    data::{Dataset, GameConfig, GameMode, build_board},
     game::{
-        grants::Grant::{self, Play},
-        state::{GameState, PlayerSlot, Token},
+        grants::Grant::{self},
+        state::{Cell, GameState, GridQuizState, LinearState, ModeState, PlayerSlot, Token},
     },
     protocol::{ConnectionError, RoomMessage},
 };
@@ -48,19 +51,40 @@ impl JoinCode {
 #[derive(Clone)]
 pub struct RoomHandle {
     pub command_tx: mpsc::Sender<RoomMessage>,
-    pub state_tx: broadcast::Sender<GameState>,
+    pub state_tx: broadcast::Sender<Arc<GameState>>,
 }
 
-pub fn spawn_room(code: JoinCode, game: GameConfig) -> RoomHandle {
+pub fn spawn_room(code: JoinCode, game_config: GameConfig, data: Arc<Dataset>) -> RoomHandle {
     let (room_msg_tx, mut room_msg_rx) = mpsc::channel::<RoomMessage>(64);
-    let (state_tx, _) = broadcast::channel::<GameState>(16);
+    let (state_tx, _) = broadcast::channel::<Arc<GameState>>(16);
 
     let state_tx_loop = state_tx.clone();
     tokio::spawn(async move {
-        let mut state = GameState {
-            game,
-            player_slots: HashMap::new(),
+        let mode = match &game_config
+            .games
+            .first()
+            .expect("a room without a game")
+            .mode
+        {
+            GameMode::GridQuiz(game) => {
+                let seed = rand::rng().random::<u64>();
+                let cells = build_board(&data, &game.board, seed)
+                    .into_iter()
+                    .map(|row| row.into_iter().map(Cell::from).collect())
+                    .collect();
+                ModeState::GridQuiz(GridQuizState::build(cells))
+            }
+            GameMode::Linear(_) => ModeState::Linear(LinearState::default()),
         };
+
+        let mut state = GameState {
+            game_config,
+            current_game_idx: 0,
+            player_slots: HashMap::new(),
+            mode,
+            judgment_log: Vec::new(),
+        };
+
         while let Some(room_msg) = room_msg_rx.recv().await {
             tracing::info!("room msg {:?}", &room_msg);
             match room_msg {
@@ -87,7 +111,6 @@ pub fn spawn_room(code: JoinCode, game: GameConfig) -> RoomHandle {
                     );
 
                     let _ = reply.send(Ok(token));
-                    let _ = state_tx_loop.send(state.clone());
                 }
                 RoomMessage::Reconnect { token, reply } => {
                     let Some(slot) = state.player_slots.get_mut(&token) else {
@@ -98,7 +121,6 @@ pub fn spawn_room(code: JoinCode, game: GameConfig) -> RoomHandle {
                     slot.connected = true;
 
                     let _ = reply.send(Ok(token));
-                    let _ = state_tx_loop.send(state.clone());
                 }
                 RoomMessage::Disconnect { token } => {
                     if let Some(slot) = state.player_slots.get_mut(&token) {
@@ -109,9 +131,10 @@ pub fn spawn_room(code: JoinCode, game: GameConfig) -> RoomHandle {
                     tracing::info!("command {:?} received in room {}", cmd, &code.0);
 
                     state.apply(token, cmd);
-                    let _ = state_tx_loop.send(state.clone());
                 }
             }
+
+            let _ = state_tx_loop.send(Arc::new(state.clone()));
         }
     });
 

@@ -3,8 +3,7 @@ id: game_test_grid
 title: Test Grid
 description: A test grid game
 games:
-  - mode: grid_quiz
-    title: Round 1
+  - title: Round 1
     rules:
       buzz_policy: open_floor
       scoring_mode: first_correct
@@ -13,14 +12,16 @@ games:
       judge: auto
       question_timer_secs: 30
       answer_timer_secs: 15
-    board:
-      points: [100, 200, 300, 500]
-      categories:
-        - name: Capitals
-          filter:
-            tags_any: [subject:geo]
-        - name: Flags
-          question_ids: { 100: q_alpha_one, 200: q_alpha_two }
+    mode:
+      kind: grid_quiz
+      board:
+        points: [100, 200, 300, 500]
+        categories:
+          - name: Capitals
+            filter:
+              tags_any: [subject:geo]
+          - name: Flags
+            question_ids: { 100: q_alpha_one, 200: q_alpha_two }
 "#;
 
 pub(super) const VALID_LINEAR_GAME: &str = r#"
@@ -28,8 +29,7 @@ id: game_test_linear
 title: Test Linear
 description: A test linear game
 games:
-  - mode: linear
-    title: Round 1
+  - title: Round 1
     rules:
       buzz_policy: broadcast
       scoring_mode: all_grade
@@ -38,9 +38,11 @@ games:
       judge: auto
       question_timer_secs: 20
       answer_timer_secs: 10
-    questions:
-      source: questions
-      question_ids: [q_alpha_one]
+    mode:
+      kind: linear
+      questions:
+        source: questions
+        question_ids: [q_alpha_one]
 "#;
 
 pub(super) const VALID_QUESTION_TWO: &str = r#"

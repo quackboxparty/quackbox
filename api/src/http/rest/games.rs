@@ -32,10 +32,9 @@ async fn list_games(State(state): State<Arc<AppState>>) -> impl IntoResponse {
                     .item
                     .games
                     .iter()
-                    .map(|mode| mode.mode_name().to_owned())
+                    .map(|game| game.mode.mode_name().to_owned())
                     .collect(),
             })
             .collect::<Vec<Game>>(),
     )
 }
-

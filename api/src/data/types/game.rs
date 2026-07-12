@@ -22,24 +22,24 @@ pub struct GameConfig {
     #[serde(default)]
     pub auto_advance: bool, // auto-start next game in chain
     #[garde(length(min = 1), custom(valid_game_entries))]
-    pub games: Vec<GameEntry>, // ordered sequence
+    pub games: Vec<Game>, // ordered sequence
 }
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct GameOverlay {
+pub struct GameConfigOverlay {
     pub id: String,
     #[serde(default)]
     pub title: Option<String>,
     #[serde(default)]
     pub description: Option<String>,
     #[serde(default)]
-    pub games: Vec<GameEntryOverlay>,
+    pub games: Vec<GameOverlay>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct GameEntryOverlay {
+pub struct GameOverlay {
     #[serde(default)]
     pub title: Option<String>,
     #[serde(default)]
@@ -60,33 +60,39 @@ pub struct BoardCategoryOverlay {
     pub name: Option<String>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Game {
+    pub title: String, // translatable
+    pub rules: Rules,
+    pub mode: GameMode,
+}
+
 /// A single game in the chain. Each has its own mode, rules, and content.
 #[derive(Debug, Clone, Deserialize)]
-#[serde(tag = "mode", rename_all = "snake_case", deny_unknown_fields)]
-pub enum GameEntry {
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum GameMode {
     /// Grid-based, Jeopardy-style quiz with NxM board.
     GridQuiz(GridQuizGame),
     /// Linear sequence of questions (Kahoot-style).
     Linear(LinearGame),
 }
 
-impl GameEntry {
+impl GameMode {
     pub fn mode_name(&self) -> &'static str {
         match self {
-            GameEntry::GridQuiz(_) => "grid_quiz",
-            GameEntry::Linear(_) => "linear",
+            GameMode::GridQuiz(_) => "grid_quiz",
+            GameMode::Linear(_) => "linear",
         }
     }
 }
-
-// ── Game-specific payloads ──────────────────────────────────────────────────
 
 /// Grid quiz: inline board definition.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct GridQuizGame {
-    pub title: String, // translatable
-    pub rules: Rules,
+    #[serde(default)]
+    pub grid_rules: GridQuizRules,
     pub board: Board,
 }
 
@@ -115,8 +121,6 @@ pub struct BoardCategory {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct LinearGame {
-    pub title: String, // translatable
-    pub rules: Rules,
     pub questions: LinearSource,
 }
 
@@ -198,25 +202,57 @@ pub enum Judge {
     Moderator,
 }
 
-impl GameEntry {
-    /// Validate rules for this entry. Returns error if invalid combo found.
-    // ponytail: inline validation, not a trait. One struct, skip abstraction.
-    pub fn validate(&self) -> garde::Result {
-        let rules = match self {
-            GameEntry::GridQuiz(g) => &g.rules,
-            GameEntry::Linear(g) => &g.rules,
-        };
+/// Who picks the next cell in grid_quiz. Independent of the answer-side buzz
+/// policy — see `docs/game-flow.md` §Picker modes.
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq, Hash)]
+#[serde(rename_all = "snake_case")]
+pub enum PickerMode {
+    /// Strict rotation through the player order every round.
+    Rotate,
+    /// First correct answerer picks next (Jeopardy control); no correct answer
+    /// → fall back to rotation.
+    WinnerPicks,
+}
 
-        validate_rules(rules)?;
+/// grid_quiz-specific rules, separate from the shared `Rules` (linear has no
+/// cells to pick). Defaults from the manifest; host may override per session.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct GridQuizRules {
+    #[serde(default = "default_picker_mode")]
+    pub picker_mode: PickerMode,
+    /// `None` = manual (mod advances Reveal); `Some(n)` = auto-advance after n secs.
+    #[serde(default)]
+    pub reveal_auto_advance_secs: Option<u32>,
+}
 
-        match self {
-            GameEntry::GridQuiz(g) => validate_grid_quiz(g),
-            GameEntry::Linear(g) => validate_linear(g),
+fn default_picker_mode() -> PickerMode {
+    PickerMode::WinnerPicks
+}
+
+impl Default for GridQuizRules {
+    fn default() -> Self {
+        Self {
+            picker_mode: PickerMode::WinnerPicks,
+            reveal_auto_advance_secs: None,
         }
     }
 }
 
-fn valid_game_entries(entries: &[GameEntry], _ctx: &()) -> garde::Result {
+impl Game {
+    /// Validate rules for this entry. Returns error if invalid combo found.
+    // ponytail: inline validation, not a trait. One struct, skip abstraction.
+    pub fn validate(&self) -> garde::Result {
+        validate_rules(&self.rules)?;
+
+        match &self.mode {
+            GameMode::GridQuiz(g) => validate_grid_quiz(g),
+            GameMode::Linear(g) => validate_linear(g),
+        }
+    }
+}
+
+fn valid_game_entries(entries: &[Game], _ctx: &()) -> garde::Result {
     for (idx, entry) in entries.iter().enumerate() {
         if let Err(e) = entry.validate() {
             return Err(garde::Error::new(format!("game[{idx}]: {}", e.message())));
@@ -261,6 +297,11 @@ fn validate_rules(rules: &Rules) -> garde::Result {
 }
 
 fn validate_grid_quiz(g: &GridQuizGame) -> garde::Result {
+    if g.grid_rules.reveal_auto_advance_secs == Some(0) {
+        return Err(garde::Error::new(
+            "grid_quiz reveal_auto_advance_secs must be greater than 0",
+        ));
+    }
     if g.board.points.len() < 2 {
         return Err(garde::Error::new(
             "grid_quiz board must define at least 2 point values",

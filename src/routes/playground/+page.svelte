@@ -75,7 +75,9 @@
 				style="background: var(--color-success); border-color: var(--color-success)"
 			></span>
 			success
-			<span class="swatch" style="background: var(--color-danger); border-color: var(--color-danger)"
+			<span
+				class="swatch"
+				style="background: var(--color-danger); border-color: var(--color-danger)"
 			></span> danger
 		</div>
 	</section>

@@ -3,9 +3,9 @@ use super::*;
 pub(super) fn check_game_refs(ds: &Dataset, issues: &mut Vec<LoadIssue>) {
     for entry in ds.games.values() {
         let gc = &entry.item;
-        for (game_idx, game_entry) in gc.games.iter().enumerate() {
-            match game_entry {
-                GameEntry::GridQuiz(g) => {
+        for (game_idx, game) in gc.games.iter().enumerate() {
+            match &game.mode {
+                GameMode::GridQuiz(g) => {
                     for (cat_idx, cat) in g.board.categories.iter().enumerate() {
                         let ctx = format!("game '{}' entry[{game_idx}] category[{cat_idx}]", gc.id);
 
@@ -48,7 +48,7 @@ pub(super) fn check_game_refs(ds: &Dataset, issues: &mut Vec<LoadIssue>) {
                         }
                     }
                 }
-                GameEntry::Linear(g) => match &g.questions {
+                GameMode::Linear(g) => match &g.questions {
                     LinearSource::Questions { question_ids } => {
                         for qid in question_ids {
                             if !ds.questions.contains_key(qid) {

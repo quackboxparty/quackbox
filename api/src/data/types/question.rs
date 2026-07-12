@@ -37,6 +37,17 @@ pub struct MultipleChoiceVariant {
     pub choices: Vec<Choice>,
 }
 
+impl MultipleChoiceVariant {
+    /// IDs of choices marked `correct: true`. Empty if none.
+    pub fn correct_choice_ids(&self) -> Vec<String> {
+        self.choices
+            .iter()
+            .filter(|c| c.correct == Some(true))
+            .map(|c| c.id.clone())
+            .collect()
+    }
+}
+
 fn choices_have_correct(choices: &[Choice], _ctx: &()) -> garde::Result {
     if choices.iter().any(|c| c.correct == Some(true)) {
         Ok(())
@@ -68,7 +79,9 @@ pub struct OpenVariant {
 
 #[derive(Debug, Clone, Deserialize, Validate)]
 #[garde(allow_unvalidated)]
-pub struct TrueFalseVariant {}
+pub struct TrueFalseVariant {
+    pub correct: bool,
+}
 
 #[derive(Debug, Clone, Deserialize, Validate)]
 pub struct NumericInputVariant {
@@ -86,6 +99,9 @@ pub struct RangeVariant {
     #[garde(range(min = 0.0))]
     #[serde(default = "default_step")]
     pub step: f64,
+    #[garde(range(min = 0.0))]
+    #[serde(default)]
+    pub tolerance: f64,
 }
 
 fn range_max_gt_min(value: &RangeVariant, _ctx: &()) -> garde::Result {
@@ -269,6 +285,27 @@ pub enum Question {
     },
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum Correctness {
+    MultipleChoice {
+        correct_ids: Vec<String>,
+    },
+    Open {
+        accepted: Vec<String>,
+    },
+    TrueFalse {
+        correct: bool,
+    },
+    /// NumericInput and Range share a correctness shape
+    Numeric {
+        value: f64,
+        tolerance: f64,
+    },
+    Order {
+        positions: Vec<(String, u32)>,
+    },
+}
+
 impl Question {
     pub fn id(&self) -> &str {
         self.base().id.as_str()
@@ -289,6 +326,17 @@ impl Question {
     pub fn base(&self) -> &QuestionBase {
         match self {
             Self::Text { base, .. } | Self::Numeric { base, .. } | Self::Order { base, .. } => base,
+        }
+    }
+
+    /// Prompt shared by every variant — TextContent / NumericContent /
+    /// OrderContent all embed the same `Prompt` type, so this is the one
+    /// accessor projection code reaches for.
+    pub fn prompt(&self) -> &Prompt {
+        match self {
+            Self::Text { content, .. } => &content.prompt,
+            Self::Numeric { content, .. } => &content.prompt,
+            Self::Order { content, .. } => &content.prompt,
         }
     }
 
@@ -360,5 +408,215 @@ impl Question {
             }
         }
         out
+    }
+
+    pub fn explanation(&self) -> Option<&str> {
+        match self {
+            Self::Text { content, .. } => content.explanation.as_deref(),
+            Self::Numeric { content, .. } => content.explanation.as_deref(),
+            Self::Order { content, .. } => content.explanation.as_deref(),
+        }
+    }
+
+    pub fn default_lang(&self) -> &str {
+        match self {
+            Self::Text { content, .. } => &content.default_lang,
+            Self::Numeric { content, .. } => &content.default_lang,
+            Self::Order { content, .. } => &content.default_lang,
+        }
+    }
+
+    pub fn mc_choices(&self) -> Option<&MultipleChoiceVariant> {
+        match self {
+            Self::Text { content, .. } => content.variants.multiple_choice.as_ref(),
+            Self::Numeric { content, .. } => content.variants.multiple_choice.as_ref(),
+            Self::Order { .. } => None,
+        }
+    }
+
+    pub fn range(&self) -> Option<&RangeVariant> {
+        match self {
+            Self::Numeric { content, .. } => content.variants.range.as_ref(),
+            _ => None,
+        }
+    }
+
+    pub fn order_items(&self) -> Option<&[OrderItem]> {
+        match self {
+            Self::Order { content, .. } => Some(&content.items),
+            _ => None,
+        }
+    }
+
+    /// Correctness for the resolved variant. `None` when the variant isn't
+    /// defined on this kind. Order ignores `variant` — its shape is fixed.
+    pub fn correctness(&self, variant: VariantName) -> Option<Correctness> {
+        match self {
+            Self::Text { content, .. } => match variant {
+                VariantName::MultipleChoice => content
+                    .variants
+                    .multiple_choice
+                    .as_ref()
+                    .map(|mc| Correctness::MultipleChoice {
+                        correct_ids: mc.correct_choice_ids(),
+                    }),
+                VariantName::Open => content
+                    .variants
+                    .open
+                    .as_ref()
+                    .map(|o| Correctness::Open {
+                        accepted: o.accepted.clone(),
+                    }),
+                VariantName::TrueFalse => content
+                    .variants
+                    .true_false
+                    .as_ref()
+                    .map(|tf| Correctness::TrueFalse {
+                        correct: tf.correct,
+                    }),
+                _ => None,
+            },
+            Self::Numeric { content, .. } => match variant {
+                VariantName::MultipleChoice => content
+                    .variants
+                    .multiple_choice
+                    .as_ref()
+                    .map(|mc| Correctness::MultipleChoice {
+                        correct_ids: mc.correct_choice_ids(),
+                    }),
+                VariantName::NumericInput => content
+                    .variants
+                    .numeric_input
+                    .as_ref()
+                    .map(|ni| Correctness::Numeric {
+                        value: content.answer,
+                        tolerance: ni.tolerance,
+                    }),
+                VariantName::Range => content.variants.range.as_ref().map(|r| Correctness::Numeric {
+                    value: content.answer,
+                    tolerance: r.tolerance,
+                }),
+                _ => None,
+            },
+            Self::Order { content, .. } => Some(Correctness::Order {
+                positions: content
+                    .items
+                    .iter()
+                    .map(|i| (i.id.clone(), i.position))
+                    .collect(),
+            }),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn load_q(s: &str) -> Question {
+        serde_yaml::from_str(s).expect("test fixture must parse")
+    }
+
+    const TF_Q: &str = r#"
+kind: text
+id: q_tf
+tags: []
+content:
+  default_lang: en
+  prompt: { text: "The sky is blue." }
+  answer: "true"
+  variants:
+    true_false: { correct: true }
+"#;
+
+    const NUM_Q: &str = r#"
+kind: numeric
+id: q_n
+tags: []
+content:
+  default_lang: en
+  prompt: { text: "Answer" }
+  answer: 42
+  variants:
+    numeric_input: { tolerance: 0.5 }
+    range: { min: 0, max: 100, step: 1, tolerance: 2 }
+"#;
+
+    const ORDER_Q: &str = r#"
+kind: order
+id: q_o
+tags: []
+content:
+  default_lang: de
+  prompt: { text: "Order these." }
+  items:
+    - { id: a, text: A, position: 1 }
+    - { id: b, text: B, position: 2 }
+"#;
+
+    #[test]
+    fn true_false_correctness_reads_correct_field() {
+        // Regression for the empty-{} bug: TrueFalseVariant now carries correct.
+        let q = load_q(TF_Q);
+        assert_eq!(
+            q.correctness(VariantName::TrueFalse),
+            Some(Correctness::TrueFalse { correct: true })
+        );
+    }
+
+    #[test]
+    fn correctness_none_for_unsupported_variant() {
+        let q = load_q(TF_Q);
+        assert_eq!(q.correctness(VariantName::NumericInput), None);
+    }
+
+    #[test]
+    fn numeric_input_correctness_carries_tolerance() {
+        let q = load_q(NUM_Q);
+        assert_eq!(
+            q.correctness(VariantName::NumericInput),
+            Some(Correctness::Numeric { value: 42.0, tolerance: 0.5 })
+        );
+    }
+
+    #[test]
+    fn range_correctness_uses_own_tolerance() {
+        let q = load_q(NUM_Q);
+        assert_eq!(
+            q.correctness(VariantName::Range),
+            Some(Correctness::Numeric { value: 42.0, tolerance: 2.0 })
+        );
+    }
+
+    #[test]
+    fn order_correctness_ignores_variant_arg() {
+        let q = load_q(ORDER_Q);
+        assert_eq!(
+            q.correctness(VariantName::MultipleChoice),
+            Some(Correctness::Order {
+                positions: vec![("a".into(), 1), ("b".into(), 2)]
+            })
+        );
+    }
+
+    #[test]
+    fn accessors_return_expected_per_kind() {
+        let tf = load_q(TF_Q);
+        assert_eq!(tf.default_lang(), "en");
+        assert!(tf.explanation().is_none());
+        assert!(tf.mc_choices().is_none());
+        assert!(tf.range().is_none());
+        assert!(tf.order_items().is_none());
+
+        let num = load_q(NUM_Q);
+        assert!(num.range().is_some());
+        assert!(num.mc_choices().is_none());
+        assert!(num.order_items().is_none());
+
+        let order = load_q(ORDER_Q);
+        assert_eq!(order.default_lang(), "de");
+        assert!(order.order_items().is_some());
+        assert!(order.mc_choices().is_none());
+        assert!(order.range().is_none());
     }
 }

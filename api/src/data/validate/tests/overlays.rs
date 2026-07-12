@@ -49,17 +49,18 @@ id: game_base
 title: Base
 description: Base
 games:
-  - mode: linear
-    title: R1
+  - title: R1
     rules:
       buzz_policy: open_floor
       scoring_mode: first_correct
       lockout_policy: none
       steal_policy: none
       judge: auto
-    questions:
-      source: questions
-      question_ids: [q_alpha_one]
+    mode:
+      kind: linear
+      questions:
+        source: questions
+        question_ids: [q_alpha_one]
 "#,
         ),
         (
@@ -89,17 +90,18 @@ id: game_base
 title: Base
 description: Base
 games:
-  - mode: linear
-    title: R1
+  - title: R1
     rules:
       buzz_policy: open_floor
       scoring_mode: first_correct
       lockout_policy: none
       steal_policy: none
       judge: auto
-    questions:
-      source: questions
-      question_ids: [q_alpha_one]
+    mode:
+      kind: linear
+      questions:
+        source: questions
+        question_ids: [q_alpha_one]
 "#,
         ),
         (
@@ -130,21 +132,22 @@ id: game_base
 title: Base
 description: Base
 games:
-  - mode: grid_quiz
-    title: R1
+  - title: R1
     rules:
       buzz_policy: open_floor
       scoring_mode: first_correct
       lockout_policy: none
       steal_policy: none
       judge: auto
-    board:
-      points: [100, 200]
-      categories:
-        - name: Geo
-          filter: { tags_any: [subject:geo] }
-        - name: History
-          filter: { tags_any: [subject:history] }
+    mode:
+      kind: grid_quiz
+      board:
+        points: [100, 200]
+        categories:
+          - name: Geo
+            filter: { tags_any: [subject:geo] }
+          - name: History
+            filter: { tags_any: [subject:history] }
 "#,
         ),
         (

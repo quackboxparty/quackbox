@@ -25,7 +25,11 @@ use std::collections::{BTreeMap, HashMap};
 use serde::{Deserialize, Serialize};
 use tokio::sync::oneshot;
 
-use crate::game::{grants::GrantSet, state::Token};
+use crate::game::{
+    grants::GrantSet,
+    judge::Verdict,
+    state::{GridQuizPhase, Token},
+};
 
 #[derive(Debug)]
 pub enum RoomMessage {
@@ -54,8 +58,7 @@ pub enum ConnectionError {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "kind")]
-#[cfg_attr(test, derive(ts_rs::TS))]
-#[cfg_attr(test, ts(export, export_to = "Protocol.ts"))]
+#[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
 pub enum ClientMessage {
     Join { name: String },
     Reconnect { token: String },
@@ -64,19 +67,26 @@ pub enum ClientMessage {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "kind")]
-#[cfg_attr(test, derive(ts_rs::TS))]
-#[cfg_attr(test, ts(export, export_to = "Protocol.ts"))]
+#[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
 pub enum Command {
-    Kick { player: String },
+    // ── lifecycle ──
+    StartGame,
+    PickCell { category: usize, point: usize },
+    Next,
+    EndGame,
+    // ── answering ──
     Buzz,
     Answer { text: String },
+    Rule { verdict: Verdict },
+    // ── controls ──
+    Grant { player: String, grants: GrantSet },
     ExtendTimer { delta_secs: u32 },
+    Kick { player: String },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "kind")]
-#[cfg_attr(test, derive(ts_rs::TS))]
-#[cfg_attr(test, ts(export, export_to = "Protocol.ts"))]
+#[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
 pub enum ServerMessage {
     Joined { token: String },
     Snapshot(ClientView),
@@ -84,15 +94,170 @@ pub enum ServerMessage {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-#[cfg_attr(test, derive(ts_rs::TS))]
-#[cfg_attr(test, ts(export, export_to = "Protocol.ts"))]
+#[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
 pub struct ClientView {
-    pub(crate) players: BTreeMap<String, GrantSet>,
-    // pub(crate) scoreboard: Option<Scoreboard>,
+    pub(crate) players: BTreeMap<String, PlayerView>,
     // pub(crate) phase: Phase,
     // pub(crate) timer: Option<Deadline>,
     // pub(crate) controls: Option<Controls>,
-    // pub(crate) stage: GamemodeView,
+    pub(crate) stage: GamemodeView,
+    pub(crate) question: Option<QuestionView>,
+    pub(crate) judgment_log: Vec<JudgmentView>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
+pub struct PlayerView {
+    pub(crate) grants: GrantSet,
+    pub(crate) score: i32,
+    pub(crate) connected: bool,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
+pub struct JudgmentView {
+    pub game_idx: usize,
+    pub player: String,
+    pub question_id: String,
+    /// `None` for spoken answers (moderator verdict stands alone).
+    pub submission: Option<String>,
+    pub verdict: Verdict,
+    /// Resolved award (cell value, half on steal, penalty…). The fold sums
+    /// this — steal/half math can't be re-derived from a single entry, so the
+    /// outcome is recorded once at append (steal logic lives in one place).
+    pub points: i32,
+    /// Index of the log entry this supersedes, if revising a prior ruling.
+    pub supersedes: Option<usize>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
+pub enum GamemodeView {
+    GridQuiz(GridQuizView),
+    Linear {},
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
+pub struct GridQuizView {
+    pub phase: GridQuizPhase,
+    pub categories: Vec<String>,
+    pub points: Vec<u32>,
+    pub used: Vec<Vec<bool>>,
+    pub active_picker: Option<String>,
+    pub floored: Option<String>,
+    pub locked_out: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
+pub struct QuestionView {
+    pub prompt: PromptView,
+    pub variant: VariantView,
+    pub answer: Option<AnswerView>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
+pub struct PromptView {
+    pub text: String,
+    pub media: Option<MediaView>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
+pub enum MediaSrc {
+    /// `local:` (server-resolved to a URL) or `url:` direct remote — load into
+    /// the kind's media element.
+    Url(String),
+    /// `youtube:` id — render an iframe embed, not a media element.
+    Youtube(String),
+}
+
+/// Per-kind: each variant exposes only the fields valid for that kind — Audio
+/// carries no dimensions, Image carries no playback timing. Type error, not a
+/// stray `Option`, if they're mismatched.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "kind")]
+#[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
+pub enum MediaView {
+    Image {
+        src: MediaSrc,
+        alt: Option<String>,
+        width: Option<u32>,
+        height: Option<u32>,
+    },
+    Video {
+        src: MediaSrc,
+        alt: Option<String>,
+        width: Option<u32>,
+        height: Option<u32>,
+        duration_ms: Option<u32>,
+        start_ms: Option<u32>,
+        end_ms: Option<u32>,
+    },
+    Audio {
+        src: MediaSrc,
+        alt: Option<String>,
+        duration_ms: Option<u32>,
+        start_ms: Option<u32>,
+        end_ms: Option<u32>,
+    },
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "kind")]
+#[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
+pub enum VariantView {
+    MultipleChoice { choices: Vec<ChoiceView> },
+    Open,
+    TrueFalse,
+    NumericInput,
+    Range { min: f64, max: f64, step: f64 },
+    Order { items: Vec<OrderItemView> },
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
+pub struct ChoiceView {
+    pub id: String,
+    pub text: String,
+    pub media: Option<MediaView>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
+pub struct OrderItemView {
+    pub id: String,
+    pub text: String,
+    pub media: Option<MediaView>,
+}
+
+/// The reveal block — `Some` if `Moderate || phase == Reveal`. Wraps the
+/// per-variant correctness plus the shared explanation.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
+pub struct AnswerView {
+    pub correctness: CorrectnessView,
+    pub explanation: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "kind")]
+#[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
+pub enum CorrectnessView {
+    MultipleChoice { correct_ids: Vec<String> },
+    Open { accepted: Vec<String> },
+    TrueFalse { correct: bool },
+    Numeric { value: f64, tolerance: f64 },
+    Order { positions: Vec<OrderPositionView> },
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
+pub struct OrderPositionView {
+    pub id: String,
+    pub position: u32,
 }
 
 #[cfg(test)]

@@ -52,8 +52,8 @@ pub(super) fn check_overlay_refs(ds: &Dataset, issues: &mut Vec<LoadIssue>) {
                 };
 
                 if let Some(board_ovl) = &ovl_game.board {
-                    match base_entry {
-                        GameEntry::GridQuiz(base_grid) => {
+                    match &base_entry.mode {
+                        GameMode::GridQuiz(base_grid) => {
                             if board_ovl.categories.len() > base_grid.board.categories.len() {
                                 issues.push(LoadIssue::msg(
                                     &entry.file,
@@ -65,7 +65,7 @@ pub(super) fn check_overlay_refs(ds: &Dataset, issues: &mut Vec<LoadIssue>) {
                                 ));
                             }
                         }
-                        GameEntry::Linear(_) => {
+                        GameMode::Linear(_) => {
                             issues.push(LoadIssue::msg(
                                 &entry.file,
                                 format!(
