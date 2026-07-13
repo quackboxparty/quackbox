@@ -25,11 +25,12 @@ export type ClientView = {
 export type Command =
 	| { kind: 'StartGame' }
 	| { kind: 'PickCell'; category: number; point: number }
+	| { kind: 'CloseQuestion' }
 	| { kind: 'Next' }
 	| { kind: 'EndGame' }
 	| { kind: 'Buzz' }
 	| { kind: 'Answer'; text: string }
-	| { kind: 'Rule'; verdict: Verdict }
+	| { kind: 'Rule'; player: string; verdict: Verdict }
 	| { kind: 'Grant'; player: string; grants: Array<Grant> }
 	| { kind: 'ExtendTimer'; delta_secs: number }
 	| { kind: 'Kick'; player: string };

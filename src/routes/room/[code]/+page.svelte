@@ -6,6 +6,7 @@
 	import type { ClientMessage, ClientView, ServerMessage } from '$lib/bindings/Protocol';
 	import Button from '$lib/components/Button.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
+	import GameStage from '$lib/components/game/GameStage.svelte';
 	import TextInput from '$lib/components/TextInput.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { clearSession, readSession, saveSession } from '$lib/session';
@@ -107,16 +108,9 @@
 	}
 </script>
 
-<div class="hero">
-	{#if snapshot}
-		<h2>Players:</h2>
-		{#each Object.keys(snapshot.players) as player (player)}
-			<div class="card">
-				<h3>{player}</h3>
-			</div>
-		{/each}
-	{/if}
-</div>
+{#if snapshot}
+	<GameStage view={snapshot} />
+{/if}
 
 <Dialog bind:open={nameOpen} title="Username">
 	<form
@@ -129,16 +123,3 @@
 		<Button disabled={!name}>{m.join()}</Button>
 	</form>
 </Dialog>
-
-<style>
-	.hero {
-		min-height: 100%;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: var(--space-6);
-		text-align: center;
-		padding: var(--space-12) var(--space-6);
-	}
-</style>
