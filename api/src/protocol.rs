@@ -26,7 +26,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::oneshot;
 
 use crate::game::{
-    grants::GrantSet,
+    grants::{Grant, GrantSet},
     judge::Verdict,
     state::{GridQuizPhase, Token},
 };
@@ -72,16 +72,31 @@ pub enum Command {
     // ── lifecycle ──
     StartGame,
     PickCell { category: usize, point: usize },
+    CloseQuestion,
     Next,
     EndGame,
     // ── answering ──
     Buzz,
     Answer { text: String },
-    Rule { verdict: Verdict },
+    Rule { player: String, verdict: Verdict },
     // ── controls ──
     Grant { player: String, grants: GrantSet },
     ExtendTimer { delta_secs: u32 },
     Kick { player: String },
+}
+
+impl Command {
+    pub fn required_grant(&self) -> Option<Grant> {
+        match self {
+            Command::Kick { .. }
+            | Command::StartGame
+            | Command::EndGame
+            | Command::Grant { .. }
+            | Command::Next
+            | Command::Rule { .. } => Some(Grant::Moderate),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

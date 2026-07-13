@@ -141,7 +141,7 @@ async fn handle_socket(socket: WebSocket, join_code: String, state: Arc<AppState
         }
 
         while let Ok(gamestate) = state_rx.recv().await {
-            let grants = gamestate.grants_for(&token);
+            let grants = gamestate.player_slots.grants_for(&token);
             let view = match grants {
                 Some(grants) => project(&data, &gamestate, grants),
                 None => {

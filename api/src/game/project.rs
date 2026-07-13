@@ -58,7 +58,10 @@ pub fn project(data: &Dataset, gamestate: &GameState, grants: &GrantSet) -> Clie
         .iter()
         .map(|judgment| JudgmentView {
             game_idx: judgment.game_idx,
-            player: gamestate.player_name(&judgment.player).unwrap_or_default(),
+            player: gamestate
+                .player_slots
+                .name_for_token(&judgment.player)
+                .unwrap_or_default(),
             question_id: judgment.question_id.clone(),
             submission: judgment.submission.clone(),
             verdict: judgment.verdict,
@@ -99,15 +102,15 @@ pub fn project(data: &Dataset, gamestate: &GameState, grants: &GrantSet) -> Clie
                 active_picker: grid_quiz
                     .active_picker
                     .as_ref()
-                    .and_then(|token| gamestate.player_name(token)),
+                    .and_then(|token| gamestate.player_slots.name_for_token(token)),
                 floored: grid_quiz
                     .floored_player
                     .as_ref()
-                    .and_then(|token| gamestate.player_name(token)),
+                    .and_then(|token| gamestate.player_slots.name_for_token(token)),
                 locked_out: grid_quiz
                     .locked_out
                     .iter()
-                    .flat_map(|token| gamestate.player_name(token))
+                    .flat_map(|token| gamestate.player_slots.name_for_token(token))
                     .collect(),
             })
         }

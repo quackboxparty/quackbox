@@ -8,7 +8,10 @@
 //!
 //! TODO: GameState, apply(Command), on_timeout, snapshot, score = fold(log).
 
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    ops::{Deref, DerefMut},
+};
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -21,6 +24,7 @@ use crate::{
     game::{
         grants::{Grant, GrantSet},
         judge::Verdict,
+        state::GridQuizPhase::BoardSelect,
     },
     protocol::Command,
 };
@@ -30,7 +34,7 @@ pub struct GameState {
     pub game_config: GameConfig,
     /// Which entry in the game chain (`game.games[..]`) is currently live.
     pub current_game_idx: usize,
-    pub player_slots: HashMap<Token, PlayerSlot>,
+    pub player_slots: PlayerSlots,
     pub mode: ModeState,
     /// Global, append-only, spans all rounds. `score = fold(judgment_log)`.
     pub judgment_log: Vec<Judgment>,
@@ -38,44 +42,145 @@ pub struct GameState {
 
 impl GameState {
     pub fn apply(&mut self, token: Token, cmd: Command) {
+        if let Some(needed) = cmd.required_grant() {
+            let ok = self
+                .player_slots
+                .grants_for(&token)
+                .is_some_and(|grants| grants.contains(&needed));
+            if !ok {
+                tracing::info!(?token, ?needed, "command without required grant");
+                return;
+            }
+        }
+
         match cmd {
             Command::Kick { player } => {
-                if self
-                    .grants_for(&token)
-                    .is_none_or(|grants| !grants.contains(&Grant::Moderate))
-                {
-                    tracing::info!(
-                        "Token '{}' tried to kick without right permissions",
-                        token.0
-                    );
-                    return;
-                }
-
                 self.player_slots.retain(|_, v| v.name != player);
             }
-            other => self.mode.apply(&self.player_slots, token, other),
+            other => {
+                for effect in self.mode.apply(&self.player_slots, token, other) {
+                    self.run_effect(effect);
+                }
+            }
         }
     }
 
-    pub(crate) fn grants_for(&self, token: &Token) -> Option<&GrantSet> {
-        match self.player_slots.get(token) {
-            Some(slot) => Some(&slot.grants),
-            None => None,
+    fn run_effect(&mut self, effect: Effect) {
+        match effect {
+            Effect::Submit {
+                player,
+                question_id,
+                text,
+            } => {
+                if let Some(idx) = self.live_judgment(&player, &question_id) {
+                    if self.judgment_log[idx].verdict == Verdict::Pending {
+                        // TODO: maybe we want to allow updating the answer before judgment
+                        tracing::warn!(?player, "answer while pending judgment");
+                        return;
+                    }
+                }
+
+                self.judgment_log.push(Judgment {
+                    game_idx: self.current_game_idx,
+                    player,
+                    points: 0,
+                    verdict: Verdict::Pending,
+                    question_id,
+                    submission: Some(text),
+                    supersedes: None,
+                });
+            }
+            Effect::Rule {
+                target,
+                question_id,
+                verdict,
+                points,
+            } => {
+                let pending_idx = self.live_judgment(&target, &question_id);
+                self.judgment_log.push(Judgment {
+                    player: target,
+                    question_id,
+                    verdict,
+                    points,
+                    game_idx: self.current_game_idx,
+                    submission: None,
+                    supersedes: pending_idx,
+                });
+            }
         }
     }
 
-    pub(crate) fn player_name(&self, token: &Token) -> Option<String> {
-        match self.player_slots.get(token) {
-            Some(slot) => Some(slot.name.clone()),
-            None => None,
-        }
+    // TODO: rebuilds the superseded set on every call, O(n) per lookup. fine at
+    // quiz-room scale. if the log grows large, cache it or store a superseded flag
+    // on each entry.
+    fn live_judgment(&self, player: &Token, question_id: &str) -> Option<usize> {
+        let superseded: HashSet<usize> = self
+            .judgment_log
+            .iter()
+            .filter_map(|j| j.supersedes)
+            .collect();
+        self.judgment_log
+            .iter()
+            .enumerate()
+            .rev()
+            .find_map(|(i, j)| {
+                (j.player == *player && j.question_id == question_id && !superseded.contains(&i))
+                    .then_some(i)
+            })
     }
 
     pub(crate) fn current_game(&self) -> &Game {
         self.game_config
             .games
             .get(self.current_game_idx)
-            .expect("current game idx does not yiled a game")
+            .expect("current game idx does not yield a game")
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct PlayerSlots(HashMap<Token, PlayerSlot>);
+
+impl PlayerSlots {
+    pub(crate) fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    pub(crate) fn grants_for(&self, token: &Token) -> Option<&GrantSet> {
+        match self.get(token) {
+            Some(slot) => Some(&slot.grants),
+            None => None,
+        }
+    }
+
+    pub(crate) fn name_for_token(&self, token: &Token) -> Option<String> {
+        match self.get(token) {
+            Some(slot) => Some(slot.name.clone()),
+            None => None,
+        }
+    }
+
+    pub(crate) fn token_for_name(&self, name: &str) -> Option<Token> {
+        self.iter()
+            .find(|(_, slot)| slot.name == name)
+            .map(|(token, _)| token.clone())
+    }
+}
+
+impl Default for PlayerSlots {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Deref for PlayerSlots {
+    type Target = HashMap<Token, PlayerSlot>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl DerefMut for PlayerSlots {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -95,6 +200,20 @@ pub struct PlayerSlot {
     pub grants: GrantSet,
 }
 
+enum Effect {
+    Submit {
+        player: Token,
+        question_id: String,
+        text: String,
+    },
+    Rule {
+        target: Token,
+        question_id: String,
+        verdict: Verdict,
+        points: i32,
+    },
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum ModeState {
     GridQuiz(GridQuizState),
@@ -102,7 +221,7 @@ pub enum ModeState {
 }
 
 impl ModeState {
-    pub fn apply(&mut self, player_slots: &HashMap<Token, PlayerSlot>, token: Token, cmd: Command) {
+    fn apply(&mut self, player_slots: &PlayerSlots, token: Token, cmd: Command) -> Vec<Effect> {
         match self {
             ModeState::GridQuiz(modestate) => match cmd {
                 Command::StartGame => {
@@ -146,11 +265,100 @@ impl ModeState {
                     if let Some(token) = modestate.picker_rotation.pop_front() {
                         modestate.picker_rotation.push_back(token);
                     }
+
+                    modestate.phase = GridQuizPhase::QuestionOpen;
+                }
+                Command::Answer { text } => {
+                    if modestate.floored_player.as_ref() != Some(&token)
+                        && player_slots
+                            .grants_for(&token)
+                            .is_none_or(|grants| !grants.contains(&Grant::Moderate))
+                    {
+                        tracing::warn!(?token, "tried to answer while not being floored");
+                        return Vec::new();
+                    }
+
+                    let Some(current) = modestate.current.as_ref() else {
+                        tracing::warn!(?token, "answer with no cell in play");
+                        return Vec::new();
+                    };
+
+                    // TODO: we should check for a pending judgement here before pushing, maybe we
+                    // could even allow or prevent updating your answer
+                    return vec![Effect::Submit {
+                        player: token,
+                        question_id: current.question_id.clone(),
+                        text,
+                    }];
+                }
+                Command::Rule { player, verdict } => {
+                    let Some(current) = modestate.current.as_ref() else {
+                        tracing::warn!(?token, "rule with no cell in play");
+                        return Vec::new();
+                    };
+
+                    let Some(&value) = modestate.points.get(current.point) else {
+                        tracing::warn!(point = current.point, "rule with out-of-range point");
+                        return Vec::new();
+                    };
+                    let Some(target) = player_slots.token_for_name(&player) else {
+                        tracing::warn!(?player, "rule for unknown player");
+                        return Vec::new();
+                    };
+
+                    let points = match verdict {
+                        Verdict::Correct => value as i32,
+                        Verdict::Incorrect => -(value as i32) / 2,
+                        Verdict::Void | Verdict::Pending => 0,
+                    };
+
+                    match verdict {
+                        Verdict::Correct | Verdict::Void => {
+                            modestate.phase = GridQuizPhase::Reveal;
+                            modestate.floored_player = None;
+                            modestate.cells[current.category][current.point] =
+                                Cell::Used(current.question_id.clone());
+                        }
+                        Verdict::Incorrect => {
+                            modestate.floored_player = None;
+                            // TODO: check if all players are locked out and close question/reveal
+                            // automatically maybe
+                            modestate.locked_out.insert(target.clone());
+                        }
+                        _ => {}
+                    }
+
+                    return vec![Effect::Rule {
+                        target,
+                        question_id: current.question_id.clone(),
+                        verdict,
+                        points,
+                    }];
+                }
+                Command::Buzz => {
+                    if let Some(floored_player) = &modestate.floored_player {
+                        tracing::warn!(?floored_player, "tried to buzz while player is floored");
+                        return Vec::new();
+                    }
+
+                    if &modestate.phase != &GridQuizPhase::QuestionOpen {
+                        tracing::warn!(?token, "tried to buzz while no question was open");
+                        return Vec::new();
+                    }
+
+                    modestate.floored_player = Some(token);
+                }
+                Command::Next => {
+                    modestate.locked_out = HashSet::new();
+                    modestate.current = None;
+                    modestate.active_picker = modestate.picker_rotation.front().cloned();
+                    modestate.phase = GridQuizPhase::BoardSelect;
                 }
                 _ => todo!("other gridquiz cmds not implemented yet"),
             },
             ModeState::Linear(_) => todo!("Linear not implemented yet"),
         };
+        return Vec::new();
     }
 }
 
@@ -171,10 +379,11 @@ pub struct GridQuizState {
     /// Picking turn order. Shuffled at `StartGame`; advanced per picker policy.
     pub picker_rotation: VecDeque<Token>,
     pub cells: Vec<Vec<Cell>>,
+    pub points: Vec<u32>,
 }
 
 impl GridQuizState {
-    pub fn build(cells: Vec<Vec<Cell>>) -> Self {
+    pub fn build(cells: Vec<Vec<Cell>>, points: Vec<u32>) -> Self {
         Self {
             phase: GridQuizPhase::Lobby,
             active_picker: None,
@@ -183,6 +392,7 @@ impl GridQuizState {
             current: None,
             picker_rotation: VecDeque::new(),
             cells,
+            points,
         }
     }
 }

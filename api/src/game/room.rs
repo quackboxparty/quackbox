@@ -23,7 +23,9 @@ use crate::{
     data::{Dataset, GameConfig, GameMode, build_board},
     game::{
         grants::Grant::{self},
-        state::{Cell, GameState, GridQuizState, LinearState, ModeState, PlayerSlot, Token},
+        state::{
+            Cell, GameState, GridQuizState, LinearState, ModeState, PlayerSlot, PlayerSlots, Token,
+        },
     },
     protocol::{ConnectionError, RoomMessage},
 };
@@ -72,7 +74,7 @@ pub fn spawn_room(code: JoinCode, game_config: GameConfig, data: Arc<Dataset>) -
                     .into_iter()
                     .map(|row| row.into_iter().map(Cell::from).collect())
                     .collect();
-                ModeState::GridQuiz(GridQuizState::build(cells))
+                ModeState::GridQuiz(GridQuizState::build(cells, game.board.points.clone()))
             }
             GameMode::Linear(_) => ModeState::Linear(LinearState::default()),
         };
@@ -80,7 +82,7 @@ pub fn spawn_room(code: JoinCode, game_config: GameConfig, data: Arc<Dataset>) -
         let mut state = GameState {
             game_config,
             current_game_idx: 0,
-            player_slots: HashMap::new(),
+            player_slots: PlayerSlots::default(),
             mode,
             judgment_log: Vec::new(),
         };
