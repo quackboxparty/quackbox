@@ -7,17 +7,17 @@
 
 	let { players }: { players: Record<string, PlayerView> } = $props();
 
-	const entries = $derived(Object.entries(players));
+	const player_entries = $derived(Object.entries(players));
 </script>
 
 <section class="lobby">
 	<header class="head">
 		<h1>{m.lobby()}</h1>
-		<p class="muted">{m.players_joined({ count: entries.length })}</p>
+		<p class="muted">{m.players_joined({ count: player_entries.length })}</p>
 	</header>
 
 	<ul class="roster">
-		{#each entries as [name, p] (name)}
+		{#each player_entries as [name, p] (name)}
 			<li class="row" class:dim={!p.connected}>
 				<span class="avatar" style:background={playerColor(name)}>{playerInitial(name)}</span>
 				<span class="name">

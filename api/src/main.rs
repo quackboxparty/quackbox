@@ -65,6 +65,7 @@ async fn main() {
 
     let app = Router::new()
         .nest("/api", rest::router())
+        .nest_service("/media", ServeDir::new("../data/media"))
         .merge(ws::router())
         .fallback_service(serve_dir)
         .layer(TraceLayer::new_for_http())

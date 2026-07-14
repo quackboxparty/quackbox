@@ -5,4 +5,4 @@
  * timer-driven auto-verdict); the rest are final. Stored in the judgment log;
  * `score = fold(log)`.
  */
-export type Verdict = 'correct' | 'incorrect' | 'void' | 'pending';
+export type Verdict = "correct" | "incorrect" | "void" | "pending";

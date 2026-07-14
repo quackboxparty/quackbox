@@ -146,6 +146,7 @@ pub struct JudgmentView {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "kind")]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
 pub enum GamemodeView {
     GridQuiz(GridQuizView),
@@ -180,6 +181,7 @@ pub struct PromptView {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "kind", content = "value")]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]
 pub enum MediaSrc {
     /// `local:` (server-resolved to a URL) or `url:` direct remote — load into
@@ -257,6 +259,7 @@ pub struct AnswerView {
     pub explanation: Option<String>,
 }
 
+// TODO: this needs to be translated
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "kind")]
 #[cfg_attr(test, derive(ts_rs::TS), ts(export, export_to = "Protocol.ts"))]

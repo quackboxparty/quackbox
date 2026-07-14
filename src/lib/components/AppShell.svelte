@@ -28,7 +28,7 @@
 
 	const phase = $derived.by(() => {
 		const stage = room.gamestate?.stage;
-		return stage && 'GridQuiz' in stage ? stage.GridQuiz.phase : undefined;
+		return stage?.kind === 'GridQuiz' ? stage.phase : undefined;
 	});
 	const sortedPlayers = $derived(
 		Object.entries(room.gamestate?.players ?? {}).sort(([, a], [, b]) => b.score - a.score)

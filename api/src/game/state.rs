@@ -314,10 +314,17 @@ impl ModeState {
 
                     match verdict {
                         Verdict::Correct | Verdict::Void => {
-                            modestate.phase = GridQuizPhase::Reveal;
                             modestate.floored_player = None;
                             modestate.cells[current.category][current.point] =
                                 Cell::Used(current.question_id.clone());
+
+                            if modestate.cells.iter().any(|column| {
+                                column.iter().any(|cell| matches!(cell, Cell::Open(_)))
+                            }) {
+                                modestate.phase = GridQuizPhase::Reveal;
+                            } else {
+                                modestate.phase = GridQuizPhase::GameOver;
+                            }
                         }
                         Verdict::Incorrect => {
                             modestate.floored_player = None;
@@ -353,6 +360,34 @@ impl ModeState {
                     modestate.current = None;
                     modestate.active_picker = modestate.picker_rotation.front().cloned();
                     modestate.phase = GridQuizPhase::BoardSelect;
+                }
+                Command::CloseQuestion => {
+                    let Some(current) = modestate.current.as_ref() else {
+                        tracing::warn!(?token, "tried to close question with no current cell");
+                        return Vec::new();
+                    };
+
+                    if &modestate.phase != &GridQuizPhase::QuestionOpen {
+                        tracing::warn!(
+                            ?token,
+                            "tried to close question while no question was open"
+                        );
+                        return Vec::new();
+                    }
+
+                    modestate.floored_player = None;
+                    modestate.cells[current.category][current.point] =
+                        Cell::Used(current.question_id.clone());
+
+                    if modestate
+                        .cells
+                        .iter()
+                        .any(|column| column.iter().any(|cell| matches!(cell, Cell::Open(_))))
+                    {
+                        modestate.phase = GridQuizPhase::Reveal;
+                    } else {
+                        modestate.phase = GridQuizPhase::GameOver;
+                    }
                 }
                 _ => todo!("other gridquiz cmds not implemented yet"),
             },

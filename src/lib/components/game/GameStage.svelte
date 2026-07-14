@@ -9,7 +9,7 @@
 
 	let { view }: { view: ClientView } = $props();
 
-	const grid = $derived('GridQuiz' in view.stage ? view.stage.GridQuiz : null);
+	const grid = $derived(view.stage.kind === 'GridQuiz' ? view.stage : null);
 </script>
 
 <article class="stage">

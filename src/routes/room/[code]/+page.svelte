@@ -88,6 +88,10 @@
 		ws.onerror = () => {
 			toast.error(m.error_generic());
 		};
+		ws.onclose = () => {
+			toast.error(m.error_generic());
+			void goto(resolve('/', {}));
+		};
 	}
 
 	onMount(() => {

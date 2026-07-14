@@ -12,7 +12,7 @@
 
 	// Transient disable: which cell we just picked, cleared when a snapshot
 	// moves us off board_select (the phase switch unmounts us) or re-renders.
-	let pending = $state<{ c: number; r: number } | null>(null);
+	let pending = $state<{ column: number; row: number } | null>(null);
 	$effect(() => {
 		void view; // clear stale pending once a fresh snapshot lands
 		pending = null;
@@ -20,7 +20,7 @@
 
 	function pick(category: number, point: number) {
 		if (!canPick || pending) return;
-		pending = { c: category, r: point };
+		pending = { column: category, row: point };
 		room.send?.({ kind: 'PickCell', category, point });
 	}
 </script>
@@ -43,7 +43,7 @@
 		{#each view.points as _point, r (r)}
 			{#each view.categories as _cat, c (c)}
 				{@const used = view.used[c]?.[r] ?? false}
-				{@const isPending = pending !== null && pending.c === c && pending.r === r}
+				{@const isPending = pending !== null && pending.column === c && pending.row === r}
 				<button
 					class="cell"
 					class:used

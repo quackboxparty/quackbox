@@ -453,49 +453,55 @@ impl Question {
     pub fn correctness(&self, variant: VariantName) -> Option<Correctness> {
         match self {
             Self::Text { content, .. } => match variant {
-                VariantName::MultipleChoice => content
-                    .variants
-                    .multiple_choice
-                    .as_ref()
-                    .map(|mc| Correctness::MultipleChoice {
-                        correct_ids: mc.correct_choice_ids(),
-                    }),
-                VariantName::Open => content
-                    .variants
-                    .open
-                    .as_ref()
-                    .map(|o| Correctness::Open {
-                        accepted: o.accepted.clone(),
-                    }),
-                VariantName::TrueFalse => content
-                    .variants
-                    .true_false
-                    .as_ref()
-                    .map(|tf| Correctness::TrueFalse {
-                        correct: tf.correct,
-                    }),
+                VariantName::MultipleChoice => {
+                    content.variants.multiple_choice.as_ref().map(|mc| {
+                        Correctness::MultipleChoice {
+                            correct_ids: mc.correct_choice_ids(),
+                        }
+                    })
+                }
+                VariantName::Open => content.variants.open.as_ref().map(|o| Correctness::Open {
+                    accepted: vec![content.answer.clone()],
+                }),
+                VariantName::TrueFalse => {
+                    content
+                        .variants
+                        .true_false
+                        .as_ref()
+                        .map(|tf| Correctness::TrueFalse {
+                            correct: tf.correct,
+                        })
+                }
                 _ => None,
             },
             Self::Numeric { content, .. } => match variant {
-                VariantName::MultipleChoice => content
-                    .variants
-                    .multiple_choice
-                    .as_ref()
-                    .map(|mc| Correctness::MultipleChoice {
-                        correct_ids: mc.correct_choice_ids(),
-                    }),
-                VariantName::NumericInput => content
-                    .variants
-                    .numeric_input
-                    .as_ref()
-                    .map(|ni| Correctness::Numeric {
-                        value: content.answer,
-                        tolerance: ni.tolerance,
-                    }),
-                VariantName::Range => content.variants.range.as_ref().map(|r| Correctness::Numeric {
-                    value: content.answer,
-                    tolerance: r.tolerance,
-                }),
+                VariantName::MultipleChoice => {
+                    content.variants.multiple_choice.as_ref().map(|mc| {
+                        Correctness::MultipleChoice {
+                            correct_ids: mc.correct_choice_ids(),
+                        }
+                    })
+                }
+                VariantName::NumericInput => {
+                    content
+                        .variants
+                        .numeric_input
+                        .as_ref()
+                        .map(|ni| Correctness::Numeric {
+                            value: content.answer,
+                            tolerance: ni.tolerance,
+                        })
+                }
+                VariantName::Range => {
+                    content
+                        .variants
+                        .range
+                        .as_ref()
+                        .map(|r| Correctness::Numeric {
+                            value: content.answer,
+                            tolerance: r.tolerance,
+                        })
+                }
                 _ => None,
             },
             Self::Order { content, .. } => Some(Correctness::Order {
@@ -575,7 +581,10 @@ content:
         let q = load_q(NUM_Q);
         assert_eq!(
             q.correctness(VariantName::NumericInput),
-            Some(Correctness::Numeric { value: 42.0, tolerance: 0.5 })
+            Some(Correctness::Numeric {
+                value: 42.0,
+                tolerance: 0.5
+            })
         );
     }
 
@@ -584,7 +593,10 @@ content:
         let q = load_q(NUM_Q);
         assert_eq!(
             q.correctness(VariantName::Range),
-            Some(Correctness::Numeric { value: 42.0, tolerance: 2.0 })
+            Some(Correctness::Numeric {
+                value: 42.0,
+                tolerance: 2.0
+            })
         );
     }
 

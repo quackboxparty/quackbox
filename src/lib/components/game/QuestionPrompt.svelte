@@ -1,16 +1,19 @@
 <script lang="ts">
 	import type { QuestionView } from '$lib/bindings/Protocol';
 	import { m } from '$lib/paraglide/messages';
+	import MediaDisplay from './MediaDisplay.svelte';
 
 	let { question }: { question: QuestionView } = $props();
 
 	const variant = $derived(question.variant);
 </script>
 
-<!-- ponytail: prompt/media rendering is text-only; media (image/video/audio/
-	youtube) is its own task — add when a question with media enters play. -->
 <div class="prompt">
 	<h2>{question.prompt.text}</h2>
+
+	{#if question.prompt.media}
+		<MediaDisplay media={question.prompt.media} />
+	{/if}
 
 	{#if variant.kind === 'MultipleChoice'}
 		<ul class="choices">

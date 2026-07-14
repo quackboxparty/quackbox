@@ -11,7 +11,6 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use crate::{
     data::{Correctness, Dataset, GameMode, Media, MediaKind, Question, VariantName},
     game::{
-        self,
         grants::{Grant, GrantSet},
         state::{Cell, GameState, GridQuizPhase, Token},
     },
@@ -133,6 +132,7 @@ pub fn project(data: &Dataset, gamestate: &GameState, grants: &GrantSet) -> Clie
                 }
             };
             // TODO: we currently default to the open variant, needs to be fixed when todo 12 lands
+            // TODO: we need to translate these fields for the locale the user has
             build_question_view(question, VariantName::Open, include_answer)
         }),
         ModeState::Linear(_) => todo!("Linedar not implemented yet"),
@@ -254,7 +254,7 @@ fn parse_media_src(r: &str) -> MediaSrc {
     if let Some(id) = r.strip_prefix("youtube:") {
         MediaSrc::Youtube(id.split('?').next().unwrap_or(id).to_string())
     } else if let Some(p) = r.strip_prefix("local:") {
-        MediaSrc::Url(format!("local:{p}"))
+        MediaSrc::Url(format!("/media/{p}"))
     } else if let Some(url) = r.strip_prefix("url:") {
         MediaSrc::Url(url.to_string())
     } else {
