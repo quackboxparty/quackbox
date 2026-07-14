@@ -350,8 +350,18 @@ impl ModeState {
                                 .all(|(player_token, _)| {
                                     modestate.locked_out.contains(player_token)
                                 });
+
                             if all_locked {
-                                modestate.phase = GridQuizPhase::Reveal;
+                                modestate.floored_player = None;
+                                modestate.cells[current.category][current.point] =
+                                    Cell::Used(current.question_id.clone());
+                                if modestate.cells.iter().any(|column| {
+                                    column.iter().any(|cell| matches!(cell, Cell::Open(_)))
+                                }) {
+                                    modestate.phase = GridQuizPhase::Reveal;
+                                } else {
+                                    modestate.phase = GridQuizPhase::GameOver;
+                                }
                             }
                         }
                         _ => {}
