@@ -97,10 +97,11 @@ pub fn spawn_room(code: JoinCode, game_config: GameConfig, data: Arc<Dataset>) -
                         continue;
                     }
 
-                    let mut grants = HashSet::from([Grant::Play]);
-                    if state.player_slots.is_empty() {
-                        grants.insert(Grant::Moderate);
-                    }
+                    let grants = if state.player_slots.is_empty() {
+                        HashSet::from([Grant::Moderate])
+                    } else {
+                        HashSet::from([Grant::Play])
+                    };
 
                     let token = Token::generate();
                     state.player_slots.insert(

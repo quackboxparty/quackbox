@@ -17,14 +17,10 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    data::{
-        BoardGrid, Game, GameConfig,
-        GameMode::{self, Linear},
-    },
+    data::{Game, GameConfig},
     game::{
         grants::{Grant, GrantSet},
         judge::Verdict,
-        state::GridQuizPhase::BoardSelect,
     },
     protocol::Command,
 };
@@ -228,9 +224,20 @@ impl ModeState {
                     // TODO: maybe shuffle this
                     let rotation: VecDeque<Token> = player_slots
                         .iter()
-                        .filter(|(_, player)| player.connected)
+                        .filter(|(player_token, player)| {
+                            player.connected
+                                && player_slots
+                                    .grants_for(player_token)
+                                    .is_some_and(|grants| grants.contains(&Grant::Play))
+                        })
                         .map(|(token, _)| token.clone())
                         .collect();
+
+                    if rotation.is_empty() {
+                        tracing::warn!(?token, "start game with no connected Play-granted player");
+                        return Vec::new();
+                    }
+
                     modestate.picker_rotation = rotation;
 
                     modestate.active_picker = modestate.picker_rotation.front().cloned();
@@ -331,6 +338,21 @@ impl ModeState {
                             // TODO: check if all players are locked out and close question/reveal
                             // automatically maybe
                             modestate.locked_out.insert(target.clone());
+
+                            let all_locked = player_slots
+                                .iter()
+                                .filter(|(player_token, slot)| {
+                                    slot.connected
+                                        && player_slots
+                                            .grants_for(&player_token)
+                                            .is_some_and(|grants| grants.contains(&Grant::Play))
+                                })
+                                .all(|(player_token, _)| {
+                                    modestate.locked_out.contains(player_token)
+                                });
+                            if all_locked {
+                                modestate.phase = GridQuizPhase::Reveal;
+                            }
                         }
                         _ => {}
                     }

@@ -8,6 +8,9 @@
 	let { players }: { players: Record<string, PlayerView> } = $props();
 
 	const player_entries = $derived(Object.entries(players));
+	const can_start = $derived(
+		player_entries.some(([, p]) => p.connected && p.grants.includes('Play'))
+	);
 </script>
 
 <section class="lobby">
@@ -24,13 +27,20 @@
 					{name}
 					{#if name === room.player}<em>({m.you()})</em>{/if}
 				</span>
-				{#if p.grants.includes('Moderate')}<span class="tag">🛡️ {m.mod_actions()}</span>{/if}
+				{#if p.grants.includes('Moderate')}
+					<span class="tag">
+						🛡️{p.grants.includes('Play') ? '🎮' : ''}
+						{m.mod_actions()}
+					</span>
+				{/if}
 			</li>
 		{/each}
 	</ul>
 
 	{#if has('Moderate')}
-		<Button size="lg" onclick={() => room.send?.({ kind: 'StartGame' })}>▶ {m.start_game()}</Button>
+		<Button size="lg" disabled={!can_start} onclick={() => room.send?.({ kind: 'StartGame' })}>
+			▶ {m.start_game()}
+		</Button>
 	{:else}
 		<p class="muted center">{m.waiting_for_host()}</p>
 	{/if}

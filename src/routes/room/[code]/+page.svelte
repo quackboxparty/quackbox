@@ -98,7 +98,10 @@
 		name = readSession()?.player ?? '';
 		void handleWebsocket();
 		return () => {
-			ws?.close();
+			if (ws) {
+				ws.onmessage = ws.onerror = ws.onclose = null;
+				ws.close();
+			}
 			clearRoom();
 		};
 	});
