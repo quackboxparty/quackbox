@@ -2,7 +2,7 @@ const STORAGE_KEY = 'room';
 
 export interface RoomSession {
 	room: string;
-	token: string;
+	token?: string;
 	player?: string;
 }
 
@@ -12,12 +12,12 @@ export function readSession(): RoomSession | null {
 
 	try {
 		const parsed = JSON.parse(raw) as Partial<RoomSession>;
-		if (typeof parsed?.room !== 'string' || typeof parsed?.token !== 'string') {
+		if (typeof parsed?.room !== 'string') {
 			return null;
 		}
 
-		const session: RoomSession = { room: parsed.room, token: parsed.token };
-		// player added later — tolerate older entries that lack it
+		const session: RoomSession = { room: parsed.room };
+		if (typeof parsed.token === 'string') session.token = parsed.token;
 		if (typeof parsed.player === 'string') session.player = parsed.player;
 		return session;
 	} catch {

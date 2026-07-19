@@ -9,7 +9,7 @@
 	import GameStage from '$lib/components/game/GameStage.svelte';
 	import TextInput from '$lib/components/TextInput.svelte';
 	import { m } from '$lib/paraglide/messages';
-	import { clearSession, readSession, saveSession } from '$lib/session';
+	import { readSession, saveSession } from '$lib/session';
 	import { room, clearRoom } from '$lib/room.svelte';
 	import { toast } from '$lib/toast.svelte';
 	import { onMount } from 'svelte';
@@ -42,11 +42,11 @@
 		ws = new WebSocket(`/ws/${code}`);
 		room.send = (cmd) => {
 			const s = readSession();
-			if (s) send({ kind: 'Authed', token: s.token, cmd });
+			if (s?.token) send({ kind: 'Authed', token: s.token, cmd });
 		};
 		ws.onopen = () => {
 			const stored = readSession();
-			if (stored?.room === code) {
+			if (stored?.room === code && stored?.token) {
 				room.player = stored.player ?? null;
 				send({ kind: 'Reconnect', token: stored.token });
 			} else {
@@ -76,7 +76,7 @@
 				}
 				case 'Error':
 					toast.error(serverMsg.message);
-					clearSession();
+					saveSession({ room: code });
 					clearRoom();
 					nameOpen = true;
 					break;
@@ -96,6 +96,11 @@
 
 	onMount(() => {
 		name = readSession()?.player ?? '';
+		if (code === undefined) return;
+		const existing = readSession();
+		if (!existing || existing.room !== code) {
+			saveSession({ room: code });
+		}
 		void handleWebsocket();
 		return () => {
 			if (ws) {

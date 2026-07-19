@@ -59,13 +59,9 @@
 			</svg>
 		</Popover.Trigger>
 		<Popover.Portal>
-			<Popover.Content
-				class="qr-popover"
-				sideOffset={8}
-				align="end"
-			>
+			<Popover.Content class="qr-popover" sideOffset={8} align="end">
 				<div class="qr-header">
-					<h4 class="qr-title">{m.share_room()}</h4>
+					<h4 class="qr-title">{m.share_room()} {code}</h4>
 					<p class="qr-sub">{m.scan_to_join()}</p>
 				</div>
 				<div class="qr-code">

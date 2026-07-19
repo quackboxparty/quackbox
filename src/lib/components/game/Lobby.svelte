@@ -11,12 +11,26 @@
 	const can_start = $derived(
 		player_entries.some(([, p]) => p.connected && p.grants.includes('Play'))
 	);
+
+	let revealed = $state(false);
 </script>
 
 <section class="lobby">
 	<header class="head">
 		<h1>{m.lobby()}</h1>
 		<p class="muted">{m.players_joined({ count: player_entries.length })}</p>
+		{#if room.code}
+			<button
+				class="code"
+				type="button"
+				onclick={() => (revealed = !revealed)}
+				aria-pressed={revealed}
+				aria-label={revealed ? m.hide_code() : m.show_code()}
+			>
+				<span class="code-label">{m.room_code()}:</span>
+				<span class="code-value" aria-hidden="true">{revealed ? room.code : '••••••'}</span>
+			</button>
+		{/if}
 	</header>
 
 	<ul class="roster">
@@ -65,6 +79,27 @@
 	.muted {
 		color: var(--color-text-muted);
 		font-size: clamp(0.95rem, 2.2cqi, 1.4rem);
+	}
+	.code {
+		margin-top: var(--space-2);
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-2) var(--space-3);
+		border: var(--border-width) var(--border-style) var(--border-color);
+		border-radius: var(--radius-md);
+		background: var(--bg-surface);
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+	}
+	.code-label {
+		color: var(--color-text-muted);
+	}
+	.code-value {
+		font-family: ui-monospace, monospace;
+		font-weight: 700;
+		letter-spacing: 0.1em;
 	}
 	.center {
 		text-align: center;
