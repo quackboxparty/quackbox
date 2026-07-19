@@ -59,6 +59,8 @@
 		"@fontsource/rajdhani": "5.2.7",
 		"@fontsource/rye": "5.2.7",
 		"@fontsource/sancreek": "5.2.7",
-		"bits-ui": "2.18.1"
+		"@types/qrcode": "^1.5.6",
+		"bits-ui": "2.18.1",
+		"qrcode": "^1.5.4"
 	}
 }

@@ -1,0 +1,75 @@
+- id: q_gaming_minecraft_entwickler
+  kind: text
+  tags: [subject:gaming, region:global, difficulty:easy]
+  content:
+    default_lang: de
+    prompt: { text: 'Welches schwedische Studio veröffentlichte 2011 das Spiel Minecraft?' }
+    answer: Mojang
+    explanation: 'Minecraft wurde von Markus „Notch" Persson entwickelt; sein Studio Mojang veröffentlichte es 2011 offiziell.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: mojang, text: Mojang, correct: true }
+          - { id: ubisoft, text: Ubisoft }
+          - { id: ea, text: Electronic Arts }
+          - { id: rockstar, text: Rockstar Games }
+      open:
+        accepted: ['Mojang', 'Mojang Studios']
+        normalize: [lowercase, strip_punctuation]
+
+- id: q_gaming_among_us_jahr
+  kind: text
+  tags: [subject:gaming, region:global, difficulty:easy]
+  content:
+    default_lang: de
+    prompt: { text: 'In welchem Jahr wurde das Partyspiel „Among Us" veröffentlicht?' }
+    answer: '2018'
+    explanation: 'Among Us erschien 2018 vom Studio InnerSloth, wurde aber erst 2020 durch Streams zum Massenhit.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: '2015', text: '2015' }
+          - { id: '2018', text: '2018', correct: true }
+          - { id: '2020', text: '2020' }
+          - { id: '2022', text: '2022' }
+      open:
+        accepted: ['2018']
+        normalize: [strip_whitespace]
+
+- id: q_gaming_fortnite_studio
+  kind: text
+  tags: [subject:gaming, region:global, difficulty:general]
+  content:
+    default_lang: de
+    prompt: { text: 'Welches Studio entwickelt das Battle-Royale-Spiel „Fortnite"?' }
+    answer: Epic Games
+    explanation: 'Fortnite wird vom US-Studio Epic Games entwickelt, das auch die Unreal Engine baut.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: epic, text: Epic Games, correct: true }
+          - { id: riot, text: Riot Games }
+          - { id: blizzard, text: Blizzard }
+          - { id: valve, text: Valve }
+      open:
+        accepted: ['Epic Games', 'Epic']
+        normalize: [lowercase, strip_punctuation]
+
+- id: q_gaming_lol_riot
+  kind: text
+  tags: [subject:gaming, region:global, difficulty:niche]
+  content:
+    default_lang: de
+    prompt: { text: 'Wer entwickelte das MOBA „League of Legends"?' }
+    answer: Riot Games
+    explanation: 'League of Legends wurde 2009 vom US-Studio Riot Games veröffentlicht.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: riot, text: Riot Games, correct: true }
+          - { id: blizzard, text: Blizzard }
+          - { id: epic, text: Epic Games }
+          - { id: ubisoft, text: Ubisoft }
+      open:
+        accepted: ['Riot Games', 'Riot']
+        normalize: [lowercase, strip_punctuation]

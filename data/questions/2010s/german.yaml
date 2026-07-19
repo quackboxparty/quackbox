@@ -1,0 +1,75 @@
+- id: q_2010s_ipad_jahr
+  kind: text
+  tags: [subject:2010s, region:global, difficulty:easy]
+  content:
+    default_lang: de
+    prompt: { text: 'In welchem Jahr stellte Apple das erste iPad vor?' }
+    answer: '2010'
+    explanation: 'Apple-Chef Steve Jobs präsentierte das erste iPad am 27. Januar 2010.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: '2007', text: '2007' }
+          - { id: '2009', text: '2009' }
+          - { id: '2010', text: '2010', correct: true }
+          - { id: '2012', text: '2012' }
+      open:
+        accepted: ['2010']
+        normalize: [strip_whitespace]
+
+- id: q_2010s_got_staffel1
+  kind: text
+  tags: [subject:2010s, region:global, difficulty:easy]
+  content:
+    default_lang: de
+    prompt: { text: 'In welchem Jahr feierte die Serie „Game of Thrones" Premiere?' }
+    answer: '2011'
+    explanation: 'Die erste Folge von „Game of Thrones" wurde am 17. April 2011 auf HBO ausgestrahlt.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: '2009', text: '2009' }
+          - { id: '2011', text: '2011', correct: true }
+          - { id: '2013', text: '2013' }
+          - { id: '2015', text: '2015' }
+      open:
+        accepted: ['2011']
+        normalize: [strip_whitespace]
+
+- id: q_2010s_wm_2014
+  kind: text
+  tags: [subject:2010s, region:global, difficulty:general]
+  content:
+    default_lang: de
+    prompt: { text: 'Welches Land gewann die Fußball-Weltmeisterschaft 2014 in Brasilien?' }
+    answer: Deutschland
+    explanation: 'Deutschland besiegte im Finale Argentinien 1:0 (Tor: Mario Götze) und wurde in Brasilien Weltmeister.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: deutschland, text: Deutschland, correct: true }
+          - { id: brasilien, text: Brasilien }
+          - { id: argentinien, text: Argentinien }
+          - { id: spanien, text: Spanien }
+      open:
+        accepted: ['Deutschland', 'DE', 'Bundesrepublik Deutschland']
+        normalize: [lowercase, strip_punctuation, strip_articles]
+
+- id: q_2010s_conchita_esc
+  kind: text
+  tags: [subject:2010s, region:global, difficulty:niche]
+  content:
+    default_lang: de
+    prompt: { text: 'Welches Land gewann den Eurovision Song Contest 2014 mit Conchita Wurst?' }
+    answer: Österreich
+    explanation: 'Conchita Wurst gewann am 10. Mai 2014 in Kopenhagen mit „Rise Like a Phoenix" für Österreich.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: oesterreich, text: Österreich, correct: true }
+          - { id: schweiz, text: Schweiz }
+          - { id: niederlande, text: Niederlande }
+          - { id: schweden, text: Schweden }
+      open:
+        accepted: ['Österreich', 'Oesterreich', 'Austria']
+        normalize: [lowercase, strip_diacritics, strip_punctuation]

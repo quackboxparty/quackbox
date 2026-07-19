@@ -1,0 +1,56 @@
+id: game_generation_y_zehntausend
+title: Generation Y — Allgemeinwissen & 2010er
+description: Ein Grid-Quiz mit 24 Fragen aus Gaming, Kinderserien, den 2010ern, Schulallgemeinwissen, Musik und Politik — alles Allgemeinwissen oder nach 2000.
+games:
+  - title: Runde 1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: this_question
+      steal_policy: round_limited
+      judge: auto
+      question_timer_secs: 30
+      answer_timer_secs: 15
+    mode:
+      kind: grid_quiz
+      grid_rules:
+        picker_mode: winner_picks
+      board:
+        points: [100, 200, 300, 500]
+        categories:
+          - name: Gaming
+            question_ids:
+              100: q_gaming_minecraft_entwickler
+              200: q_gaming_among_us_jahr
+              300: q_gaming_fortnite_studio
+              500: q_gaming_lol_riot
+          - name: Kinderserien
+            question_ids:
+              100: q_kids_sendung_mit_der_maus
+              200: q_kids_paw_patrol_hund
+              300: q_kids_peppa_wutz_medium
+              500: q_kids_bibi_blocksberg_sender
+          - name: 2010er
+            question_ids:
+              100: q_2010s_ipad_jahr
+              200: q_2010s_got_staffel1
+              300: q_2010s_wm_2014
+              500: q_2010s_conchita_esc
+          - name: Schulallgemeinwissen
+            question_ids:
+              100: q_school_kontinente_anzahl
+              200: q_school_haupstadt_frankreich
+              300: q_school_laengster_fluss
+              500: q_school_knochen_anzahl
+          - name: Musik
+            question_ids:
+              100: q_music_hey_jude_band
+              200: q_music_adele_someone
+              300: q_music_tango_herkunft
+              500: q_music_klavier_tasten
+          - name: Politik
+            question_ids:
+              100: q_politics_merkel_amtszeit
+              200: q_politics_groesste_flaeche
+              300: q_politics_berliner_mauer
+              500: q_politics_eu_hauptorgan

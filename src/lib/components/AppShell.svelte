@@ -15,6 +15,7 @@
 	import Logo from '$lib/components/Logo.svelte';
 	import Drawer from '$lib/components/Drawer.svelte';
 	import Button from '$lib/components/Button.svelte';
+	import RoomQR from '$lib/components/RoomQR.svelte';
 	import { playerColor, playerInitial } from '$lib/playerUi';
 	import { room, has } from '$lib/room.svelte';
 	import type { Grant } from '$lib/bindings/Grants';
@@ -80,6 +81,7 @@
 		</a>
 		<div class="nav-actions">
 			{#if room.code}
+				<RoomQR />
 				<button
 					class="icon-btn players-toggle"
 					aria-label={m.players_and_scoreboard()}
@@ -245,7 +247,7 @@
 						{#if view.grants.includes('Moderate')}
 							<span class="mod-badge" title="Moderator">🛡️ Mod</span>
 						{/if}
-						{#if has('Moderate') && player !== room.player}
+						{#if has('Moderate')}
 							<DropdownMenu.Root>
 								<DropdownMenu.Trigger
 									class="player-menu-btn"
@@ -273,15 +275,17 @@
 												{grantLabels[g]()}
 											</DropdownMenu.CheckboxItem>
 										{/each}
-										<DropdownMenu.Item
-											class="menu-item menu-danger"
-											onSelect={() => {
-												kick(player);
-											}}
-										>
-											<span class="menu-check">✕</span>
-											{m.kick_player({ name: player })}
-										</DropdownMenu.Item>
+										{#if player !== room.player}
+											<DropdownMenu.Item
+												class="menu-item menu-danger"
+												onSelect={() => {
+													kick(player);
+												}}
+											>
+												<span class="menu-check">✕</span>
+												{m.kick_player({ name: player })}
+											</DropdownMenu.Item>
+										{/if}
 									</DropdownMenu.Content>
 								</DropdownMenu.Portal>
 							</DropdownMenu.Root>
@@ -352,7 +356,9 @@
 		align-items: center;
 		gap: var(--space-2);
 	}
-	.icon-btn {
+	/* bits-ui renders the trigger button inside child components (e.g. RoomQR) —
+	   must be global to reach across the component boundary */
+	:global(.icon-btn) {
 		position: relative;
 		display: flex;
 		flex-direction: column;
@@ -367,7 +373,11 @@
 		color: var(--color-text);
 		cursor: pointer;
 	}
-	.icon {
+	:global(.icon-btn:hover) {
+		background: var(--bg-surface-elevated);
+	}
+	:global(.icon .icon),
+	:global(.icon-btn .icon) {
 		width: 1.25rem;
 		height: 1.25rem;
 	}

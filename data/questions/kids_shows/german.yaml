@@ -1,0 +1,75 @@
+- id: q_kids_sendung_mit_der_maus
+  kind: text
+  tags: [subject:kids_shows, region:germany, difficulty:easy]
+  content:
+    default_lang: de
+    prompt: { text: 'Welches Tier begleitet die „Sendung mit der Maus" als blauen Freund?' }
+    answer: Elefant
+    explanation: 'Der blaue Elefant ist seit 1971 das Markenzeichen der „Sendung mit der Maus".'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: elefant, text: Elefant, correct: true }
+          - { id: loewe, text: Löwe }
+          - { id: maus, text: Maus }
+          - { id: baer, text: Bär }
+      open:
+        accepted: ['Elefant', 'der Elefant', 'blaue Elefant']
+        normalize: [lowercase, strip_articles, strip_punctuation]
+
+- id: q_kids_paw_patrol_hund
+  kind: text
+  tags: [subject:kids_shows, region:global, difficulty:easy]
+  content:
+    default_lang: de
+    prompt: { text: 'Wie heißt der Polizeihund-Anführer in „Paw Patrol"?' }
+    answer: Chase
+    explanation: 'Chase ist der Polizeihund und Anführer der Helferhunde in „Paw Patrol".'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: chase, text: Chase, correct: true }
+          - { id: marshall, text: Marshall }
+          - { id: skye, text: Skye }
+          - { id: rubble, text: Rubble }
+      open:
+        accepted: ['Chase']
+        normalize: [lowercase, strip_punctuation]
+
+- id: q_kids_peppa_wutz_medium
+  kind: text
+  tags: [subject:kids_shows, region:global, difficulty:general]
+  content:
+    default_lang: de
+    prompt: { text: 'Aus welcher britischen Kinderserie stammt die Figur Peppa Wutz (Peppa Pig)?' }
+    answer: 'Peppa Pig'
+    explanation: '„Peppa Pig" wurde 2004 in Großbritannien erstausgestrahlt; in Deutschland läuft sie als „Peppa Wutz".'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: peppa, text: 'Peppa Pig', correct: true }
+          - { id: ben_holly, text: 'Ben & Holly' }
+          - { id: bob_baumeister, text: 'Bob der Baumeister' }
+          - { id: feuwehrmann_sam, text: 'Feuerwehrmann Sam' }
+      open:
+        accepted: ['Peppa Pig', 'Peppa Wutz']
+        normalize: [lowercase, strip_punctuation]
+
+- id: q_kids_bibi_blocksberg_sender
+  kind: text
+  tags: [subject:kids_shows, region:germany, difficulty:niche]
+  content:
+    default_lang: de
+    prompt: { text: 'Welcher Sender zeigte ab 2004 die Neuauflage von „Bibi Blocksberg" als Zeichentrickserie?' }
+    answer: ZDF
+    explanation: 'Die ZDF-Neuauflage von „Bibi Blocksberg" startete 2004 und läuft seitdem im KiKA-Vorabend.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: zdf, text: ZDF, correct: true }
+          - { id: ard, text: ARD }
+          - { id: rtl, text: RTL }
+          - { id: sat1, text: 'Sat.1' }
+      open:
+        accepted: ['ZDF']
+        normalize: [lowercase, strip_punctuation]

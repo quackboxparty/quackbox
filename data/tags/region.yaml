@@ -1,3 +1,7 @@
 - id: region:global
   default_lang: en
   label: Global
+
+- id: region:germany
+  default_lang: en
+  label: Germany

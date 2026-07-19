@@ -22,7 +22,7 @@ export type GamemodeView = { "kind": "GridQuiz" } & GridQuizView | { "kind": "Li
 
 export type GridQuizPhase = "lobby" | "board_select" | "question_open" | "reveal" | "game_over";
 
-export type GridQuizView = { phase: GridQuizPhase, categories: Array<string>, points: Array<number>, used: Array<Array<boolean>>, current_category: string | null, current_points: number | null, active_picker: string | null, floored: string | null, locked_out: Array<string>, };
+export type GridQuizView = { phase: GridQuizPhase, categories: Array<string>, points: Array<number>, used: Array<Array<boolean>>, active_picker: string | null, floored: string | null, locked_out: Array<string>, };
 
 export type JudgmentView = { game_idx: number, player: string, question_id: string, 
 /**

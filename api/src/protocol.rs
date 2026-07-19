@@ -160,6 +160,8 @@ pub struct GridQuizView {
     pub categories: Vec<String>,
     pub points: Vec<u32>,
     pub used: Vec<Vec<bool>>,
+    pub current_category: Option<String>,
+    pub current_points: Option<u32>,
     pub active_picker: Option<String>,
     pub floored: Option<String>,
     pub locked_out: Vec<String>,

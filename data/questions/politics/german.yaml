@@ -1,0 +1,75 @@
+- id: q_politics_merkel_amtszeit
+  kind: text
+  tags: [subject:politics, region:germany, difficulty:easy]
+  content:
+    default_lang: de
+    prompt: { text: 'Welche deutsche Bundeskanzlerin regierte von 2005 bis 2021?' }
+    answer: Angela Merkel
+    explanation: 'Angela Merkel (CDU) war von 2005 bis 2021 Bundeskanzlerin der Bundesrepublik Deutschland.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: merkel, text: Angela Merkel, correct: true }
+          - { id: drogen, text: 'Helmut Kohl' }
+          - { id: schroeder, text: Gerhard Schröder }
+          - { id: baerbock, text: Annalena Baerbock }
+      open:
+        accepted: ['Angela Merkel', 'Merkel']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_politics_groesste_flaeche
+  kind: text
+  tags: [subject:politics, subject:geography, region:global, difficulty:general]
+  content:
+    default_lang: de
+    prompt: { text: 'Welches Land hat die größte Fläche der Welt?' }
+    answer: Russland
+    explanation: 'Russland ist mit rund 17,1 Millionen km² das flächengrößte Land der Erde.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: russland, text: Russland, correct: true }
+          - { id: kanada, text: Kanada }
+          - { id: usa, text: USA }
+          - { id: china, text: China }
+      open:
+        accepted: ['Russland', 'Russia']
+        normalize: [lowercase, strip_diacritics, strip_punctuation]
+
+- id: q_politics_berliner_mauer
+  kind: text
+  tags: [subject:politics, region:germany, difficulty:general]
+  content:
+    default_lang: de
+    prompt: { text: 'In welchem Jahr fiel die Berliner Mauer?' }
+    answer: '1989'
+    explanation: 'Die Berliner Mauer wurde am 9. November 1989 geöffnet; der Mauerfall gilt als Startpunkt der Wiedervereinigung.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: '1985', text: '1985' }
+          - { id: '1987', text: '1987' }
+          - { id: '1989', text: '1989', correct: true }
+          - { id: '1991', text: '1991' }
+      open:
+        accepted: ['1989']
+        normalize: [strip_whitespace]
+
+- id: q_politics_eu_hauptorgan
+  kind: text
+  tags: [subject:politics, region:global, difficulty:niche]
+  content:
+    default_lang: de
+    prompt: { text: 'In welcher Stadt hat das Europäische Parlament seinen Hauptsitz?' }
+    answer: Straßburg
+    explanation: 'Das Europäische Parlament hat zwei Sitze — den Hauptsitz in Straßburg (Frankreich) und zusätzlich Brüssel.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: bruessel, text: Brüssel }
+          - { id: luxemburg, text: Luxemburg }
+          - { id: strassburg, text: Straßburg, correct: true }
+          - { id: paris, text: Paris }
+      open:
+        accepted: ['Straßburg', 'Strassburg', 'Strasbourg']
+        normalize: [lowercase, strip_diacritics, strip_punctuation]

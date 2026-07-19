@@ -36,6 +36,7 @@
 		flex-direction: column;
 		align-items: center;
 		gap: var(--space-6);
+		width: 100%;
 	}
 	.head {
 		text-align: center;
@@ -43,28 +44,30 @@
 	.head h1 {
 		font-family: var(--font-heading);
 		margin: 0;
+		font-size: clamp(2rem, 7cqi, 4rem);
 	}
 	.muted {
 		color: var(--color-text-muted);
-		font-size: calc(0.9rem * var(--font-scale));
+		font-size: clamp(0.95rem, 2.2cqi, 1.4rem);
 	}
 	.standings {
 		list-style: none;
 		margin: 0;
 		padding: 0;
-		width: min(24rem, 100%);
+		width: min(40rem, 100%);
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-2);
+		gap: var(--space-3);
 	}
 	.row {
 		display: flex;
 		align-items: center;
-		gap: var(--space-3);
-		padding: var(--space-2) var(--space-3);
+		gap: var(--space-4);
+		padding: var(--space-3) var(--space-4);
 		border: var(--border-width) var(--border-style) var(--border-color);
 		border-radius: var(--radius-md);
 		background: var(--bg-surface);
+		font-size: clamp(1rem, 2.6cqi, 1.5rem);
 	}
 	.row.you {
 		border-color: var(--color-primary);
@@ -76,11 +79,11 @@
 		font-family: var(--font-heading);
 		font-weight: 700;
 		color: var(--color-text-muted);
-		min-width: 1.5rem;
+		min-width: 1.8rem;
 	}
 	.avatar {
-		width: 1.75rem;
-		height: 1.75rem;
+		width: clamp(1.75rem, 5cqi, 2.75rem);
+		height: clamp(1.75rem, 5cqi, 2.75rem);
 		border-radius: var(--radius-full);
 		display: flex;
 		align-items: center;
@@ -88,7 +91,7 @@
 		color: var(--color-text-inverse);
 		font-weight: 700;
 		font-family: var(--font-heading);
-		font-size: calc(0.8rem * var(--font-scale));
+		font-size: clamp(0.8rem, 2.2cqi, 1.2rem);
 		flex-shrink: 0;
 		text-transform: uppercase;
 	}

@@ -1,0 +1,75 @@
+- id: q_school_kontinente_anzahl
+  kind: text
+  tags: [subject:school, subject:geography, region:global, difficulty:easy]
+  content:
+    default_lang: de
+    prompt: { text: 'Wie viele Kontinente gibt es?' }
+    answer: '7'
+    explanation: 'Allgemein werden 7 Kontinente gezählt: Europa, Asien, Afrika, Nordamerika, Südamerika, Australien/Ozeanien und Antarktis.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: '5', text: '5' }
+          - { id: '6', text: '6' }
+          - { id: '7', text: '7', correct: true }
+          - { id: '8', text: '8' }
+      open:
+        accepted: ['7', 'sieben']
+        normalize: [lowercase, strip_whitespace]
+
+- id: q_school_haupstadt_frankreich
+  kind: text
+  tags: [subject:school, subject:capitals, subject:geography, region:global, difficulty:easy]
+  content:
+    default_lang: de
+    prompt: { text: 'Wie heißt die Hauptstadt von Frankreich?' }
+    answer: Paris
+    explanation: 'Paris ist seit 987 n. Chr. die Hauptstadt Frankreichs.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: paris, text: Paris, correct: true }
+          - { id: lyon, text: Lyon }
+          - { id: marseille, text: Marseille }
+          - { id: nizza, text: Nizza }
+      open:
+        accepted: ['Paris']
+        normalize: [lowercase, strip_punctuation]
+
+- id: q_school_laengster_fluss
+  kind: text
+  tags: [subject:school, subject:geography, region:global, difficulty:general]
+  content:
+    default_lang: de
+    prompt: { text: 'Welcher ist der längste Fluss der Welt?' }
+    answer: Amazonas
+    explanation: 'Der Amazonas in Südamerika ist mit ca. 6.400–6.700 km der längste Fluss; manche Quellen zählen den Nil ähnlich lang.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: nil, text: Nil }
+          - { id: amazonas, text: Amazonas, correct: true }
+          - { id: yangtse, text: Jangtsekiang }
+          - { id: mississippi, text: Mississippi }
+      open:
+        accepted: ['Amazonas', 'Amazonas-Fluss', 'Amazon']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_school_knochen_anzahl
+  kind: text
+  tags: [subject:school, region:global, difficulty:niche]
+  content:
+    default_lang: de
+    prompt: { text: 'Wie viele Knochen hat das Skelett eines erwachsenen Menschen?' }
+    answer: '206'
+    explanation: 'Ein erwachsener Mensch hat 206 Knochen; Babys kommen mit etwa 270 Knochen auf die Welt, die teilweise zusammenwachsen.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: '186', text: '186' }
+          - { id: '206', text: '206', correct: true }
+          - { id: '226', text: '226' }
+          - { id: '246', text: '246' }
+      open:
+        accepted: ['206', 'zweihundertsechs']
+        normalize: [lowercase, strip_whitespace]

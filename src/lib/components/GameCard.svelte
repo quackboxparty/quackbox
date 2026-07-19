@@ -14,11 +14,11 @@
 		<h3 class="title">{game.title}</h3>
 		<p class="desc">{game.description}</p>
 		{#if game.modes.length}
-			<ul class="modes">
-				{#each game.modes as mode (mode)}
-					<li class="badge">{mode}</li>
-				{/each}
-			</ul>
+			<!-- <ul class="modes"> -->
+			<!-- 	{#each game.modes as mode (mode)} -->
+			<!-- 		<li class="badge">{mode}</li> -->
+			<!-- 	{/each} -->
+			<!-- </ul> -->
 		{/if}
 	</div>
 </Card>

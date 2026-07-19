@@ -98,6 +98,16 @@ pub fn project(data: &Dataset, gamestate: &GameState, grants: &GrantSet) -> Clie
                     .collect(),
                 points: board.points.clone(),
                 used,
+                current_category: grid_quiz
+                    .current
+                    .as_ref()
+                    .and_then(|cell| board.categories.get(cell.category))
+                    .map(|category| category.name.clone()),
+                current_points: grid_quiz
+                    .current
+                    .as_ref()
+                    .and_then(|cell| board.points.get(cell.point))
+                    .copied(),
                 active_picker: grid_quiz
                     .active_picker
                     .as_ref()

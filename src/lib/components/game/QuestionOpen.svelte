@@ -92,10 +92,11 @@
 		flex-direction: column;
 		align-items: center;
 		gap: var(--space-6);
+		width: 100%;
 	}
 	.muted {
 		color: var(--color-text-muted);
-		font-size: calc(0.9rem * var(--font-scale));
+		font-size: clamp(0.95rem, 2.2cqi, 1.4rem);
 	}
 	.center {
 		text-align: center;
@@ -104,22 +105,23 @@
 		color: var(--color-success);
 		font-weight: 600;
 		margin: 0;
+		font-size: clamp(1rem, 2.6cqi, 1.5rem);
 	}
 	.floor-you {
 		font-family: var(--font-heading);
-		font-size: calc(1.4rem * var(--font-scale));
+		font-size: clamp(1.6rem, 5cqi, 3rem);
 		color: var(--color-success);
 		text-align: center;
 	}
 	.floor-other {
 		display: flex;
 		align-items: center;
-		gap: var(--space-2);
-		font-size: calc(1.1rem * var(--font-scale));
+		gap: var(--space-3);
+		font-size: clamp(1.2rem, 3.5cqi, 2rem);
 	}
 	.avatar {
-		width: 1.75rem;
-		height: 1.75rem;
+		width: clamp(1.75rem, 5cqi, 2.75rem);
+		height: clamp(1.75rem, 5cqi, 2.75rem);
 		border-radius: var(--radius-full);
 		display: flex;
 		align-items: center;
@@ -127,17 +129,17 @@
 		color: var(--color-text-inverse);
 		font-weight: 700;
 		font-family: var(--font-heading);
-		font-size: calc(0.8rem * var(--font-scale));
+		font-size: clamp(0.8rem, 2.2cqi, 1.2rem);
 		flex-shrink: 0;
 		text-transform: uppercase;
 	}
 	/* Big blind-tap slab, subtle radius — slappable on mobile without looking. */
 	.buzz {
 		font-family: var(--font-heading);
-		font-size: calc(2.75rem * var(--font-scale));
+		font-size: clamp(2.5rem, 9cqi, 5rem);
 		font-weight: 800;
 		letter-spacing: 0.08em;
-		width: min(92vw, 28rem);
+		width: min(92cqi, 40rem);
 		min-height: 18rem;
 		border: none;
 		border-radius: var(--radius-md);

@@ -1,0 +1,56 @@
+id: game_german_popculture
+title: Deutsche Popkultur
+description: Ein Grid-Quiz mit 24 Fragen zu deutscher Musik, Film und Fernsehen, Internetkultur, Comedy, Stars und Kultfiguren.
+games:
+  - title: Runde 1
+    rules:
+      buzz_policy: open_floor
+      scoring_mode: first_correct
+      lockout_policy: this_question
+      steal_policy: round_limited
+      judge: auto
+      question_timer_secs: 30
+      answer_timer_secs: 15
+    mode:
+      kind: grid_quiz
+      grid_rules:
+        picker_mode: winner_picks
+      board:
+        points: [100, 200, 300, 500]
+        categories:
+          - name: Deutsche Musik
+            question_ids:
+              100: q_german_pop_nena_99_luftballons
+              200: q_german_pop_tokio_hotel_monsun
+              300: q_german_pop_peter_fox_haus_am_see
+              500: q_german_pop_fehlfarben_monarchie_und_alltag
+          - name: Film & Fernsehen
+            question_ids:
+              100: q_german_pop_wetten_dass_gottschalk
+              200: q_german_pop_stromberg_schauspieler
+              300: q_german_pop_dark_netflix_serie
+              500: q_german_pop_leben_der_anderen_regisseur
+          - name: Internet & Memes
+            question_ids:
+              100: q_german_pop_7_vs_wild_erfinder
+              200: q_german_pop_gronkh_buergerlicher_name
+              300: q_german_pop_coldmirror_buergerlicher_name
+              500: q_german_pop_die_lochis_vornamen
+          - name: Comedy
+            question_ids:
+              100: q_german_pop_loriot_kuenstlername
+              200: q_german_pop_horst_schlaemmer
+              300: q_german_pop_dittsche_schauspieler
+              500: q_german_pop_die_doofen_mitglieder
+          - name: Stars
+            question_ids:
+              100: q_german_pop_lena_eurovision_2010
+              200: q_german_pop_lola_rennt_franka_potente
+              300: q_german_pop_karl_lagerfeld
+              500: q_german_pop_winnetou_pierre_brice
+          - name: Kultfiguren
+            question_ids:
+              100: q_german_pop_bernd_das_brot
+              200: q_german_pop_mainzelmaennchen_sender
+              300: q_german_pop_maus_blauer_begleiter
+              500: q_german_pop_mainzelmaennchen_schoepfer

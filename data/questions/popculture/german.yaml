@@ -1,0 +1,311 @@
+- id: q_german_pop_nena_99_luftballons
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:easy]
+  content:
+    default_lang: de
+    prompt: { text: 'Welche deutsche Band veröffentlichte 1983 den Song „99 Luftballons“?' }
+    answer: 'Nena'
+    explanation: '„99 Luftballons“ erschien 1983 auf dem selbstbetitelten Debütalbum der Band Nena.'
+    variants:
+      open:
+        accepted: ['Nena']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_tokio_hotel_monsun
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:general]
+  content:
+    default_lang: de
+    prompt: { text: 'Welche Band landete 2005 mit „Durch den Monsun“ einen Nummer-eins-Hit in Deutschland?' }
+    answer: 'Tokio Hotel'
+    explanation: '„Durch den Monsun“ war die Debütsingle von Tokio Hotel und erreichte 2005 Platz eins der deutschen Charts.'
+    variants:
+      open:
+        accepted: ['Tokio Hotel']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_peter_fox_haus_am_see
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:niche]
+  content:
+    default_lang: de
+    prompt: { text: 'Welches Mitglied der Band Seeed veröffentlichte solo den Song „Haus am See“?' }
+    answer: 'Peter Fox'
+    explanation: 'Peter Fox ist Mitglied von Seeed und veröffentlichte „Haus am See“ 2008 auf seinem Soloalbum „Stadtaffe“.'
+    variants:
+      open:
+        accepted: ['Peter Fox']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_fehlfarben_monarchie_und_alltag
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:niche]
+  content:
+    default_lang: de
+    prompt: { text: 'Welche Düsseldorfer Band veröffentlichte 1980 das Album „Monarchie und Alltag“?' }
+    answer: 'Fehlfarben'
+    explanation: '„Monarchie und Alltag“ ist das Debütalbum der Band Fehlfarben und gilt als Klassiker des deutschen Post-Punk.'
+    variants:
+      open:
+        accepted: ['Fehlfarben']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_wetten_dass_gottschalk
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:easy]
+  content:
+    default_lang: de
+    prompt: { text: 'Welcher Entertainer moderierte „Wetten, dass..?“ über Jahrzehnte und häufiger als jeder andere?' }
+    answer: 'Thomas Gottschalk'
+    explanation: 'Thomas Gottschalk prägte „Wetten, dass..?“ seit seiner ersten Moderation 1987.'
+    variants:
+      open:
+        accepted: ['Thomas Gottschalk', 'Gottschalk']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_stromberg_schauspieler
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:general]
+  content:
+    default_lang: de
+    prompt: { text: 'Welcher Schauspieler verkörpert Bernd Stromberg in der Serie „Stromberg“?' }
+    answer: 'Christoph Maria Herbst'
+    explanation: 'Christoph Maria Herbst spielte die Titelfigur in allen fünf Staffeln und im Kinofilm.'
+    variants:
+      open:
+        accepted: ['Christoph Maria Herbst', 'Christoph Herbst']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_dark_netflix_serie
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:niche]
+  content:
+    default_lang: de
+    prompt: { text: 'Wie heißt die 2017 gestartete deutsche Netflix-Mysteryserie über Zeitreisen in der Kleinstadt Winden?' }
+    answer: 'Dark'
+    explanation: '„Dark“ spielt in der fiktiven Stadt Winden und war die erste deutschsprachige Netflix-Originalserie.'
+    variants:
+      open:
+        accepted: ['Dark']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_leben_der_anderen_regisseur
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:niche]
+  content:
+    default_lang: de
+    prompt: { text: 'Wer führte beim Oscar-prämierten Film „Das Leben der Anderen“ Regie?' }
+    answer: 'Florian Henckel von Donnersmarck'
+    explanation: 'Florian Henckel von Donnersmarck schrieb und inszenierte „Das Leben der Anderen“, der 2007 den Auslands-Oscar gewann.'
+    variants:
+      open:
+        accepted: ['Florian Henckel von Donnersmarck', 'Henckel von Donnersmarck', 'Florian von Donnersmarck']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_7_vs_wild_erfinder
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:easy]
+  content:
+    default_lang: de
+    prompt: { text: 'Welcher YouTuber entwickelte das Survival-Format „7 vs. Wild“ und moderierte dessen erste Staffeln?' }
+    answer: 'Fritz Meinecke'
+    explanation: 'Fritz Meinecke entwickelte „7 vs. Wild“ und nahm selbst an den ersten drei Staffeln teil.'
+    variants:
+      open:
+        accepted: ['Fritz Meinecke', 'Meinecke']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_gronkh_buergerlicher_name
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:general]
+  content:
+    default_lang: de
+    prompt: { text: 'Wie heißt der YouTuber Gronkh mit bürgerlichem Namen?' }
+    answer: 'Erik Range'
+    explanation: 'Gronkh ist der Künstlername des deutschen Webvideoproduzenten Erik Range.'
+    variants:
+      open:
+        accepted: ['Erik Range', 'Erik']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_coldmirror_buergerlicher_name
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:niche]
+  content:
+    default_lang: de
+    prompt: { text: 'Wie heißt die Webvideoproduzentin hinter dem Namen „coldmirror“?' }
+    answer: 'Kathrin Fricke'
+    explanation: 'Kathrin Fricke wurde als coldmirror unter anderem mit ihren Harry-Potter-Neusynchronisationen bekannt.'
+    variants:
+      open:
+        accepted: ['Kathrin Fricke', 'Kaddi', 'Kaddi Fricke']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_die_lochis_vornamen
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:niche]
+  content:
+    default_lang: de
+    prompt: { text: 'Wie heißen die Zwillingsbrüder, die als YouTube-Duo „Die Lochis“ bekannt wurden?' }
+    answer: 'Heiko und Roman Lochmann'
+    explanation: 'Die Lochis bestanden aus den Zwillingsbrüdern Heiko und Roman Lochmann.'
+    variants:
+      open:
+        accepted: ['Heiko und Roman Lochmann', 'Roman und Heiko Lochmann', 'Heiko und Roman', 'Roman und Heiko', 'Heiko Lochmann und Roman Lochmann', 'Roman Lochmann und Heiko Lochmann']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_loriot_kuenstlername
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:easy]
+  content:
+    default_lang: de
+    prompt: { text: 'Unter welchem Künstlernamen wurde Vicco von Bülow bekannt?' }
+    answer: 'Loriot'
+    explanation: 'Vicco von Bülow prägte unter dem Namen Loriot die deutsche Fernseh- und Humorkultur.'
+    variants:
+      open:
+        accepted: ['Loriot']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_horst_schlaemmer
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:general]
+  content:
+    default_lang: de
+    prompt: { text: 'Welcher Komiker erfand und spielte die Kunstfigur Horst Schlämmer?' }
+    answer: 'Hape Kerkeling'
+    explanation: 'Hape Kerkeling spielte den fiktiven Grevenbroicher Lokalreporter Horst Schlämmer.'
+    variants:
+      open:
+        accepted: ['Hape Kerkeling', 'Hans-Peter Kerkeling', 'Kerkeling']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_dittsche_schauspieler
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:niche]
+  content:
+    default_lang: de
+    prompt: { text: 'Welcher Komiker spielt die Titelfigur in der Improvisationssendung „Dittsche“?' }
+    answer: 'Olli Dittrich'
+    explanation: 'Olli Dittrich spielt Dittsche im Bademantel und improvisiert dessen Geschichten in einem Hamburger Imbiss.'
+    variants:
+      open:
+        accepted: ['Olli Dittrich', 'Oliver Dittrich', 'Dittrich']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_die_doofen_mitglieder
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:niche]
+  content:
+    default_lang: de
+    prompt: { text: 'Welche beiden Komiker bildeten in den 1990er-Jahren das Musikduo „Die Doofen“?' }
+    answer: 'Wigald Boning und Olli Dittrich'
+    explanation: 'Wigald Boning und Olli Dittrich traten gemeinsam als Die Doofen auf.'
+    variants:
+      open:
+        accepted: ['Wigald Boning und Olli Dittrich', 'Olli Dittrich und Wigald Boning', 'Wigald Boning, Olli Dittrich', 'Olli Dittrich, Wigald Boning']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_lena_eurovision_2010
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:easy]
+  content:
+    default_lang: de
+    prompt: { text: 'Welche Sängerin gewann 2010 mit „Satellite“ für Deutschland den Eurovision Song Contest?' }
+    answer: 'Lena Meyer-Landrut'
+    explanation: 'Lena Meyer-Landrut gewann den Eurovision Song Contest 2010 in Oslo mit „Satellite“.'
+    variants:
+      open:
+        accepted: ['Lena Meyer-Landrut', 'Lena Meyer Landrut', 'Lena']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_lola_rennt_franka_potente
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:general]
+  content:
+    default_lang: de
+    prompt: { text: 'Welche Schauspielerin spielt die Hauptrolle im Film „Lola rennt“?' }
+    answer: 'Franka Potente'
+    explanation: 'Franka Potente spielt Lola in Tom Tykwers Film „Lola rennt“ von 1998.'
+    variants:
+      open:
+        accepted: ['Franka Potente', 'Potente']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_karl_lagerfeld
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:niche]
+  content:
+    default_lang: de
+    prompt: { text: 'Welcher in Hamburg geborene Modedesigner war für weißen Zopf, Sonnenbrille und hohen Kragen bekannt?' }
+    answer: 'Karl Lagerfeld'
+    explanation: 'Karl Lagerfeld wurde in Hamburg geboren und machte seinen markanten Look zu einem Wiedererkennungszeichen.'
+    variants:
+      open:
+        accepted: ['Karl Lagerfeld', 'Lagerfeld']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_winnetou_pierre_brice
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:niche]
+  content:
+    default_lang: de
+    prompt: { text: 'Welcher französische Schauspieler verkörperte Winnetou in den Karl-May-Filmen der 1960er-Jahre?' }
+    answer: 'Pierre Brice'
+    explanation: 'Pierre Brice wurde durch seine Rolle als Winnetou im deutschsprachigen Raum zum Star.'
+    variants:
+      open:
+        accepted: ['Pierre Brice', 'Brice']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_bernd_das_brot
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:easy]
+  content:
+    default_lang: de
+    prompt: { text: 'Wie heißt das mürrische Kastenbrot aus dem Kinderkanal KiKA?' }
+    answer: 'Bernd das Brot'
+    explanation: 'Bernd das Brot ist seit 2000 eine Figur des Kinderkanals KiKA.'
+    variants:
+      open:
+        accepted: ['Bernd das Brot', 'Bernd']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_mainzelmaennchen_sender
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:general]
+  content:
+    default_lang: de
+    prompt: { text: 'Zu welchem Fernsehsender gehören die Mainzelmännchen?' }
+    answer: 'ZDF'
+    explanation: 'Die Mainzelmännchen laufen seit dem Sendestart 1963 als Werbetrenner im ZDF.'
+    variants:
+      open:
+        accepted: ['ZDF', 'Zweites Deutsches Fernsehen']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_maus_blauer_begleiter
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:niche]
+  content:
+    default_lang: de
+    prompt: { text: 'Welches Tier ist der kleine blaue Begleiter der Maus in „Die Sendung mit der Maus“?' }
+    answer: 'Elefant'
+    explanation: 'Der kleine blaue Elefant begleitet die Maus seit 1975.'
+    variants:
+      open:
+        accepted: ['Elefant', 'der Elefant', 'ein Elefant', 'blauer Elefant']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]
+
+- id: q_german_pop_mainzelmaennchen_schoepfer
+  kind: text
+  tags: [subject:popculture, region:germany, difficulty:niche]
+  content:
+    default_lang: de
+    prompt: { text: 'Welcher Grafiker erfand die Mainzelmännchen?' }
+    answer: 'Wolf Gerlach'
+    explanation: 'Der Grafiker und Bühnenbildner Wolf Gerlach entwickelte die Mainzelmännchen zum ZDF-Sendestart 1963.'
+    variants:
+      open:
+        accepted: ['Wolf Gerlach', 'Gerlach']
+        normalize: [lowercase, strip_punctuation, strip_whitespace]

@@ -46,6 +46,7 @@
 	"waiting_for_host": "Warte auf Host zum Starten…",
 	"your_turn_pick": "Du bist dran — wähle ein Feld",
 	"player_choosing": "{name} wählt…",
+	"question_cell": "{category} · {points} Punkte",
 	"you_have_floor": "Du bist dran — antworte laut.",
 	"player_answering": "{name} antwortet…",
 	"locked_out_wait": "Du bist gesperrt — warte auf die nächste Frage.",
@@ -66,5 +67,10 @@
 	"next": "Weiter",
 	"game_over": "Spiel vorbei",
 	"winner_wins": "{name} gewinnt!",
-	"mode_not_supported": "Dieser Spielmodus wird noch nicht unterstützt."
+	"mode_not_supported": "Dieser Spielmodus wird noch nicht unterstützt.",
+	"share_room": "Raum teilen",
+	"scan_to_join": "Scannen um beizutreten",
+	"copy_link": "Kopieren",
+	"copy_link_success": "Link kopiert",
+	"copy_link_failed": "Link konnte nicht kopiert werden"
 }

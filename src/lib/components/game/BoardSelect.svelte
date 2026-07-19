@@ -66,6 +66,9 @@
 		flex-direction: column;
 		align-items: center;
 		gap: var(--space-6);
+		width: 100%;
+		max-width: 100%;
+		min-width: 0;
 	}
 	.banner {
 		font-size: calc(1.1rem * var(--font-scale));
@@ -73,25 +76,43 @@
 		border-radius: var(--radius-md);
 		background: var(--bg-surface);
 		border: var(--border-width) var(--border-style) var(--border-color);
+		max-width: 100%;
+		min-width: 0;
+		overflow-wrap: break-word;
+		text-align: center;
 	}
 	.grid {
 		display: grid;
-		grid-template-columns: repeat(var(--cols, 4), 1fr);
+		/* minmax(0, 1fr) lets columns shrink below min-content so the grid
+		   never blows past the viewport on long category names or 6+ cats */
+		grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
 		gap: var(--space-2);
-		width: min(40rem, 100%);
+		/* grow on big screens so the board isn't a tiny island in a sea of
+		   whitespace; caps at 80rem so 4K doesn't get comically huge */
+		width: min(80rem, 100%);
+		min-width: 0;
+		container-type: inline-size;
 	}
 	.col-head {
 		font-family: var(--font-heading);
 		text-align: center;
 		padding: var(--space-2);
-		font-size: calc(0.85rem * var(--font-scale));
+		/* scale with column width so heads stay readable in narrow columns
+		   and grow with the grid on wide screens */
+		font-size: clamp(0.55rem, 3.2cqi, 1.6rem);
+		line-height: 1.15;
 		background: var(--color-primary);
 		color: var(--color-text-inverse);
 		border-radius: var(--radius-sm);
+		min-width: 0;
+		overflow: hidden;
+		overflow-wrap: break-word;
+		hyphens: auto;
 	}
 	.cell {
 		font-family: var(--font-heading);
-		font-size: calc(1.5rem * var(--font-scale));
+		/* scale with column width: bigger on wide grids, smaller on phones */
+		font-size: clamp(0.95rem, 7.5cqi, 3.5rem);
 		font-weight: 700;
 		padding: var(--space-4) var(--space-2);
 		background: var(--bg-surface-elevated);
@@ -99,6 +120,20 @@
 		border-radius: var(--radius-sm);
 		color: var(--color-primary);
 		cursor: pointer;
+		min-width: 0;
+		overflow: hidden;
+		text-align: center;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	@media (max-width: 480px) {
+		.cell {
+			padding: var(--space-3) var(--space-1);
+		}
+		.col-head {
+			padding: var(--space-2) var(--space-1);
+		}
 	}
 	.cell:disabled {
 		cursor: default;

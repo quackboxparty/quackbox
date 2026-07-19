@@ -25,3 +25,27 @@
 - id: subject:school
   default_lang: en
   label: School
+
+- id: subject:popculture
+  default_lang: en
+  label: Pop culture
+
+- id: subject:politics
+  default_lang: en
+  label: Politics
+
+- id: subject:gaming
+  default_lang: en
+  label: Gaming
+
+- id: subject:music
+  default_lang: en
+  label: Music
+
+- id: subject:kids_shows
+  default_lang: en
+  label: Kids shows
+
+- id: subject:2010s
+  default_lang: en
+  label: 2010s

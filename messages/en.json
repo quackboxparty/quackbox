@@ -46,6 +46,7 @@
 	"waiting_for_host": "Waiting for host to start…",
 	"your_turn_pick": "Your turn — pick a cell",
 	"player_choosing": "{name} is choosing…",
+	"question_cell": "{category} · {points} points",
 	"you_have_floor": "You have the floor — answer out loud.",
 	"player_answering": "{name} is answering…",
 	"locked_out_wait": "You're locked out — wait for the next question.",
@@ -66,5 +67,10 @@
 	"next": "Next",
 	"game_over": "Game over",
 	"winner_wins": "{name} wins!",
-	"mode_not_supported": "This game mode is not supported yet."
+	"mode_not_supported": "This game mode is not supported yet.",
+	"share_room": "Share room",
+	"scan_to_join": "Scan to join this room",
+	"copy_link": "Copy",
+	"copy_link_success": "Link copied",
+	"copy_link_failed": "Could not copy link"
 }

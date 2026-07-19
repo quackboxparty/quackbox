@@ -1,0 +1,75 @@
+- id: q_music_hey_jude_band
+  kind: text
+  tags: [subject:music, region:global, difficulty:easy]
+  content:
+    default_lang: de
+    prompt: { text: 'Welche Band veröffentlichte 1968 den Song „Hey Jude"?' }
+    answer: Beatles
+    explanation: '„Hey Jude" wurde 1968 von John Lennon und Paul McCartney für die Beatles geschrieben und erschien als Single.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: beatles, text: 'The Beatles', correct: true }
+          - { id: stones, text: 'The Rolling Stones' }
+          - { id: who, text: 'The Who' }
+          - { id: kinks, text: 'The Kinks' }
+      open:
+        accepted: ['Beatles', 'The Beatles']
+        normalize: [lowercase, strip_punctuation, strip_articles]
+
+- id: q_music_adele_someone
+  kind: text
+  tags: [subject:music, subject:2010s, region:global, difficulty:easy]
+  content:
+    default_lang: de
+    prompt: { text: 'Welche Sängerin hatte 2011 mit „Someone Like You" einen Nummer-eins-Hit?' }
+    answer: Adele
+    explanation: 'Adele veröffentlichte „Someone Like You" im Januar 2011; der Song erreichte in vielen Ländern Platz 1.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: adele, text: Adele, correct: true }
+          - { id: lara, text: Lara Fabian }
+          - { id: gaga, text: 'Lady Gaga' }
+          - { id: rihanna, text: Rihanna }
+      open:
+        accepted: ['Adele', 'Adele Adkins']
+        normalize: [lowercase, strip_punctuation]
+
+- id: q_music_tango_herkunft
+  kind: text
+  tags: [subject:music, region:global, difficulty:general]
+  content:
+    default_lang: de
+    prompt: { text: 'In welchem Land hat der Tango seinen Ursprung?' }
+    answer: Argentinien
+    explanation: 'Der Tango entstand Ende des 19. Jahrhunderts in den Arbeiter- und Hafenvierteln von Buenos Aires, Argentinien.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: argentinien, text: Argentinien, correct: true }
+          - { id: brasilien, text: Brasilien }
+          - { id: spanien, text: Spanien }
+          - { id: mexiko, text: Mexiko }
+      open:
+        accepted: ['Argentinien', 'Argentina']
+        normalize: [lowercase, strip_diacritics, strip_punctuation]
+
+- id: q_music_klavier_tasten
+  kind: text
+  tags: [subject:music, region:global, difficulty:niche]
+  content:
+    default_lang: de
+    prompt: { text: 'Wie viele Tasten hat ein klassisches Konzertklavier?' }
+    answer: '88'
+    explanation: 'Ein modernes Konzertklavier hat 88 Tasten: 52 weiße und 36 schwarze, über fast 7 Oktaven.'
+    variants:
+      multiple_choice:
+        choices:
+          - { id: '76', text: '76' }
+          - { id: '82', text: '82' }
+          - { id: '88', text: '88', correct: true }
+          - { id: '94', text: '94' }
+      open:
+        accepted: ['88', 'achtundachtzig']
+        normalize: [lowercase, strip_whitespace]
