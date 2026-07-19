@@ -25,6 +25,26 @@ use crate::{
     protocol::Command,
 };
 
+#[derive(Debug, thiserror::Error)]
+pub enum CommandError {
+    #[error("no cell in play")]
+    NoCurrentCell,
+    #[error("no players in game")]
+    NoPlayers,
+    #[error("player not floored {0}")]
+    PlayerNotFloored(String),
+    #[error("point out of range")]
+    PointOutOfRange,
+    #[error("buzzed while floored player")]
+    BuzzWhileFlooredPlayer,
+    #[error("question not open (phase {0:?})")]
+    WrongPhase(GridQuizPhase),
+    #[error("unknown player {0}")]
+    UnknownPlayer(String),
+    #[error("missing grant {0:?}")]
+    MissingGrant(Grant),
+}
+
 #[derive(Clone, Debug)]
 pub struct GameState {
     pub game_config: GameConfig,
@@ -53,11 +73,22 @@ impl GameState {
             Command::Kick { player } => {
                 self.player_slots.retain(|_, v| v.name != player);
             }
-            other => {
-                for effect in self.mode.apply(&self.player_slots, token, other) {
-                    self.run_effect(effect);
-                }
+            Command::Grant { player, grants } => {
+                let Some(token) = self.player_slots.token_for_name(&player) else {
+                    tracing::info!(?player, "grant by unknown player");
+                    return;
+                };
+
+                self.player_slots
+                    .entry(token)
+                    .and_modify(|slot| slot.grants = grants);
             }
+            other => match self.mode.apply(&self.player_slots, token.clone(), other) {
+                Ok(effects) => effects
+                    .into_iter()
+                    .for_each(|effect| self.run_effect(effect)),
+                Err(err) => tracing::warn!(?token, %err, "command rejected"),
+            },
         }
     }
 
@@ -160,6 +191,11 @@ impl PlayerSlots {
             .find(|(_, slot)| slot.name == name)
             .map(|(token, _)| token.clone())
     }
+
+    pub(crate) fn is_grant(&self, token: &Token, grant: &Grant) -> bool {
+        self.grants_for(token)
+            .is_some_and(|grants| grants.contains(grant))
+    }
 }
 
 impl Default for PlayerSlots {
@@ -217,7 +253,12 @@ pub enum ModeState {
 }
 
 impl ModeState {
-    fn apply(&mut self, player_slots: &PlayerSlots, token: Token, cmd: Command) -> Vec<Effect> {
+    fn apply(
+        &mut self,
+        player_slots: &PlayerSlots,
+        token: Token,
+        cmd: Command,
+    ) -> Result<Vec<Effect>, CommandError> {
         match self {
             ModeState::GridQuiz(modestate) => match cmd {
                 Command::StartGame => {
@@ -234,8 +275,7 @@ impl ModeState {
                         .collect();
 
                     if rotation.is_empty() {
-                        tracing::warn!(?token, "start game with no connected Play-granted player");
-                        return Vec::new();
+                        return Err(CommandError::NoPlayers);
                     }
 
                     modestate.picker_rotation = rotation;
@@ -277,40 +317,33 @@ impl ModeState {
                 }
                 Command::Answer { text } => {
                     if modestate.floored_player.as_ref() != Some(&token)
-                        && player_slots
-                            .grants_for(&token)
-                            .is_none_or(|grants| !grants.contains(&Grant::Moderate))
+                        && !player_slots.is_grant(&token, &Grant::Moderate)
                     {
-                        tracing::warn!(?token, "tried to answer while not being floored");
-                        return Vec::new();
+                        return Err(CommandError::PlayerNotFloored(token.0));
                     }
 
                     let Some(current) = modestate.current.as_ref() else {
-                        tracing::warn!(?token, "answer with no cell in play");
-                        return Vec::new();
+                        return Err(CommandError::NoCurrentCell);
                     };
 
                     // TODO: we should check for a pending judgement here before pushing, maybe we
                     // could even allow or prevent updating your answer
-                    return vec![Effect::Submit {
+                    return Ok(vec![Effect::Submit {
                         player: token,
                         question_id: current.question_id.clone(),
                         text,
-                    }];
+                    }]);
                 }
                 Command::Rule { player, verdict } => {
                     let Some(current) = modestate.current.as_ref() else {
-                        tracing::warn!(?token, "rule with no cell in play");
-                        return Vec::new();
+                        return Err(CommandError::NoCurrentCell);
                     };
 
                     let Some(&value) = modestate.points.get(current.point) else {
-                        tracing::warn!(point = current.point, "rule with out-of-range point");
-                        return Vec::new();
+                        return Err(CommandError::PointOutOfRange);
                     };
                     let Some(target) = player_slots.token_for_name(&player) else {
-                        tracing::warn!(?player, "rule for unknown player");
-                        return Vec::new();
+                        return Err(CommandError::UnknownPlayer(player));
                     };
 
                     let points = match verdict {
@@ -367,22 +400,20 @@ impl ModeState {
                         _ => {}
                     }
 
-                    return vec![Effect::Rule {
+                    return Ok(vec![Effect::Rule {
                         target,
                         question_id: current.question_id.clone(),
                         verdict,
                         points,
-                    }];
+                    }]);
                 }
                 Command::Buzz => {
-                    if let Some(floored_player) = &modestate.floored_player {
-                        tracing::warn!(?floored_player, "tried to buzz while player is floored");
-                        return Vec::new();
+                    if modestate.floored_player.is_some() {
+                        return Err(CommandError::BuzzWhileFlooredPlayer);
                     }
 
                     if &modestate.phase != &GridQuizPhase::QuestionOpen {
-                        tracing::warn!(?token, "tried to buzz while no question was open");
-                        return Vec::new();
+                        return Err(CommandError::WrongPhase(modestate.phase));
                     }
 
                     modestate.floored_player = Some(token);
@@ -395,16 +426,11 @@ impl ModeState {
                 }
                 Command::CloseQuestion => {
                     let Some(current) = modestate.current.as_ref() else {
-                        tracing::warn!(?token, "tried to close question with no current cell");
-                        return Vec::new();
+                        return Err(CommandError::NoCurrentCell);
                     };
 
                     if &modestate.phase != &GridQuizPhase::QuestionOpen {
-                        tracing::warn!(
-                            ?token,
-                            "tried to close question while no question was open"
-                        );
-                        return Vec::new();
+                        return Err(CommandError::WrongPhase(modestate.phase));
                     }
 
                     modestate.floored_player = None;
@@ -425,7 +451,7 @@ impl ModeState {
             },
             ModeState::Linear(_) => todo!("Linear not implemented yet"),
         };
-        return Vec::new();
+        return Ok(Vec::new());
     }
 }
 
@@ -450,7 +476,7 @@ pub struct GridQuizState {
 }
 
 impl GridQuizState {
-    pub fn build(cells: Vec<Vec<Cell>>, points: Vec<u32>) -> Self {
+    pub(crate) fn build(cells: Vec<Vec<Cell>>, points: Vec<u32>) -> Self {
         Self {
             phase: GridQuizPhase::Lobby,
             active_picker: None,
@@ -460,6 +486,31 @@ impl GridQuizState {
             picker_rotation: VecDeque::new(),
             cells,
             points,
+        }
+    }
+
+    pub(crate) fn close_current(&mut self) {
+        let Some(current) = self.current.as_ref() else {
+            tracing::warn!("tried to close question with no current cell");
+            return;
+        };
+
+        if &self.phase != &GridQuizPhase::QuestionOpen {
+            tracing::warn!("tried to close question while no question was open");
+            return;
+        }
+
+        self.floored_player = None;
+        self.cells[current.category][current.point] = Cell::Used(current.question_id.clone());
+
+        if self
+            .cells
+            .iter()
+            .any(|column| column.iter().any(|cell| matches!(cell, Cell::Open(_))))
+        {
+            self.phase = GridQuizPhase::Reveal;
+        } else {
+            self.phase = GridQuizPhase::GameOver;
         }
     }
 }

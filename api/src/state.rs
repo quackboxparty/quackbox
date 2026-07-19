@@ -7,8 +7,6 @@
 //!              ONLY mutable shared state; DashMap gives concurrent interior
 //!              mutability so no lock is written by hand.
 //! - `config` — server config (host/port, creation secret).
-//!
-//! TODO: move `AppState` here out of `main.rs`; add the `rooms` registry.
 
 use std::sync::Arc;
 

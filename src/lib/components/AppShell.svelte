@@ -17,6 +17,8 @@
 	import Button from '$lib/components/Button.svelte';
 	import { playerColor, playerInitial } from '$lib/playerUi';
 	import { room, has } from '$lib/room.svelte';
+	import type { Grant } from '$lib/bindings/Grants';
+	import { DropdownMenu } from 'bits-ui';
 	import { toast } from '$lib/toast.svelte';
 
 	let { children }: { children: Snippet } = $props();
@@ -34,8 +36,19 @@
 		Object.entries(room.gamestate?.players ?? {}).sort(([, a], [, b]) => b.score - a.score)
 	);
 
+	const allGrants: Grant[] = ['Play', 'Present', 'Moderate'];
+	const grantLabels: Record<Grant, () => string> = {
+		Play: m.grant_play,
+		Present: m.grant_present,
+		Moderate: m.grant_moderate
+	};
+
 	function kick(player: string) {
 		room.send?.({ kind: 'Kick', player });
+	}
+	function toggleGrant(player: string, current: Grant[], g: Grant) {
+		const grants = current.includes(g) ? current.filter((x) => x !== g) : [...current, g];
+		room.send?.({ kind: 'Grant', player, grants });
 	}
 	function endGame() {
 		room.send?.({ kind: 'EndGame' });
@@ -115,14 +128,30 @@
 				</button>
 			{/if}
 			<button
-				class="icon-btn burger"
-				aria-label={m.menu()}
+				class="icon-btn"
+				aria-label={m.settings()}
 				aria-expanded={open}
 				onclick={() => (open = !open)}
 			>
-				<span class="burger-bar"></span>
-				<span class="burger-bar"></span>
-				<span class="burger-bar"></span>
+				<svg
+					class="icon"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<circle cx="9" cy="9" r="3" />
+					<path
+						d="M9 2.8v1.7M9 13.5v1.7M2.8 9h1.7M13.5 9h1.7M4.6 4.6l1.2 1.2M12.2 12.2l1.2 1.2M13.4 4.6l-1.2 1.2M5.8 12.2l-1.2 1.2"
+					/>
+					<circle cx="18" cy="17" r="2" />
+					<path
+						d="M18 12.6v1.4M18 20v1.4M13.6 17h1.4M21 17h1.4M14.9 13.9l1 1M20.1 19.1l1 1M21.1 13.9l-1 1M15.9 19.1l-1 1"
+					/>
+				</svg>
 			</button>
 		</div>
 	</header>
@@ -217,14 +246,45 @@
 							<span class="mod-badge" title="Moderator">🛡️ Mod</span>
 						{/if}
 						{#if has('Moderate') && player !== room.player}
-							<button
-								class="kick-btn"
-								aria-label={m.kick_player({ name: player })}
-								title={m.kick_player({ name: player })}
-								onclick={() => {
-									kick(player);
-								}}>✕</button
-							>
+							<DropdownMenu.Root>
+								<DropdownMenu.Trigger
+									class="player-menu-btn"
+									aria-label={m.player_actions({ name: player })}
+									title={m.player_actions({ name: player })}
+								>
+									<svg class="dots-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+										<circle cx="5" cy="12" r="2" />
+										<circle cx="12" cy="12" r="2" />
+										<circle cx="19" cy="12" r="2" />
+									</svg>
+								</DropdownMenu.Trigger>
+								<DropdownMenu.Portal>
+									<DropdownMenu.Content class="menu-list" align="end" sideOffset={4}>
+										{#each allGrants as g (g)}
+											<DropdownMenu.CheckboxItem
+												class="menu-item"
+												checked={view.grants.includes(g)}
+												closeOnSelect={false}
+												onCheckedChange={() => {
+													toggleGrant(player, view.grants, g);
+												}}
+											>
+												<span class="menu-check">{view.grants.includes(g) ? '✓' : ''}</span>
+												{grantLabels[g]()}
+											</DropdownMenu.CheckboxItem>
+										{/each}
+										<DropdownMenu.Item
+											class="menu-item menu-danger"
+											onSelect={() => {
+												kick(player);
+											}}
+										>
+											<span class="menu-check">✕</span>
+											{m.kick_player({ name: player })}
+										</DropdownMenu.Item>
+									</DropdownMenu.Content>
+								</DropdownMenu.Portal>
+							</DropdownMenu.Root>
 						{/if}
 					</li>
 				{/each}
@@ -307,9 +367,6 @@
 		color: var(--color-text);
 		cursor: pointer;
 	}
-	.burger {
-		gap: 5px;
-	}
 	.icon {
 		width: 1.25rem;
 		height: 1.25rem;
@@ -330,12 +387,6 @@
 		align-items: center;
 		justify-content: center;
 		border: 2px solid var(--bg-surface);
-	}
-	.burger-bar {
-		display: block;
-		height: 2px;
-		width: 100%;
-		background: var(--color-text);
 	}
 	.main {
 		flex: 1;
@@ -435,7 +486,8 @@
 		font-weight: 600;
 		white-space: nowrap;
 	}
-	.kick-btn {
+	/* bits-ui renders these (Content portaled to body) — scoped selectors can't reach them */
+	:global(.player-menu-btn) {
 		margin-left: auto;
 		width: 1.5rem;
 		height: 1.5rem;
@@ -444,13 +496,56 @@
 		background: transparent;
 		color: var(--color-text-muted);
 		cursor: pointer;
-		font-size: calc(0.9rem * var(--font-scale));
-		line-height: 1;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		flex-shrink: 0;
 	}
-	.kick-btn:hover {
+	:global(.player-menu-btn:hover),
+	:global(.player-menu-btn[data-state='open']) {
+		background: var(--bg-muted, var(--border-color));
+		color: var(--color-text);
+	}
+	:global(.player-menu-btn .dots-icon) {
+		width: 1.1rem;
+		height: 1.1rem;
+	}
+	:global(.menu-list) {
+		z-index: 60;
+		min-width: 10rem;
+		padding: var(--space-1);
+		border: var(--border-width) var(--border-style) var(--border-color);
+		border-radius: var(--radius-md);
+		background: var(--bg-surface);
+		box-shadow: 0 4px 12px rgb(0 0 0 / 0.15);
+		display: flex;
+		flex-direction: column;
+		outline: none;
+	}
+	:global(.menu-item) {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-2) var(--space-3);
+		border-radius: var(--radius-sm);
+		color: var(--color-text);
+		font-family: var(--font-body);
+		font-size: calc(0.875rem * var(--font-scale));
+		cursor: pointer;
+		white-space: nowrap;
+		outline: none;
+	}
+	:global(.menu-item[data-highlighted]) {
+		background: var(--bg-muted, var(--border-color));
+	}
+	:global(.menu-check) {
+		width: 1em;
+		flex-shrink: 0;
+	}
+	:global(.menu-danger) {
+		color: var(--color-danger);
+	}
+	:global(.menu-danger[data-highlighted]) {
 		background: var(--color-danger);
 		color: var(--color-text-inverse);
 	}
