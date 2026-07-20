@@ -140,10 +140,16 @@ async fn handle_socket(socket: WebSocket, join_code: String, state: Arc<AppState
             return;
         }
 
+        let mut joined_seen = false;
         while let Ok(gamestate) = state_rx.recv().await {
             let grants = gamestate.player_slots.grants_for(&token);
             let view = match grants {
-                Some(grants) => project(&data, &gamestate, grants),
+                Some(grants) => {
+                    joined_seen = true;
+                    project(&data, &gamestate, grants)
+                }
+                // snapshot predates our join - skip, own join broadcast is still queued
+                None if !joined_seen => continue,
                 None => {
                     tracing::debug!("slot gone for live token; closing stream");
                     let json = serde_json::to_string(&ServerMessage::Error {
@@ -169,5 +175,137 @@ async fn handle_socket(socket: WebSocket, join_code: String, state: Arc<AppState
 
     if let Ok(token) = token_rx.await {
         let _ = disconnect_tx.send(RoomMessage::Disconnect { token }).await;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use dashmap::DashMap;
+    use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async, tungstenite};
+
+    use super::*;
+    use crate::{config::AppConfig, game::room::spawn_room, protocol::Command, state::AppState};
+
+    type Client = WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>;
+
+    /// Real server on port 0 with one room; returns the ws URL for that room.
+    async fn start_server() -> String {
+        let data = Arc::new(crate::data::load("../data").expect("load ../data"));
+        let game = data
+            .games
+            .values()
+            .next()
+            .expect("example dataset has a game")
+            .item
+            .clone();
+        let code = JoinCode("TEST42".into());
+        let handle = spawn_room(code.clone(), game, Arc::clone(&data));
+        let state = Arc::new(AppState {
+            config: AppConfig::default(),
+            data,
+            rooms: DashMap::new(),
+        });
+        state.rooms.insert(code, handle);
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            axum::serve(listener, router().with_state(state)).await.unwrap();
+        });
+        format!("ws://{addr}/ws/TEST42")
+    }
+
+    async fn connect(url: &str) -> Client {
+        let (ws, _) = connect_async(url).await.expect("ws connect");
+        ws
+    }
+
+    async fn send_msg(ws: &mut Client, msg: &ClientMessage) {
+        let json = serde_json::to_string(msg).unwrap();
+        ws.send(tungstenite::Message::Text(json.into()))
+            .await
+            .unwrap();
+    }
+
+    async fn recv_msg(ws: &mut Client) -> ServerMessage {
+        loop {
+            let msg = tokio::time::timeout(Duration::from_secs(5), ws.next())
+                .await
+                .expect("timed out waiting for server message")
+                .expect("socket closed")
+                .expect("ws error");
+            if let tungstenite::Message::Text(txt) = msg {
+                return serde_json::from_str(&txt).expect("valid ServerMessage");
+            }
+        }
+    }
+
+    /// Regression: a connection subscribes to the room broadcast at connect
+    /// time, but joins later (user typing at the name dialog). Snapshots
+    /// broadcast in between predate its slot and must be skipped — they used
+    /// to be mistaken for a kick, killing every join into an active room.
+    #[tokio::test]
+    async fn join_survives_snapshots_broadcast_while_at_name_dialog() {
+        let url = start_server().await;
+
+        let mut a = connect(&url).await;
+        // let the server run handle_socket for A so its broadcast rx exists
+        tokio::time::sleep(Duration::from_millis(50)).await;
+
+        // B joins while A sits at the name dialog → a snapshot without A
+        // queues up in A's rx
+        let mut b = connect(&url).await;
+        send_msg(&mut b, &ClientMessage::Join { name: "host".into() }).await;
+        assert!(matches!(recv_msg(&mut b).await, ServerMessage::Joined { .. }));
+        assert!(matches!(recv_msg(&mut b).await, ServerMessage::Snapshot(_)));
+
+        send_msg(&mut a, &ClientMessage::Join { name: "karl".into() }).await;
+        assert!(matches!(recv_msg(&mut a).await, ServerMessage::Joined { .. }));
+        match recv_msg(&mut a).await {
+            ServerMessage::Snapshot(view) => assert!(view.players.contains_key("karl")),
+            other => panic!("expected snapshot containing karl, got {other:?}"),
+        }
+    }
+
+    /// The stale-snapshot skip must not swallow real kicks: once a player has
+    /// seen itself in a snapshot, a snapshot without it means kicked → Error.
+    #[tokio::test]
+    async fn kicked_player_gets_error() {
+        let url = start_server().await;
+
+        // first joiner gets the Moderate grant
+        let mut host = connect(&url).await;
+        send_msg(&mut host, &ClientMessage::Join { name: "host".into() }).await;
+        let ServerMessage::Joined { token } = recv_msg(&mut host).await else {
+            panic!("expected Joined");
+        };
+
+        let mut karl = connect(&url).await;
+        send_msg(&mut karl, &ClientMessage::Join { name: "karl".into() }).await;
+        assert!(matches!(recv_msg(&mut karl).await, ServerMessage::Joined { .. }));
+
+        send_msg(
+            &mut host,
+            &ClientMessage::Authed {
+                token,
+                cmd: Command::Kick {
+                    player: "karl".into(),
+                },
+            },
+        )
+        .await;
+
+        loop {
+            match recv_msg(&mut karl).await {
+                ServerMessage::Snapshot(_) => continue,
+                ServerMessage::Error { message } => {
+                    assert_eq!(message, "You are no longer in this game.");
+                    break;
+                }
+                other => panic!("expected kick error, got {other:?}"),
+            }
+        }
     }
 }

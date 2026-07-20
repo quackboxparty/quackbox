@@ -49,7 +49,7 @@ async fn main() {
             data.issues.len()
         );
         for issue in &data.issues {
-            tracing::warn!("{issue}");
+            tracing::error!("{issue}");
         }
     }
 

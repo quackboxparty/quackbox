@@ -6,7 +6,7 @@
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/api';
 	import { toast } from '$lib/toast.svelte';
-	import { readSession, type RoomSession } from '$lib/session';
+	import { lastSession, type RoomSession } from '$lib/session';
 	import Button from './Button.svelte';
 	import { onMount } from 'svelte';
 
@@ -40,7 +40,7 @@
 	}
 
 	onMount(() => {
-		recentSession = readSession();
+		recentSession = lastSession();
 	});
 </script>
 

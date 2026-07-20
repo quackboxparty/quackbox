@@ -9,7 +9,7 @@
 	import GameStage from '$lib/components/game/GameStage.svelte';
 	import TextInput from '$lib/components/TextInput.svelte';
 	import { m } from '$lib/paraglide/messages';
-	import { readSession, saveSession } from '$lib/session';
+	import { clearSession, lastSession, readSession, saveSession } from '$lib/session';
 	import { room, clearRoom } from '$lib/room.svelte';
 	import { toast } from '$lib/toast.svelte';
 	import { onMount } from 'svelte';
@@ -17,6 +17,8 @@
 	let nameOpen = $state(false);
 	let name = $state('');
 	let snapshot = $state<ClientView>();
+	// server sent an Error and will close the socket; skip generic onclose handling
+	let serverError = false;
 
 	const code = $derived(page.params['code']);
 	let ws: WebSocket | null | undefined;
@@ -41,12 +43,12 @@
 
 		ws = new WebSocket(`/ws/${code}`);
 		room.send = (cmd) => {
-			const s = readSession();
-			if (s?.token) send({ kind: 'Authed', token: s.token, cmd });
+			const session = readSession(code);
+			if (session?.token) send({ kind: 'Authed', token: session.token, cmd });
 		};
 		ws.onopen = () => {
-			const stored = readSession();
-			if (stored?.room === code && stored?.token) {
+			const stored = readSession(code);
+			if (stored?.token) {
 				room.player = stored.player ?? null;
 				send({ kind: 'Reconnect', token: stored.token });
 			} else {
@@ -75,8 +77,13 @@
 					break;
 				}
 				case 'Error':
+					// TODO: all current server errors mean the token is absent/dead, so
+					// clearing is safe. Once non-fatal errors exist (e.g. server-side name
+					// validation), add a structured Error kind and only clear on auth-fatal
+					// ones — see todo 6 (kick handling).
 					toast.error(serverMsg.message);
-					saveSession({ room: code });
+					serverError = true;
+					clearSession(code);
 					clearRoom();
 					nameOpen = true;
 					break;
@@ -89,18 +96,20 @@
 			toast.error(m.error_generic());
 		};
 		ws.onclose = () => {
+			if (serverError) {
+				serverError = false;
+				// server closes after every Error; reopen so the name dialog has a live socket
+				void handleWebsocket();
+				return;
+			}
 			toast.error(m.error_generic());
 			void goto(resolve('/', {}));
 		};
 	}
 
 	onMount(() => {
-		name = readSession()?.player ?? '';
 		if (code === undefined) return;
-		const existing = readSession();
-		if (!existing || existing.room !== code) {
-			saveSession({ room: code });
-		}
+		name = readSession(code)?.player ?? lastSession()?.player ?? '';
 		void handleWebsocket();
 		return () => {
 			if (ws) {

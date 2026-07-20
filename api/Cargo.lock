@@ -37,6 +37,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tokio",
+ "tokio-tungstenite",
  "tower-http 0.7.0",
  "tracing",
  "tracing-opentelemetry",
